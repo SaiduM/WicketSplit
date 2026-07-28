@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 import { getGoogleUser } from "./google-auth";
 
 export const dynamic = "force-dynamic";

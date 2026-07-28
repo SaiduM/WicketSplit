@@ -10,11 +10,15 @@ export default function PwaClient() {
     const standalone = window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
     const isiPhone = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    if (isiPhone && !standalone && localStorage.getItem("wicketsplit-install-hint") !== "dismissed") setShowInstall(true);
+    if (isiPhone && !standalone && localStorage.getItem("wicketsplit-install-hint") !== "dismissed") {
+      const timer = window.setTimeout(() => setShowInstall(true), 0);
+      return () => window.clearTimeout(timer);
+    }
   }, []);
 
   if (!showInstall) return null;
   return <aside className="install-hint" aria-label="Install WicketSplit">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src="/app-icon-192.png" alt="" />
     <div><strong>Add WicketSplit to your iPhone</strong><span>Tap <b>Share</b> in Safari, then <b>Add to Home Screen</b>.</span></div>
     <button aria-label="Dismiss install instructions" onClick={()=>{localStorage.setItem("wicketsplit-install-hint","dismissed");setShowInstall(false)}}>×</button>

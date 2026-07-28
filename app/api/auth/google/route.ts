@@ -19,26 +19,42 @@ function decodeSignature(value: string) {
 }
 
 async function verifyGoogleCredential(token: string): Promise<GooglePayload | null> {
-  const [headerPart, payloadPart, signaturePart] = token.split(".");
-  if (!headerPart || !payloadPart || !signaturePart) return null;
-  const header = decodePart(headerPart) as { alg?: string; kid?: string };
-  const payload = decodePart(payloadPart) as GooglePayload;
-  if (header.alg !== "RS256" || !header.kid) return null;
-  const clientId = (env as unknown as Record<string, string>).GOOGLE_CLIENT_ID;
-  const now = Math.floor(Date.now() / 1000);
-  if (!clientId || payload.aud !== clientId || !["accounts.google.com","https://accounts.google.com"].includes(payload.iss) ||
-      payload.exp <= now || payload.email_verified !== true || !payload.email) return null;
-  const keysResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs");
-  if (!keysResponse.ok) return null;
-  const { keys } = await keysResponse.json() as { keys: JsonWebKey[] };
-  const jwk = keys.find(key => key.kid === header.kid);
-  if (!jwk) return null;
-  const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-  const signed = new TextEncoder().encode(`${headerPart}.${payloadPart}`);
-  return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, decodeSignature(signaturePart), signed) ? payload : null;
+  try {
+    const [headerPart, payloadPart, signaturePart] = token.split(".");
+    if (!headerPart || !payloadPart || !signaturePart) return null;
+    const header = decodePart(headerPart) as { alg?: string; kid?: string };
+    const payload = decodePart(payloadPart) as GooglePayload;
+    if (header.alg !== "RS256" || !header.kid) return null;
+    const clientId = (env as unknown as Record<string, string>).GOOGLE_CLIENT_ID;
+    const now = Math.floor(Date.now() / 1000);
+    if (!clientId || payload.aud !== clientId || !["accounts.google.com","https://accounts.google.com"].includes(payload.iss) ||
+        payload.exp <= now || payload.email_verified !== true || !payload.email || !payload.sub) return null;
+    const keysResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+    if (!keysResponse.ok) return null;
+    const { keys } = await keysResponse.json() as { keys: JsonWebKey[] };
+    const jwk = keys.find(key => key.kid === header.kid);
+    if (!jwk) return null;
+    const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const signed = new TextEncoder().encode(`${headerPart}.${payloadPart}`);
+    return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, decodeSignature(signaturePart), signed) ? payload : null;
+  } catch { return null; }
 }
 
 export async function POST(request: Request) {
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS api_rate_limits (
+    rate_key TEXT PRIMARY KEY,
+    window_start INTEGER NOT NULL,
+    request_count INTEGER NOT NULL
+  )`).run();
+  const identity = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const windowStart = Math.floor(Date.now() / 60_000);
+  const rate = await env.DB.prepare(`INSERT INTO api_rate_limits (rate_key, window_start, request_count)
+    VALUES (?, ?, 1)
+    ON CONFLICT(rate_key) DO UPDATE SET
+      request_count = CASE WHEN window_start = excluded.window_start THEN request_count + 1 ELSE 1 END,
+      window_start = excluded.window_start
+    RETURNING request_count`).bind(`google-login:${identity}`, windowStart).first<{ request_count: number }>();
+  if ((rate?.request_count ?? 21) > 20) return Response.json({ error: "Too many sign-in attempts" }, { status: 429, headers: { "Retry-After": "60" } });
   let credential = "";
   try { credential = String((await request.json() as { credential?: unknown }).credential ?? ""); } catch {}
   if (!credential || credential.length > 10_000) return Response.json({ error: "Invalid credential" }, { status: 400 });

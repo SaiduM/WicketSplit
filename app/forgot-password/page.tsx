@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
+
 export default function ForgotPassword() {
   return <main className="recovery-page">
     <a className="public-brand" href="/"><span>W</span>WicketSplit</a>

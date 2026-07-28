@@ -1,14 +1,16 @@
 "use client";
+/* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Player = { id: number; name: string; initials: string; email?: string; color: string };
 type Game = { id: number; date: string; opponent: string; venue: string; players: number[]; status: "Upcoming" | "Completed" };
-type Expense = { id: number; date: string; label: string; category: string; amount: number; paidBy: number; gameId?: number; split: "players" | "team" };
+type Expense = { id: number; date: string; label: string; category: string; amount: number; paidBy: number; gameId?: number; split: "players" | "team"; participants?: number[] };
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[] };
 type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[] };
 type Account = { registered: boolean; name: string; teams: Team[] };
 type View = "overview" | "roster" | "games" | "expenses" | "settlement" | "leagues";
+type SaveState = "loading" | "saved" | "saving" | "error";
 
 const colors = ["#d9f99d","#bfdbfe","#fed7aa","#ddd6fe","#fecdd3","#bae6fd","#fde68a","#bbf7d0","#e9d5ff","#c7d2fe","#fbcfe8","#a7f3d0"];
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -25,31 +27,53 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const [editingLeague, setEditingLeague] = useState<League | null>(null);
   const [teamMenu, setTeamMenu] = useState(false);
   const [toast, setToast] = useState("");
+  const [saveState, setSaveState] = useState<SaveState>("loading");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const loaded = useRef(false);
+  const saveSequence = useRef(0);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
-    fetch("/api/state").then(r => r.ok ? r.json() : null).then(data => {
+    fetch("/api/state").then(async r => {
+      if (!r.ok) throw new Error("Workspace could not be loaded");
+      return r.json();
+    }).then(data => {
       const next = data?.registered ? data as Account : emptyAccount(user.name);
       setAccount(next);
       setTeamId(next.teams[0]?.id ?? null);
       setLeagueId(next.teams[0]?.leagues[0]?.id ?? null);
       loaded.current = true;
-    }).catch(() => { loaded.current = true; });
+      setSaveState("saved");
+    }).catch(() => { setLoadFailed(true); setSaveState("error"); });
   }, [user.name]);
 
   useEffect(() => {
     if (!loaded.current) return;
-    const timer = setTimeout(() => fetch("/api/state", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(account),
-    }).catch(() => undefined), 300);
+    const sequence = ++saveSequence.current;
+    setSaveState("saving");
+    const payload = JSON.stringify(account);
+    const timer = setTimeout(() => {
+      saveQueue.current = saveQueue.current.catch(()=>undefined).then(async () => {
+        try {
+          const response = await fetch("/api/state", {
+            method: "POST", headers: { "content-type": "application/json" }, body: payload,
+          });
+          if (!response.ok) throw new Error("Save failed");
+          if (sequence === saveSequence.current) setSaveState("saved");
+        } catch {
+          if (sequence === saveSequence.current) setSaveState("error");
+        }
+      });
+    }, 300);
     return () => clearTimeout(timer);
   }, [account]);
 
   const team = account.teams.find(t => t.id === teamId) ?? account.teams[0];
   const league = team?.leagues.find(l => l.id === leagueId) ?? team?.leagues[0];
-  const players = team?.players ?? [];
-  const games = league?.games ?? [];
-  const expenses = league?.expenses ?? [];
+  const players = useMemo(()=>team?.players ?? [],[team]);
+  const games = useMemo(()=>league?.games ?? [],[league]);
+  const expenses = useMemo(()=>league?.expenses ?? [],[league]);
   const notify = (message: string) => { setToast(message); setTimeout(() => setToast(""), 2200); };
 
   const updateTeam = (updater: (team: Team) => Team) => {
@@ -63,7 +87,10 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const balances = useMemo(() => players.map(player => {
     const paid = expenses.filter(e => e.paidBy === player.id).reduce((s,e) => s + e.amount, 0);
     const share = expenses.reduce((sum,e) => {
-      if (e.split === "team") return sum + (players.length ? e.amount / players.length : 0);
+      if (e.split === "team") {
+        const participants = e.participants?.length ? e.participants : players.map(p=>p.id);
+        return participants.includes(player.id) ? sum + e.amount / participants.length : sum;
+      }
       const game = games.find(g => g.id === e.gameId);
       return game?.players.includes(player.id) ? sum + e.amount / game.players.length : sum;
     }, 0);
@@ -90,9 +117,16 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
 
   function exportCsv() {
     if (!team || !league) return;
-    const rows = [["Team",team.name],["League",league.name],[],["Player","Games Played","Amount Paid","Fair Share","Balance"],
-      ...balances.map(b => [b.name,games.filter(g=>g.players.includes(b.id)).length,b.paid.toFixed(2),b.share.toFixed(2),b.balance.toFixed(2)])];
-    const csv = rows.map(r => r.map(c => `"${String(c).replaceAll('"','""')}"`).join(",")).join("\n");
+    const rows = [["Team",team.name],["League",league.name],["Season",league.season],[],
+      ["PLAYER SETTLEMENT"],["Player","Games Played","Amount Paid","Fair Share","Balance"],
+      ...balances.map(b => [b.name,games.filter(g=>g.players.includes(b.id)).length,b.paid.toFixed(2),b.share.toFixed(2),b.balance.toFixed(2)]),
+      [],["SUGGESTED PAYMENTS"],["From","To","Amount"],
+      ...settlementTransfers(balances).map(t=>[t.from,t.to,t.amount.toFixed(2)]),
+      [],["EXPENSE DETAILS"],["Date","Description","Category","Paid by","Split among","Amount"],
+      ...expenses.map(e=>[e.date,e.label,e.category,players.find(p=>p.id===e.paidBy)?.name??"Unknown",
+        e.split==="team"?`Full roster (${e.participants?.length??players.length})`:`Game vs ${games.find(g=>g.id===e.gameId)?.opponent??"Unknown"} (${games.find(g=>g.id===e.gameId)?.players.length??0})`,e.amount.toFixed(2)])];
+    const safeCell=(value:unknown)=>{const text=String(value);return /^[=+\-@]/.test(text)?`'${text}`:text};
+    const csv = rows.map(r => r.map(c => `"${safeCell(c).replaceAll('"','""')}"`).join(",")).join("\n");
     const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     link.download = `${team.name}-${league.name}-settlement.csv`.replaceAll(" ","-").toLowerCase(); link.click();
     URL.revokeObjectURL(link.href); notify("Settlement CSV downloaded");
@@ -100,6 +134,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
 
   const total = expenses.reduce((s,e)=>s+e.amount,0);
   const outstanding = balances.filter(b=>b.balance<0).reduce((s,b)=>s+Math.abs(b.balance),0);
+
+  if (saveState === "loading") return <main className="workspace-loading"><span className="brand-mark">W</span><strong>Loading your workspace…</strong></main>;
+  if (loadFailed) return <main className="workspace-loading load-error"><span>!</span><strong>We couldn’t load your workspace.</strong><p>Your saved data has not been changed.</p><button className="primary" onClick={()=>location.reload()}>Try again</button></main>;
 
   return <main className="app-shell">
     <aside className="sidebar">
@@ -140,6 +177,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <p>{team?.name}{league ? ` · ${league.name}` : " · Create a league to begin"}</p>
         </div>
         <div className="header-actions">
+          <span className={`save-state ${saveState}`}>{saveState==="saving"?"Saving…":saveState==="error"?"Not saved":"✓ Saved"}</span>
           {view==="roster" && <button className="primary" onClick={()=>setModal("player")}>＋ Add player</button>}
           {view==="leagues" && <button className="primary" onClick={()=>setModal("league")}>＋ Create league</button>}
           {["overview","expenses"].includes(view) && league && players.length>0 && <button className="primary" onClick={()=>setModal("expense")}>＋ Add expense</button>}
@@ -152,8 +190,8 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         {view==="overview" && league && <Overview total={total} outstanding={outstanding} players={players} games={games} expenses={expenses} balances={balances} setView={setView} onPlayer={()=>setModal("player")} onGame={()=>setModal("game")} onExpense={()=>setModal("expense")}/>}
         {view==="roster" && <RosterView team={team} onAdd={()=>setModal("player")} onEdit={setEditingPlayer}/>}
         {view==="leagues" && <LeaguesView team={team} activeId={league?.id} onSelect={id=>{setLeagueId(id);setView("overview")}} onAdd={()=>setModal("league")} onEdit={setEditingLeague}/>}
-        {view==="games" && league && <GamesView games={games} players={players} onAdd={()=>setModal("game")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
-        {view==="expenses" && league && <ExpensesView expenses={expenses} players={players} games={games} onAdd={()=>setModal("expense")}/>}
+        {view==="games" && league && <GamesView games={games} players={players} onAdd={()=>setModal("game")} onRoster={()=>setView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
+        {view==="expenses" && league && <ExpensesView expenses={expenses} players={players} games={games} onAdd={()=>setModal("expense")} onRoster={()=>setView("roster")} onEdit={setEditingExpense}/>}
         {view==="settlement" && league && <SettlementView balances={balances} games={games} exportCsv={exportCsv}/>}
       </>}
     </section>
@@ -165,6 +203,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     {editingPlayer && team && <PlayerModal teamName={team.name} player={editingPlayer} onClose={()=>setEditingPlayer(null)} onSave={(name,email)=>{updateTeam(t=>({...t,players:t.players.map(p=>p.id===editingPlayer.id?{...p,name,email,initials:initials(name)}:p)}));setEditingPlayer(null);notify("Player details updated")}}/>}
     {modal==="game" && league && <GameModal players={players} onClose={()=>setModal(null)} onSave={game=>{updateLeague(l=>({...l,games:[...l.games,{...game,id:Date.now()}]}));setModal(null);notify("Game and lineup added")}}/>}
     {modal==="expense" && league && <ExpenseModal players={players} games={games} onClose={()=>setModal(null)} onSave={expense=>{updateLeague(l=>({...l,expenses:[...l.expenses,{...expense,id:Date.now()}]}));setModal(null);notify("Expense added and split recalculated")}}/>}
+    {editingExpense && league && <ExpenseModal expense={editingExpense} players={players} games={games} onClose={()=>setEditingExpense(null)} onDelete={()=>{if(confirm(`Delete “${editingExpense.label}”? This will recalculate every balance.`)){updateLeague(l=>({...l,expenses:l.expenses.filter(e=>e.id!==editingExpense.id)}));setEditingExpense(null);notify("Expense deleted and balances recalculated")}}} onSave={expense=>{updateLeague(l=>({...l,expenses:l.expenses.map(e=>e.id===editingExpense.id?{...expense,id:e.id}:e)}));setEditingExpense(null);notify("Expense updated and split recalculated")}}/>}
     {toast && <div className="toast">✓ {toast}</div>}
   </main>;
 }
@@ -193,22 +232,30 @@ function LeaguesView({team,activeId,onSelect,onAdd,onEdit}:{team:Team;activeId?:
   return <>{team.leagues.length?<div className="league-grid">{team.leagues.map(l=><article className={`league-card ${l.id===activeId?"current":""}`} key={l.id}><div><span className={l.status==="Active"?"status complete":"status"}>{l.status}</span><button className="edit-league" onClick={()=>onEdit(l)}>✎ Edit</button></div><h3>{l.name}</h3><p>{l.season} · {l.games.length} games · {l.expenses.length} expenses</p><div className="league-metrics"><div><strong>{money.format(l.expenses.reduce((s,e)=>s+e.amount,0))}</strong><span>Total spend</span></div><div><strong>{l.games.length}</strong><span>Games</span></div></div><button className="card-action" onClick={()=>onSelect(l.id)}>{l.id===activeId?"Open current league":"Switch to league"} →</button></article>)}<button className="new-league-card" onClick={onAdd}><span>＋</span><strong>Create another league</strong><small>New season or tournament</small></button></div>:<EmptyState icon="▤" title="No leagues yet" text={`${team.name} can have multiple leagues, seasons, and tournaments—each with separate expenses.`} action="Create first league" onAction={onAdd}/>}</>;
 }
 
-function GamesView({games,players,onAdd,onChange,notify}:{games:Game[];players:Player[];onAdd:()=>void;onChange:(g:Game[])=>void;notify:(s:string)=>void}) {
+function GamesView({games,players,onAdd,onRoster,onChange,notify}:{games:Game[];players:Player[];onAdd:()=>void;onRoster:()=>void;onChange:(g:Game[])=>void;notify:(s:string)=>void}) {
   const [editing,setEditing]=useState<number|null>(null); const game=games.find(g=>g.id===editing);
-  const toggle=(id:number)=>game&&onChange(games.map(g=>g.id===game.id?{...g,players:g.players.includes(id)?g.players.filter(x=>x!==id):g.players.length<12?[...g.players,id]:g.players}:g));
-  const changeStatus=(status:Game["status"])=>game&&onChange(games.map(g=>g.id===game.id?{...g,status}:g));
-  if (!players.length) return <EmptyState icon="♙" title="Add roster players first" text="Games need a team roster before you can select a Playing XI or XII." action="Go to team roster" onAction={()=>location.reload()}/>;
+  if (!players.length) return <EmptyState icon="♙" title="Add roster players first" text="Games need a team roster before you can select a Playing XI or XII." action="Go to team roster" onAction={onRoster}/>;
   return <>{games.length?<><div className="view-toolbar"><div><h2>League games</h2><p>{games.length} {games.length===1?"game":"games"} recorded in this league.</p></div><button className="primary" onClick={onAdd}>＋ Add game</button></div><div className="game-grid">{games.map((g,i)=><article className="game-card" key={g.id}><div><span className={g.status==="Completed"?"status complete":"status"}>{g.status}</span><span>GAME {i+1}</span></div><div className="game-date"><strong>{new Date(g.date+"T12:00").toLocaleDateString("en-US",{day:"2-digit"})}</strong><span>{new Date(g.date+"T12:00").toLocaleDateString("en-US",{month:"short"}).toUpperCase()}</span></div><h3>vs {g.opponent}</h3><p>{g.venue||"Venue not specified"}</p><div className="selected-count"><strong>{g.players.length}</strong> selected <span className={g.players.length>=11?"valid":"invalid"}>{g.players.length>=11?"Ready":"Need more"}</span></div><button className="card-action" onClick={()=>setEditing(g.id)}>Edit game & Playing {g.players.length||"XI"} →</button></article>)}</div></>:<EmptyState icon="◉" title="No games in this league" text="Add a fixture and select the 11 or 12 players taking part." action="Add first game" onAction={onAdd}/>}
-  {game&&<div className="modal-backdrop"><div className="modal lineup-modal"><ModalHead eyebrow="EDIT GAME" title="Game status & Playing XI / XII" description={`${game.players.length} of 12 selected`} close={()=>setEditing(null)}/><div className="form-grid edit-game-fields"><label className="wide">Game status<select value={game.status} onChange={e=>changeStatus(e.target.value as Game["status"])}><option>Upcoming</option><option>Completed</option></select></label></div><div className="player-picker">{players.map(p=><button key={p.id} className={game.players.includes(p.id)?"picked":""} onClick={()=>toggle(p.id)}><span className="avatar" style={{background:p.color}}>{p.initials}</span><span>{p.name}</span><i>{game.players.includes(p.id)?"✓":"＋"}</i></button>)}</div><div className="modal-actions"><span className={game.players.length>=11?"ready":"warning"}>{game.players.length>=11?"✓ Lineup ready":"Select at least 11"}</span><button className="primary" disabled={game.players.length<11} onClick={()=>{setEditing(null);notify("Game and lineup saved")}}>Save changes</button></div></div></div>}</>;
+  {game&&<GameModal game={game} players={players} onClose={()=>setEditing(null)} onSave={updated=>{onChange(games.map(g=>g.id===game.id?{...updated,id:g.id}:g));setEditing(null);notify("Game and lineup updated")}}/>}</>;
 }
 
-function ExpensesView({expenses,players,games,onAdd}:{expenses:Expense[];players:Player[];games:Game[];onAdd:()=>void}) {
-  return expenses.length?<div className="table-panel"><table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Paid by</th><th>Split among</th><th>Amount</th></tr></thead><tbody>{expenses.slice().reverse().map(e=><tr key={e.id}><td>{new Date(e.date+"T12:00").toLocaleDateString()}</td><td><strong>{e.label}</strong></td><td><span className="category-chip">{e.category}</span></td><td>{players.find(p=>p.id===e.paidBy)?.name}</td><td>{e.split==="team"?`Full roster (${players.length})`:`Playing team (${games.find(g=>g.id===e.gameId)?.players.length||0})`}</td><td><strong>{money.format(e.amount)}</strong></td></tr>)}</tbody></table></div>:<EmptyState icon="↗" title="No expenses yet" text="Record the league fee or a match-day purchase and choose who should share it." action="Add first expense" onAction={onAdd}/>;
+function ExpensesView({expenses,players,games,onAdd,onRoster,onEdit}:{expenses:Expense[];players:Player[];games:Game[];onAdd:()=>void;onRoster:()=>void;onEdit:(expense:Expense)=>void}) {
+  if (!players.length) return <EmptyState icon="♙" title="Add roster players first" text="Every payment needs a team member who paid it." action="Go to team roster" onAction={onRoster}/>;
+  return expenses.length?<><div className="view-toolbar"><div><h2>League expenses</h2><p>{expenses.length} {expenses.length===1?"payment":"payments"} recorded.</p></div><button className="primary" onClick={onAdd}>＋ Add expense</button></div><div className="table-panel"><table><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Paid by</th><th>Split among</th><th>Amount</th><th></th></tr></thead><tbody>{expenses.slice().reverse().map(e=><tr key={e.id}><td>{new Date(e.date+"T12:00").toLocaleDateString()}</td><td><strong>{e.label}</strong></td><td><span className="category-chip">{e.category}</span></td><td>{players.find(p=>p.id===e.paidBy)?.name??"Unknown player"}</td><td>{e.split==="team"?`Full roster (${e.participants?.length??players.length})`:`Playing team (${games.find(g=>g.id===e.gameId)?.players.length||0})`}</td><td><strong>{money.format(e.amount)}</strong></td><td><button className="table-edit" onClick={()=>onEdit(e)}>Edit</button></td></tr>)}</tbody></table></div></>:<EmptyState icon="↗" title="No expenses yet" text="Record the league fee or a match-day purchase and choose who should share it." action="Add first expense" onAction={onAdd}/>;
 }
 
 function SettlementView({balances,games,exportCsv}:{balances:(Player&{paid:number;share:number;balance:number})[];games:Game[];exportCsv:()=>void}) {
   if (!balances.length) return <EmptyState icon="⇄" title="Nothing to settle yet" text="Add players and expenses to calculate a final league settlement." />;
-  return <><div className="view-toolbar"><div><h2>League settlement</h2><p>Player-by-player totals based on participation.</p></div><button className="primary" onClick={exportCsv}>↓ Download CSV</button></div><div className="table-panel"><table><thead><tr><th>Player</th><th>Games</th><th>Paid</th><th>Fair share</th><th>Balance</th></tr></thead><tbody>{balances.map(b=><tr key={b.id}><td><div className="player-cell"><span className="avatar" style={{background:b.color}}>{b.initials}</span><strong>{b.name}</strong></div></td><td>{games.filter(g=>g.players.includes(b.id)).length}</td><td>{money.format(b.paid)}</td><td>{money.format(b.share)}</td><td><strong className={b.balance>=0?"positive":"negative"}>{b.balance>=0?"+":"−"}{money.format(Math.abs(b.balance))}</strong></td></tr>)}</tbody></table></div></>;
+  const transfers=settlementTransfers(balances);
+  return <><div className="view-toolbar"><div><h2>League settlement</h2><p>Player-by-player totals based on participation.</p></div><button className="primary" onClick={exportCsv}>↓ Download CSV</button></div><div className="table-panel"><table><thead><tr><th>Player</th><th>Games</th><th>Paid</th><th>Fair share</th><th>Balance</th></tr></thead><tbody>{balances.map(b=><tr key={b.id}><td><div className="player-cell"><span className="avatar" style={{background:b.color}}>{b.initials}</span><strong>{b.name}</strong></div></td><td>{games.filter(g=>g.players.includes(b.id)).length}</td><td>{money.format(b.paid)}</td><td>{money.format(b.share)}</td><td><strong className={b.balance>=0?"positive":"negative"}>{b.balance>=0?"+":"−"}{money.format(Math.abs(b.balance))}</strong></td></tr>)}</tbody></table></div>{transfers.length>0&&<section className="transfer-panel"><h2>Suggested payments</h2><p>Use these transfers to settle the league with the fewest practical payments.</p>{transfers.map((t,i)=><div key={i}><strong>{t.from}</strong><span>pays</span><strong>{t.to}</strong><b>{money.format(t.amount)}</b></div>)}</section>}</>;
+}
+
+function settlementTransfers(balances:(Player&{balance:number})[]) {
+  const debtors=balances.filter(b=>b.balance<-.005).map(b=>({name:b.name,amount:-b.balance}));
+  const creditors=balances.filter(b=>b.balance>.005).map(b=>({name:b.name,amount:b.balance}));
+  const result:{from:string;to:string;amount:number}[]=[]; let d=0; let c=0;
+  while(d<debtors.length&&c<creditors.length){const amount=Math.min(debtors[d].amount,creditors[c].amount);result.push({from:debtors[d].name,to:creditors[c].name,amount});debtors[d].amount-=amount;creditors[c].amount-=amount;if(debtors[d].amount<.005)d++;if(creditors[c].amount<.005)c++}
+  return result;
 }
 
 function EmptyState({icon,title,text,action,onAction}:{icon:string;title:string;text:string;action?:string;onAction?:()=>void}) { return <div className="empty-state"><span>{icon}</span><h2>{title}</h2><p>{text}</p>{action&&<button className="primary" onClick={onAction}>{action} →</button>}</div>; }
@@ -224,14 +271,15 @@ function LeagueModal({league,onClose,onSave}:{league?:League;onClose:()=>void;on
 function PlayerModal({teamName,player,onClose,onSave}:{teamName:string;player?:Player;onClose:()=>void;onSave:(name:string,email:string)=>void}) {
   const [name,setName]=useState(player?.name??""); const [email,setEmail]=useState(player?.email??""); return <div className="modal-backdrop"><form className="modal small-modal" onSubmit={e=>{e.preventDefault();onSave(name,email)}}><ModalHead eyebrow={`${teamName.toUpperCase()} ROSTER`} title={player?"Edit player":"Add a player"} description={player?"Their existing games, payments, and balances will stay linked.":"They’ll be available for every league and Playing XI / XII."} close={onClose}/><div className="form-grid"><label className="wide">Player name<input autoFocus required value={name} onChange={e=>setName(e.target.value)} placeholder="Full name"/></label><label className="wide">Email (optional)<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="player@example.com"/></label></div><div className="modal-actions"><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary">{player?"Save changes":"Add player"}</button></div></form></div>;
 }
-function GameModal({players,onClose,onSave}:{players:Player[];onClose:()=>void;onSave:(g:Omit<Game,"id">)=>void}) {
-  const [opponent,setOpponent]=useState(""); const [date,setDate]=useState(""); const [venue,setVenue]=useState(""); const [selected,setSelected]=useState<number[]>([]);
-  const [status,setStatus]=useState<Game["status"]>("Upcoming"); const [statusChanged,setStatusChanged]=useState(false);
+function GameModal({game,players,onClose,onSave}:{game?:Game;players:Player[];onClose:()=>void;onSave:(g:Omit<Game,"id">)=>void}) {
+  const [opponent,setOpponent]=useState(game?.opponent??""); const [date,setDate]=useState(game?.date??""); const [venue,setVenue]=useState(game?.venue??""); const [selected,setSelected]=useState<number[]>(game?.players??[]);
+  const [status,setStatus]=useState<Game["status"]>(game?.status??"Upcoming"); const [statusChanged,setStatusChanged]=useState(Boolean(game));
   const today=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`};
   const chooseDate=(next:string)=>{setDate(next);if(!statusChanged)setStatus(next&&next<today()?"Completed":"Upcoming")};
-  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(selected.length>=11)onSave({opponent,date,venue,players:selected,status})}}><ModalHead eyebrow="NEW FIXTURE" title="Add game & lineup" description="Past dates are marked completed automatically. You can override the status." close={onClose}/><div className="form-grid"><label>Opponent<input required value={opponent} onChange={e=>setOpponent(e.target.value)} placeholder="Team name"/></label><label>Date<input required type="date" value={date} onChange={e=>chooseDate(e.target.value)}/></label><label>Venue (optional)<input value={venue} onChange={e=>setVenue(e.target.value)} placeholder="Ground or park"/></label><label>Status<select value={status} onChange={e=>{setStatus(e.target.value as Game["status"]);setStatusChanged(true)}}><option>Upcoming</option><option>Completed</option></select></label></div><div className="player-picker compact">{players.map(p=><button type="button" key={p.id} className={selected.includes(p.id)?"picked":""} onClick={()=>setSelected(selected.includes(p.id)?selected.filter(x=>x!==p.id):selected.length<12?[...selected,p.id]:selected)}><span className="avatar" style={{background:p.color}}>{p.initials}</span><span>{p.name}</span><i>{selected.includes(p.id)?"✓":"＋"}</i></button>)}</div><div className="modal-actions"><span className={selected.length>=11?"ready":"warning"}>{selected.length}/12 selected</span><button className="primary" disabled={selected.length<11}>Save game</button></div></form></div>;
+  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(selected.length>=11)onSave({opponent:opponent.trim(),date,venue:venue.trim(),players:selected,status})}}><ModalHead eyebrow={game?"EDIT GAME":"NEW FIXTURE"} title={game?"Edit game & lineup":"Add game & lineup"} description="Past dates are marked completed automatically. You can override the status." close={onClose}/><div className="form-grid"><label>Opponent<input autoFocus={!game} required value={opponent} onChange={e=>setOpponent(e.target.value)} placeholder="Team name"/></label><label>Date<input required type="date" value={date} onChange={e=>chooseDate(e.target.value)}/></label><label>Venue (optional)<input value={venue} onChange={e=>setVenue(e.target.value)} placeholder="Ground or park"/></label><label>Status<select value={status} onChange={e=>{setStatus(e.target.value as Game["status"]);setStatusChanged(true)}}><option>Upcoming</option><option>Completed</option></select></label></div><div className="player-picker compact">{players.map(p=><button type="button" key={p.id} className={selected.includes(p.id)?"picked":""} onClick={()=>setSelected(selected.includes(p.id)?selected.filter(x=>x!==p.id):selected.length<12?[...selected,p.id]:selected)}><span className="avatar" style={{background:p.color}}>{p.initials}</span><span>{p.name}</span><i>{selected.includes(p.id)?"✓":"＋"}</i></button>)}</div><div className="modal-actions"><span className={selected.length>=11?"ready":"warning"}>{selected.length}/12 selected</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={selected.length<11}>{game?"Save changes":"Save game"}</button></div></form></div>;
 }
-function ExpenseModal({players,games,onClose,onSave}:{players:Player[];games:Game[];onClose:()=>void;onSave:(e:Omit<Expense,"id">)=>void}) {
-  const [label,setLabel]=useState(""); const [amount,setAmount]=useState(""); const [category,setCategory]=useState("Water"); const [paidBy,setPaidBy]=useState(players[0]?.id||0); const [gameId,setGameId]=useState(games[0]?.id||0); const [split,setSplit]=useState<"players"|"team">(games.length?"players":"team");
-  return <div className="modal-backdrop"><form className="modal" onSubmit={e=>{e.preventDefault();onSave({label,amount:Number(amount),category,paidBy,gameId:split==="players"?gameId:undefined,split,date:new Date().toISOString().slice(0,10)})}}><ModalHead eyebrow="NEW PAYMENT" title="Add an expense" description="The league settlement will update automatically." close={onClose}/><div className="form-grid"><label className="wide">Description<input autoFocus required value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Water & ice"/></label><label>Amount ($)<input required min=".01" step=".01" type="number" value={amount} onChange={e=>setAmount(e.target.value)}/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option>Water</option><option>Fruits</option><option>Team fund</option><option>League fee</option><option>Other</option></select></label><label>Paid by<select value={paidBy} onChange={e=>setPaidBy(Number(e.target.value))}>{players.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Split rule<select value={split} onChange={e=>setSplit(e.target.value as "players"|"team")}><option value="team">Full team roster</option>{games.length>0&&<option value="players">Playing XI / XII</option>}</select></label>{split==="players"&&<label className="wide">Game<select value={gameId} onChange={e=>setGameId(Number(e.target.value))}>{games.map((g,i)=><option key={g.id} value={g.id}>Game {i+1} vs {g.opponent} · {g.players.length} players</option>)}</select></label>}</div><div className="modal-actions"><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary">Add & split</button></div></form></div>;
+function ExpenseModal({expense,players,games,onClose,onSave,onDelete}:{expense?:Expense;players:Player[];games:Game[];onClose:()=>void;onSave:(e:Omit<Expense,"id">)=>void;onDelete?:()=>void}) {
+  const localToday=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`};
+  const [label,setLabel]=useState(expense?.label??""); const [amount,setAmount]=useState(expense?String(expense.amount):""); const [category,setCategory]=useState(expense?.category??"Water"); const [paidBy,setPaidBy]=useState(expense?.paidBy??players[0]?.id??0); const [gameId,setGameId]=useState(expense?.gameId??games[0]?.id??0); const [split,setSplit]=useState<"players"|"team">(expense?.split??(games.length?"players":"team")); const [date,setDate]=useState(expense?.date??localToday());
+  return <div className="modal-backdrop"><form className="modal" onSubmit={e=>{e.preventDefault();onSave({label:label.trim(),amount:Number(amount),category,paidBy,gameId:split==="players"?gameId:undefined,split,date,participants:split==="team"?(expense?.split==="team"&&expense.participants?.length?expense.participants:players.map(p=>p.id)):undefined})}}><ModalHead eyebrow={expense?"EDIT PAYMENT":"NEW PAYMENT"} title={expense?"Edit expense":"Add an expense"} description="The league settlement will update automatically." close={onClose}/><div className="form-grid"><label className="wide">Description<input autoFocus required value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Water & ice"/></label><label>Amount ($)<input required min=".01" step=".01" type="number" value={amount} onChange={e=>setAmount(e.target.value)}/></label><label>Expense date<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option>Water</option><option>Fruits</option><option>Team fund</option><option>League fee</option><option>Other</option></select></label><label>Paid by<select required value={paidBy} onChange={e=>setPaidBy(Number(e.target.value))}>{players.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Split rule<select value={split} onChange={e=>setSplit(e.target.value as "players"|"team")}><option value="team">Full team roster</option>{games.length>0&&<option value="players">Playing XI / XII</option>}</select></label>{split==="players"&&<label>Game<select required value={gameId} onChange={e=>setGameId(Number(e.target.value))}>{games.map((g,i)=><option key={g.id} value={g.id}>Game {i+1} vs {g.opponent} · {g.players.length} players</option>)}</select></label>}</div><div className="modal-actions">{onDelete&&<button type="button" className="danger-action" onClick={onDelete}>Delete expense</button>}<button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary">{expense?"Save changes":"Add & split"}</button></div></form></div>;
 }
