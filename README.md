@@ -23,6 +23,9 @@ them fairly, and clearly show who should pay whom.
 ## Lightweight feature set
 
 - Multiple teams, rosters, and leagues
+- Private player invitation links with shared team access
+- Treasurer and member roles with server-enforced permissions
+- Members can view the team and submit expenses they personally paid
 - Editable players, leagues, games, expenses, and credits
 - Optional game venue and automatic completed status for past dates
 - Custom-player and game-lineup expense splits

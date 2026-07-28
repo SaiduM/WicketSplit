@@ -17,6 +17,29 @@ async function ensureTables() {
       window_start INTEGER NOT NULL,
       request_count INTEGER NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS shared_teams (
+      team_id INTEGER PRIMARY KEY,
+      payload TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS team_memberships (
+      team_id INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('treasurer','member')),
+      player_id INTEGER,
+      joined_at TEXT NOT NULL,
+      PRIMARY KEY(team_id, email)
+    )`),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS team_memberships_email_idx ON team_memberships(email)"),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS team_invites (
+      token_hash TEXT PRIMARY KEY,
+      team_id INTEGER NOT NULL,
+      player_id INTEGER NOT NULL,
+      created_by TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      accepted_by TEXT,
+      accepted_at TEXT
+    )`),
   ]);
 }
 
@@ -74,11 +97,12 @@ function isValidState(value: unknown): boolean {
       const expenseIds = new Set<number>();
       if (!record.expenses.every(expense => {
         if (!expense || typeof expense !== "object") return false;
-        const payment = expense as { id?: unknown; date?: unknown; label?: unknown; category?: unknown; amount?: unknown; paidBy?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[] };
+        const payment = expense as { id?: unknown; date?: unknown; label?: unknown; category?: unknown; amount?: unknown; paidBy?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[]; submittedBy?: unknown };
         if (!id(payment.id) || expenseIds.has(payment.id as number) || !text(payment.date, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(payment.date)) ||
             !text(payment.label, 240) || !text(payment.category, 80) || typeof payment.amount !== "number" || !Number.isFinite(payment.amount) ||
             payment.amount <= 0 || payment.amount > 100_000_000 || typeof payment.paidBy !== "number" || !Number.isSafeInteger(payment.paidBy) || payment.paidBy < 0 ||
             !["players","team","custom","appearances"].includes(String(payment.split))) return false;
+        if (payment.submittedBy !== undefined && !text(payment.submittedBy, 254)) return false;
         if (payment.split === "players" && (!id(payment.gameId) || !gameIds.has(payment.gameId as number))) return false;
         if (payment.split === "custom" && (!Array.isArray(payment.participants) || payment.participants.length === 0)) return false;
         if (payment.participants !== undefined && (!Array.isArray(payment.participants) || payment.participants.length === 0 ||
@@ -108,9 +132,27 @@ export async function GET() {
   await ensureTables();
   const rate = await enforceRateLimit(user.email.toLowerCase(), "read");
   if (!rate.allowed) return Response.json({ error: "Too many requests. Try again shortly." }, { status: 429, headers: { "Retry-After": "60" } });
+  const email = user.email.toLowerCase();
   const row = await env.DB.prepare("SELECT payload FROM app_states WHERE team_key = ?")
     .bind(user.email.toLowerCase()).first<{ payload: string }>();
-  return Response.json(row ? JSON.parse(row.payload) : {}, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
+  const legacy = row ? JSON.parse(row.payload) as { registered?: boolean; name?: string; teams?: Array<Record<string, unknown>> } : {};
+  if (Array.isArray(legacy.teams) && legacy.teams.length) {
+    const now = new Date().toISOString();
+    for (const team of legacy.teams) {
+      const teamId = Number(team.id);
+      if (!Number.isSafeInteger(teamId)) continue;
+      const clean = { ...team }; delete clean.access;
+      await env.DB.batch([
+        env.DB.prepare("INSERT OR IGNORE INTO shared_teams (team_id, payload, updated_at) VALUES (?, ?, ?)").bind(teamId, JSON.stringify(clean), now),
+        env.DB.prepare("INSERT OR IGNORE INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now),
+      ]);
+    }
+  }
+  const memberships = await env.DB.prepare(`SELECT m.team_id, m.role, m.player_id, t.payload
+    FROM team_memberships m JOIN shared_teams t ON t.team_id = m.team_id
+    WHERE m.email = ? ORDER BY m.joined_at`).bind(email).all<{ team_id: number; role: "treasurer"|"member"; player_id: number|null; payload: string }>();
+  const teams = memberships.results.map(entry => ({ ...JSON.parse(entry.payload), access: { role: entry.role, playerId: entry.player_id } }));
+  return Response.json({ registered: Boolean(legacy.registered)||teams.length>0, name: legacy.name||user.name, teams }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }
 
 export async function POST(request: Request) {
@@ -126,8 +168,47 @@ export async function POST(request: Request) {
   let state: unknown;
   try { state = JSON.parse(raw); } catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
   if (!isValidState(state)) return Response.json({ error: "Invalid workspace data" }, { status: 400 });
+  const account = state as { registered: boolean; name: string; teams: Array<Record<string, unknown>> };
+  const email = user.email.toLowerCase();
+  const now = new Date().toISOString();
   await env.DB.prepare(`INSERT INTO app_states (team_key, payload, updated_at) VALUES (?, ?, ?)
     ON CONFLICT(team_key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`)
-    .bind(user.email.toLowerCase(), JSON.stringify(state), new Date().toISOString()).run();
+    .bind(email, JSON.stringify({ registered: account.registered, name: account.name, teams: [] }), now).run();
+  for (const incoming of account.teams) {
+    const teamId = Number(incoming.id);
+    const clean = { ...incoming }; delete clean.access;
+    const existingTeam = await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{ payload: string }>();
+    const membership = await env.DB.prepare("SELECT role, player_id FROM team_memberships WHERE team_id = ? AND email = ?")
+      .bind(teamId, email).first<{ role: "treasurer"|"member"; player_id: number|null }>();
+    if (!existingTeam) {
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO shared_teams (team_id, payload, updated_at) VALUES (?, ?, ?)").bind(teamId, JSON.stringify(clean), now),
+        env.DB.prepare("INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now),
+      ]);
+      continue;
+    }
+    if (!membership) return Response.json({ error: "You do not have access to this team" }, { status: 403 });
+    if (membership.role === "treasurer") {
+      await env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(clean), now, teamId).run();
+      continue;
+    }
+    const current = JSON.parse(existingTeam.payload) as Record<string, unknown>;
+    const oldLeagues = (current.leagues as Array<Record<string, unknown>>)??[];
+    const newLeagues = (clean.leagues as Array<Record<string, unknown>>)??[];
+    const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players });
+    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[] });
+    if (teamShape(current)!==teamShape(clean)||oldLeagues.length!==newLeagues.length) return Response.json({ error: "Members cannot change team setup" }, { status: 403 });
+    for (const oldLeague of oldLeagues) {
+      const nextLeague = newLeagues.find(item=>item.id===oldLeague.id);
+      if (!nextLeague||leagueShape(oldLeague)!==leagueShape(nextLeague)) return Response.json({ error: "Members cannot change leagues or games" }, { status: 403 });
+      const oldExpenses=(oldLeague.expenses as Array<Record<string,unknown>>)??[];
+      const nextExpenses=(nextLeague.expenses as Array<Record<string,unknown>>)??[];
+      if (oldExpenses.some(old=>!nextExpenses.some(next=>next.id===old.id&&JSON.stringify(next)===JSON.stringify(old)))) return Response.json({ error: "Members cannot change existing entries" }, { status: 403 });
+      const additions=nextExpenses.filter(next=>!oldExpenses.some(old=>old.id===next.id));
+      if (additions.some(entry=>entry.paidBy!==membership.player_id)) return Response.json({ error: "Members can only submit expenses they paid" }, { status: 403 });
+      oldLeague.expenses=[...oldExpenses,...additions.map(entry=>({...entry,submittedBy:email}))];
+    }
+    await env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(current), now, teamId).run();
+  }
   return Response.json({ ok: true }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }

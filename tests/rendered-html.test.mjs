@@ -51,4 +51,18 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Share summary/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.match(dashboard, /PLAYER CALCULATION/);
+  assert.match(dashboard, /Invite member|↗ Invite/);
+  assert.match(dashboard, /Submitted by you/);
+});
+
+test("shared teams use authenticated invitations and server-side roles", async () => {
+  const [stateApi, inviteApi, acceptApi] = await Promise.all([
+    readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/invites/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/invites/accept/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(stateApi, /team_memberships/);
+  assert.match(stateApi, /Members can only submit expenses they paid/);
+  assert.match(inviteApi, /Only a treasurer can invite members/);
+  assert.match(acceptApi, /role, player_id/);
 });
