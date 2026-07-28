@@ -52,3 +52,9 @@ export const appStates = sqliteTable("app_states", {
   payload: text("payload").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const apiRateLimits = sqliteTable("api_rate_limits", {
+  rateKey: text("rate_key").primaryKey(),
+  windowStart: integer("window_start").notNull(),
+  requestCount: integer("request_count").notNull(),
+});
