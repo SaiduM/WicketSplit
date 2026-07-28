@@ -56,10 +56,10 @@ function isValidState(value: unknown): boolean {
     const leagueIds = new Set<number>();
     return item.leagues.every((league: unknown) => {
       if (!league || typeof league !== "object") return false;
-      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[] };
+      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[]; credits?: unknown[] };
       if (!id(record.id) || leagueIds.has(record.id as number) || !text(record.name, 160) || !text(record.season, 40) ||
           !["Active","Completed"].includes(String(record.status)) || !Array.isArray(record.games) || record.games.length > 1_000 ||
-          !Array.isArray(record.expenses) || record.expenses.length > 10_000) return false;
+          !Array.isArray(record.expenses) || record.expenses.length > 10_000 || (record.credits !== undefined && (!Array.isArray(record.credits) || record.credits.length > 10_000))) return false;
       leagueIds.add(record.id as number);
       const gameIds = new Set<number>();
       if (!record.games.every(game => {
@@ -72,18 +72,31 @@ function isValidState(value: unknown): boolean {
         gameIds.add(fixture.id as number); return true;
       })) return false;
       const expenseIds = new Set<number>();
-      return record.expenses.every(expense => {
+      if (!record.expenses.every(expense => {
         if (!expense || typeof expense !== "object") return false;
         const payment = expense as { id?: unknown; date?: unknown; label?: unknown; category?: unknown; amount?: unknown; paidBy?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[] };
         if (!id(payment.id) || expenseIds.has(payment.id as number) || !text(payment.date, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(payment.date)) ||
             !text(payment.label, 240) || !text(payment.category, 80) || typeof payment.amount !== "number" || !Number.isFinite(payment.amount) ||
             payment.amount <= 0 || payment.amount > 100_000_000 || typeof payment.paidBy !== "number" || !Number.isSafeInteger(payment.paidBy) || payment.paidBy < 0 ||
-            !["players","team"].includes(String(payment.split))) return false;
+            !["players","team","custom"].includes(String(payment.split))) return false;
         if (payment.split === "players" && (!id(payment.gameId) || !gameIds.has(payment.gameId as number))) return false;
+        if (payment.split === "custom" && (!Array.isArray(payment.participants) || payment.participants.length === 0)) return false;
         if (payment.participants !== undefined && (!Array.isArray(payment.participants) || payment.participants.length === 0 ||
             new Set(payment.participants).size !== payment.participants.length ||
             !payment.participants.every(playerId => id(playerId) && playerIds.has(playerId as number)))) return false;
         expenseIds.add(payment.id as number); return true;
+      })) return false;
+      const creditIds = new Set<number>();
+      return (record.credits??[]).every(credit => {
+        if (!credit || typeof credit !== "object") return false;
+        const entry = credit as { id?: unknown; date?: unknown; label?: unknown; amount?: unknown; playerId?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[] };
+        if (!id(entry.id) || creditIds.has(entry.id as number) || !text(entry.date,10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date)) ||
+            !text(entry.label,240) || typeof entry.amount !== "number" || !Number.isFinite(entry.amount) || entry.amount <= 0 || entry.amount > 100_000_000 ||
+            !id(entry.playerId) || !playerIds.has(entry.playerId as number) || !["players","team","custom"].includes(String(entry.split)) ||
+            !Array.isArray(entry.participants) || entry.participants.length === 0 || new Set(entry.participants).size !== entry.participants.length ||
+            !entry.participants.every(playerId => id(playerId) && playerIds.has(playerId as number))) return false;
+        if (entry.split === "players" && (!id(entry.gameId) || !gameIds.has(entry.gameId as number))) return false;
+        creditIds.add(entry.id as number); return true;
       });
     });
   });
