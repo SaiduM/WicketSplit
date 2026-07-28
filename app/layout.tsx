@@ -1,6 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import PwaClient from "./pwa-client";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#163e2c",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -11,7 +19,15 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: base,
     title: "WicketSplit — Cricket Team Expenses",
     description: "Pick your Playing XI or XII, split every team expense fairly, and settle the league in one CSV.",
-    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    manifest: "/manifest.webmanifest",
+    applicationName: "WicketSplit",
+    appleWebApp: { capable: true, title: "WicketSplit", statusBarStyle: "black-translucent" },
+    formatDetection: { telephone: false },
+    icons: {
+      icon: [{ url: "/app-icon-192.png", sizes: "192x192", type: "image/png" }],
+      shortcut: "/app-icon-192.png",
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
     openGraph: {
       title: "WicketSplit",
       description: "Every game. Every expense. Fairly split.",
@@ -27,5 +43,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body><PwaClient />{children}</body></html>;
 }
