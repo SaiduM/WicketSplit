@@ -32,4 +32,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /Credit a contribution/);
   assert.match(dashboard, /Not saved/);
+  assert.match(dashboard, /Copy previous lineup/);
+  assert.match(dashboard, /Share summary/);
+  assert.match(dashboard, /Possible duplicate expense/);
+  assert.match(dashboard, /PLAYER CALCULATION/);
 });
