@@ -127,8 +127,14 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       <header>
         <div>
           <div className="league-picker">
-            <span className="season-pill"><i /> {league ? `${league.name} · ${league.season}` : "NO LEAGUE SELECTED"}</span>
-            {team && team.leagues.length>1 && <select aria-label="Current league" value={league?.id ?? ""} onChange={e=>{setLeagueId(Number(e.target.value));setView("overview")}}>{team.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>}
+            {league ? <>
+              <div className="league-select-label"><span className="eyebrow">CURRENT LEAGUE</span><span className={`league-status-dot ${league.status.toLowerCase()}`}>{league.status}</span></div>
+              <div className="league-select-shell">
+                <span className="league-icon">▤</span>
+                <select aria-label="Current league" value={league.id} onChange={e=>{setLeagueId(Number(e.target.value));setView("overview")}}>{team?.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>
+                <span className="league-chevron">⌄</span>
+              </div>
+            </> : <span className="season-pill"><i /> NO LEAGUE SELECTED</span>}
           </div>
           <h1>{view==="overview"?`Welcome back, ${account.name.split(" ")[0]}.`:title(view)}</h1>
           <p>{team?.name}{league ? ` · ${league.name}` : " · Create a league to begin"}</p>
