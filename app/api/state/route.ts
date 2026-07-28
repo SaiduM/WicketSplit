@@ -78,7 +78,7 @@ function isValidState(value: unknown): boolean {
         if (!id(payment.id) || expenseIds.has(payment.id as number) || !text(payment.date, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(payment.date)) ||
             !text(payment.label, 240) || !text(payment.category, 80) || typeof payment.amount !== "number" || !Number.isFinite(payment.amount) ||
             payment.amount <= 0 || payment.amount > 100_000_000 || typeof payment.paidBy !== "number" || !Number.isSafeInteger(payment.paidBy) || payment.paidBy < 0 ||
-            !["players","team","custom"].includes(String(payment.split))) return false;
+            !["players","team","custom","appearances"].includes(String(payment.split))) return false;
         if (payment.split === "players" && (!id(payment.gameId) || !gameIds.has(payment.gameId as number))) return false;
         if (payment.split === "custom" && (!Array.isArray(payment.participants) || payment.participants.length === 0)) return false;
         if (payment.participants !== undefined && (!Array.isArray(payment.participants) || payment.participants.length === 0 ||
