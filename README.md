@@ -24,7 +24,7 @@ them fairly, and clearly show who should pay whom.
 
 - Multiple teams, rosters, and leagues
 - Private player invitation links with shared team access
-- Treasurer and member roles with server-enforced permissions
+- Multiple treasurers plus member roles with server-enforced permissions
 - Members can view the team and submit expenses they personally paid
 - Editable players, leagues, games, expenses, and credits
 - Optional game venue and automatic completed status for past dates

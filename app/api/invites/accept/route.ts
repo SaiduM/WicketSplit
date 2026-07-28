@@ -9,12 +9,12 @@ export async function GET(request: Request) {
   const user=await getGoogleUser();
   if(!user) return Response.redirect(new URL(`/login?return_to=${encodeURIComponent(`/api/invites/accept?token=${token}`)}`,url));
   const tokenHash=await hashToken(token);
-  const invite=await env.DB.prepare("SELECT team_id, player_id, expires_at, accepted_by FROM team_invites WHERE token_hash = ?").bind(tokenHash).first<{team_id:number;player_id:number;expires_at:string;accepted_by:string|null}>();
+  const invite=await env.DB.prepare("SELECT team_id, player_id, expires_at, accepted_by, invite_role FROM team_invites WHERE token_hash = ?").bind(tokenHash).first<{team_id:number;player_id:number;expires_at:string;accepted_by:string|null;invite_role:"treasurer"|"member"}>();
   if(!invite||invite.accepted_by||Date.parse(invite.expires_at)<=Date.now()) return Response.redirect(new URL("/app?invite=invalid",url));
   const email=user.email.toLowerCase(); const now=new Date().toISOString();
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'member', ?, ?)
-      ON CONFLICT(team_id,email) DO NOTHING`).bind(invite.team_id,email,invite.player_id,now),
+    env.DB.prepare(`INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(team_id,email) DO UPDATE SET role = excluded.role, player_id = excluded.player_id`).bind(invite.team_id,email,invite.invite_role??"member",invite.player_id,now),
     env.DB.prepare("UPDATE team_invites SET accepted_by = ?, accepted_at = ? WHERE token_hash = ? AND accepted_by IS NULL").bind(email,now,tokenHash),
   ]);
   return Response.redirect(new URL("/app?invite=joined",url));

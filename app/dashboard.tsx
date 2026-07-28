@@ -92,12 +92,12 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const expenses = useMemo(()=>league?.expenses ?? [],[league]);
   const credits = useMemo(()=>league?.credits ?? [],[league]);
   const notify = (message: string) => { setToast(message); setTimeout(() => setToast(""), 2200); };
-  const invitePlayer = async (player: Player) => {
+  const invitePlayer = async (player: Player, role: "member"|"treasurer") => {
     if(!team)return;
-    const response=await fetch("/api/invites",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,playerId:player.id})});
+    const response=await fetch("/api/invites",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,playerId:player.id,role})});
     if(!response.ok){notify("Invitation could not be created");return}
     const {url}=await response.json() as {url:string};
-    const text=`Join ${team.name} on WicketSplit as ${player.name}: ${url}`;
+    const text=`Join ${team.name} on WicketSplit as ${role==="treasurer"?"a co-treasurer":player.name}: ${url}`;
     try{if(navigator.share)await navigator.share({title:`Join ${team.name}`,text});else{await navigator.clipboard.writeText(text);notify("Invite link copied — share it in WhatsApp")}}catch(error){if((error as Error).name!=="AbortError")notify("Invitation could not be shared")}
   };
 
@@ -258,8 +258,8 @@ function Overview({total,outstanding,players,games,expenses,credits,balances,set
   <div className="panel"><div className="panel-head"><div><h2>Player balances</h2><p>Who owes and who gets back</p></div><button onClick={()=>setView("settlement")}>Settlement →</button></div><div className="balance-list">{balances.slice().sort((a,b)=>a.balance-b.balance).slice(0,6).map(b=><div key={b.id}><div className="avatar" style={{background:b.color}}>{b.initials}</div><div><strong>{b.name}</strong><small>{games.filter(g=>g.players.includes(b.id)).length} games</small></div><span className={b.balance>=0?"positive":"negative"}>{b.balance>=0?"+":"−"}{money.format(Math.abs(b.balance))}</span></div>)}</div></div></section></>;
 }
 
-function RosterView({team,canManage,onInvite,onAdd,onEdit}:{team:Team;canManage:boolean;onInvite:(player:Player)=>void;onAdd:()=>void;onEdit:(player:Player)=>void}) {
-  return <>{team.players.length?<><div className="roster-summary"><div><span className="eyebrow">FULL SQUAD</span><strong>{team.players.length}</strong><small>active players</small></div><p>{canManage?"Invite each player with a private link so they can view the team and submit their own expenses.":`You joined ${team.name} as a team member. Shared records are visible to everyone on the team.`}</p></div><div className="roster-grid">{team.players.map((p,i)=><article className="player-card" key={p.id}><span className="squad-no">{String(i+1).padStart(2,"0")}</span><div className="avatar large" style={{background:p.color}}>{p.initials}</div><h3>{p.name}</h3><p>{p.email||"No email added"}</p><div><span>Available for selection</span><i>{team.access?.playerId===p.id?"You":"Active"}</i></div>{canManage&&<div className="player-actions"><button className="edit-player" onClick={()=>onEdit(p)}>✎ Edit</button><button className="invite-player" onClick={()=>onInvite(p)}>↗ Invite</button></div>}</article>)}</div></>:<EmptyState icon="♙" title="Your roster is empty" text={`Add all ${team.name} players here. The roster will be available across every league.`} action={canManage?"Add first player":undefined} onAction={canManage?onAdd:undefined}/>}</>;
+function RosterView({team,canManage,onInvite,onAdd,onEdit}:{team:Team;canManage:boolean;onInvite:(player:Player,role:"member"|"treasurer")=>void;onAdd:()=>void;onEdit:(player:Player)=>void}) {
+  return <>{team.players.length?<><div className="roster-summary"><div><span className="eyebrow">FULL SQUAD</span><strong>{team.players.length}</strong><small>active players</small></div><p>{canManage?"Invite players as members, or give trusted teammates the same treasurer controls you have.":`You joined ${team.name} as a team member. Shared records are visible to everyone on the team.`}</p></div><div className="roster-grid">{team.players.map((p,i)=><article className="player-card" key={p.id}><span className="squad-no">{String(i+1).padStart(2,"0")}</span><div className="avatar large" style={{background:p.color}}>{p.initials}</div><h3>{p.name}</h3><p>{p.email||"No email added"}</p><div><span>Available for selection</span><i>{team.access?.playerId===p.id?"You":"Active"}</i></div>{canManage&&<div className="player-actions three"><button className="edit-player" onClick={()=>onEdit(p)}>✎ Edit</button><button className="invite-player" onClick={()=>onInvite(p,"member")}>↗ Member</button><button className="invite-player treasurer" onClick={()=>onInvite(p,"treasurer")}>★ Treasurer</button></div>}</article>)}</div></>:<EmptyState icon="♙" title="Your roster is empty" text={`Add all ${team.name} players here. The roster will be available across every league.`} action={canManage?"Add first player":undefined} onAction={canManage?onAdd:undefined}/>}</>;
 }
 
 function LeaguesView({team,canManage,activeId,onSelect,onAdd,onEdit}:{team:Team;canManage:boolean;activeId?:number;onSelect:(id:number)=>void;onAdd:()=>void;onEdit:(league:League)=>void}) {

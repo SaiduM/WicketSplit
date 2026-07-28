@@ -8,11 +8,12 @@ export async function DELETE() {
   const email=user.email.toLowerCase();
   const owned=await env.DB.prepare("SELECT team_id FROM team_memberships WHERE email = ? AND role = 'treasurer'").bind(email).all<{team_id:number}>();
   for(const {team_id} of owned.results){
-    await env.DB.batch([
-      env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(team_id),
-      env.DB.prepare("DELETE FROM team_memberships WHERE team_id = ?").bind(team_id),
-      env.DB.prepare("DELETE FROM shared_teams WHERE team_id = ?").bind(team_id),
-    ]);
+    const remaining=await env.DB.prepare("SELECT COUNT(*) AS count FROM team_memberships WHERE team_id = ? AND role = 'treasurer' AND email <> ?").bind(team_id,email).first<{count:number}>();
+    if((remaining?.count??0)===0) await env.DB.batch([
+        env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(team_id),
+        env.DB.prepare("DELETE FROM team_memberships WHERE team_id = ?").bind(team_id),
+        env.DB.prepare("DELETE FROM shared_teams WHERE team_id = ?").bind(team_id),
+      ]);
   }
   await env.DB.batch([
     env.DB.prepare("DELETE FROM team_memberships WHERE email = ?").bind(email),

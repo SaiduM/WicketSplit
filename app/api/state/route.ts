@@ -41,6 +41,7 @@ async function ensureTables() {
       accepted_at TEXT
     )`),
   ]);
+  try { await env.DB.prepare("ALTER TABLE team_invites ADD COLUMN invite_role TEXT NOT NULL DEFAULT 'member'").run(); } catch {}
 }
 
 async function enforceRateLimit(identity: string, action: "read" | "write") {
