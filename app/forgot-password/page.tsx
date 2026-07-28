@@ -1,16 +1,14 @@
-import { chatGPTSignInPath } from "../chatgpt-auth";
-
 export default function ForgotPassword() {
   return <main className="recovery-page">
     <a className="public-brand" href="/"><span>W</span>WicketSplit</a>
     <section className="recovery-card">
       <span className="recovery-icon">↺</span>
-      <span className="hero-kicker">ACCOUNT RECOVERY</span>
-      <h1>Forgot your password?</h1>
-      <p>WicketSplit uses secure ChatGPT accounts. Continue to the sign-in screen, enter your email address, then choose <strong>Forgot password?</strong> to receive a reset email.</p>
-      <a className="primary recovery-action" href={chatGPTSignInPath("/app")}>Continue to account recovery →</a>
-      <div className="recovery-note"><strong>Signed up with Google, Microsoft, or Apple?</strong><span>Use the same provider to sign in. Password recovery is managed by that provider.</span></div>
-      <a className="help-link" href="https://help.openai.com/en/articles/4936828-how-do-i-change-my-account-password">View password reset help</a>
+      <span className="hero-kicker">GOOGLE ACCOUNT RECOVERY</span>
+      <h1>Can’t sign in?</h1>
+      <p>WicketSplit uses your Google account and never stores a password. Use Google’s secure recovery flow to reset your password or regain access.</p>
+      <a className="primary recovery-action" href="https://accounts.google.com/signin/recovery">Recover your Google account →</a>
+      <div className="recovery-note"><strong>Your WicketSplit data stays safe.</strong><span>Recovering your Google account does not change your teams, leagues, games, or expenses.</span></div>
+      <a className="help-link" href="/login?return_to=/app">Return to Google sign-in</a>
     </section>
   </main>;
 }

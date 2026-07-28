@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { getGoogleUser } from "../../google-auth";
 
 const MAX_PAYLOAD_BYTES = 256_000;
 const READS_PER_MINUTE = 120;
@@ -53,7 +53,7 @@ function isValidState(value: unknown): boolean {
 }
 
 export async function GET() {
-  const user = await getChatGPTUser();
+  const user = await getGoogleUser();
   if (!user) return Response.json({ error: "Sign in required" }, { status: 401 });
   await ensureTables();
   const rate = await enforceRateLimit(user.email.toLowerCase(), "read");
@@ -64,7 +64,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getGoogleUser();
   if (!user) return Response.json({ error: "Sign in required" }, { status: 401 });
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_PAYLOAD_BYTES) return Response.json({ error: "Workspace data is too large" }, { status: 413 });

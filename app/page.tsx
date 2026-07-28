@@ -1,10 +1,10 @@
-import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
+import { getGoogleUser } from "./google-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const user = await getChatGPTUser();
-  const workspaceLink = user ? "/app" : chatGPTSignInPath("/app");
+  const user = await getGoogleUser();
+  const workspaceLink = user ? "/app" : "/login?return_to=/app";
 
   return <main className="public-site">
     <nav className="public-nav">

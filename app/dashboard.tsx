@@ -118,7 +118,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
-        <a className="side-logout" href="/signout-with-chatgpt?return_to=/"><span>↪</span>Log out</a>
+        <a className="side-logout" href="/api/auth/logout"><span>↪</span>Log out</a>
         <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email}</small></div><span>•••</span></div>
       </div>
     </aside>
@@ -143,7 +143,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           {view==="roster" && <button className="primary" onClick={()=>setModal("player")}>＋ Add player</button>}
           {view==="leagues" && <button className="primary" onClick={()=>setModal("league")}>＋ Create league</button>}
           {["overview","expenses"].includes(view) && league && players.length>0 && <button className="primary" onClick={()=>setModal("expense")}>＋ Add expense</button>}
-          <a className="ghost logout-header" href="/signout-with-chatgpt?return_to=/">Log out</a>
+          <a className="ghost logout-header" href="/api/auth/logout">Log out</a>
         </div>
       </header>
 
