@@ -20,7 +20,8 @@ export async function GET(request: Request) {
     return Response.redirect(new URL("/login?return_to=/app&temporary_access=invalid", request.url));
   }
 
-  const token = await createSessionToken({ sub: `temporary:${email}`, email, name: email.split("@")[0] });
-  (await cookies()).set(sessionCookie.name, token, sessionCookie.options);
+  const maxAge = Math.max(60, Math.floor((expiresAt - Date.now()) / 1000));
+  const token = await createSessionToken({ sub: `temporary:${email}`, email, name: email.split("@")[0] }, maxAge);
+  (await cookies()).set(sessionCookie.name, token, { ...sessionCookie.options, maxAge });
   return Response.redirect(new URL("/app", request.url));
 }

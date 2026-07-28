@@ -23,8 +23,8 @@ async function sessionKey() {
   return crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 
-export async function createSessionToken(user: Omit<GoogleUser, "exp">) {
-  const payload: GoogleUser = { ...user, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 };
+export async function createSessionToken(user: Omit<GoogleUser, "exp">, maxAge = 60 * 60 * 24 * 30) {
+  const payload: GoogleUser = { ...user, exp: Math.floor(Date.now() / 1000) + maxAge };
   const encoded = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const signature = await crypto.subtle.sign("HMAC", await sessionKey(), new TextEncoder().encode(encoded));
   return `${encoded}.${base64UrlEncode(new Uint8Array(signature))}`;
