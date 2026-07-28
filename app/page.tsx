@@ -52,6 +52,6 @@ export default async function Home() {
     </section>
 
     <section className="public-cta"><span className="hero-kicker">YOUR NEXT LEAGUE</span><h2>Leave the calculator at home.</h2><p>Create an account, register your teams, and let WicketSplit handle the math.</p><a className="primary hero-primary" href={workspaceLink}>{user ? "Open WicketSplit" : "Create your free account"} →</a></section>
-    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Fair expense splitting for cricket teams.</p><a href="/forgot-password">Account recovery</a></footer>
+    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Fair expense splitting for cricket teams.</p><div className="footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
   </main>;
 }

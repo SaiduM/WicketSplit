@@ -34,6 +34,7 @@ them fairly, and clearly show who should pay whom.
 - Shareable settlement text and CSV export
 - Mobile-friendly PWA installation
 - Google OAuth, per-account D1 persistence, and API rate limiting
+- Public Privacy Policy, Terms of Use, and self-service account deletion
 
 WicketSplit deliberately does not include ball-by-ball scoring, player
 performance statistics, auctions, tournament brackets, chat, ground booking,

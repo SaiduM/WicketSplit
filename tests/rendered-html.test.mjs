@@ -22,6 +22,21 @@ test("Google account recovery does not collect an app password", async () => {
   assert.doesNotMatch(recovery, /type=["']password["']/i);
 });
 
+test("public legal and self-service deletion surfaces are present", async () => {
+  const [privacy, terms, deletion, accountApi, home] = await Promise.all([
+    readFile(new URL("../app/privacy/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/terms/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/data-deletion/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/account/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(privacy, /Privacy Policy/);
+  assert.match(terms, /Terms of Use/);
+  assert.match(deletion, /Permanently delete my data/);
+  assert.match(accountApi, /DELETE FROM app_states/);
+  assert.match(home, /Data deletion/);
+});
+
 test("finance workflow includes editable dated expenses and settlement transfers", async () => {
   const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /Expense date/);

@@ -56,6 +56,7 @@ export default function Login() {
       {error && <div className="login-error">{error}</div>}
       <small>We only receive your name, verified email, and profile image. WicketSplit never receives your Google password.</small>
       <a className="help-link" href="https://accounts.google.com/signin/recovery">Can’t access your Google account?</a>
+      <div className="login-legal"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a></div>
     </section>
   </main>;
 }
