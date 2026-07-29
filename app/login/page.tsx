@@ -3,25 +3,18 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { FirebaseApp, FirebaseError, getApp, getApps, initializeApp } from "firebase/app";
-import { Auth, ConfirmationResult, RecaptchaVerifier, getAuth, signInWithPhoneNumber } from "firebase/auth";
+import {
+  Auth,
+  createUserWithEmailAndPassword,
+  getAuth,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 
 const GOOGLE_CLIENT_ID = "308356327840-71gu5gabl7tt14st4pvo43t0ksv4n2m3.apps.googleusercontent.com";
-const COUNTRIES = [
-  { region: "US", name: "United States", dial: "+1", flag: "🇺🇸" },
-  { region: "CA", name: "Canada", dial: "+1", flag: "🇨🇦" },
-  { region: "IN", name: "India", dial: "+91", flag: "🇮🇳" },
-  { region: "GB", name: "United Kingdom", dial: "+44", flag: "🇬🇧" },
-  { region: "AU", name: "Australia", dial: "+61", flag: "🇦🇺" },
-  { region: "NZ", name: "New Zealand", dial: "+64", flag: "🇳🇿" },
-  { region: "AE", name: "United Arab Emirates", dial: "+971", flag: "🇦🇪" },
-  { region: "SA", name: "Saudi Arabia", dial: "+966", flag: "🇸🇦" },
-  { region: "PK", name: "Pakistan", dial: "+92", flag: "🇵🇰" },
-  { region: "BD", name: "Bangladesh", dial: "+880", flag: "🇧🇩" },
-  { region: "LK", name: "Sri Lanka", dial: "+94", flag: "🇱🇰" },
-  { region: "ZA", name: "South Africa", dial: "+27", flag: "🇿🇦" },
-  { region: "SG", name: "Singapore", dial: "+65", flag: "🇸🇬" },
-  { region: "MY", name: "Malaysia", dial: "+60", flag: "🇲🇾" },
-] as const;
+type EmailMode = "signin" | "register" | "reset";
 
 declare global {
   interface Window {
@@ -34,20 +27,14 @@ declare global {
 
 export default function Login() {
   const buttonRef = useRef<HTMLDivElement>(null);
-  const recaptchaRef = useRef<HTMLDivElement>(null);
-  const verifierRef = useRef<RecaptchaVerifier | null>(null);
   const authRef = useRef<Auth | null>(null);
+  const [firebaseEnabled, setFirebaseEnabled] = useState(false);
+  const [mode, setMode] = useState<EmailMode>(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("reset") ? "reset" : "signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [phoneEnabled, setPhoneEnabled] = useState(false);
-  const [country, setCountry] = useState<string>(() => {
-    try {
-      const region = typeof navigator === "undefined" ? undefined : new Intl.Locale(navigator.language).region;
-      return region && COUNTRIES.some(item => item.region === region) ? region : "US";
-    } catch { return "US"; }
-  });
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   const safeReturnTo = () => {
@@ -56,7 +43,7 @@ export default function Login() {
   };
 
   useEffect(() => {
-    const setup = () => {
+    const setupGoogle = () => {
       if (!window.google || !buttonRef.current) return;
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
@@ -74,71 +61,72 @@ export default function Login() {
       });
     };
     const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
-    if (existing) setup();
+    if (existing) setupGoogle();
     else {
       const script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
-      script.async = true; script.defer = true; script.onload = setup;
+      script.async = true; script.defer = true; script.onload = setupGoogle;
       script.onerror = () => setError("Google sign-in is temporarily unavailable.");
       document.head.appendChild(script);
     }
-
     fetch("/api/auth/firebase-config").then(response => response.json()).then(({ enabled, config }) => {
-      if (!enabled || !recaptchaRef.current) return;
+      if (!enabled) return;
       const app: FirebaseApp = getApps().length ? getApp() : initializeApp(config);
-      const auth = getAuth(app);
-      authRef.current = auth;
-      verifierRef.current = new RecaptchaVerifier(auth, recaptchaRef.current, { size: "invisible" });
-      setPhoneEnabled(true);
+      authRef.current = getAuth(app);
+      setFirebaseEnabled(true);
     }).catch(() => {});
-    return () => {
-      verifierRef.current?.clear();
-      verifierRef.current = null;
-    };
   }, []);
 
-  async function sendCode(event: FormEvent) {
+  function switchMode(next: EmailMode) {
+    setMode(next); setError(""); setNotice(""); setPassword(""); setConfirmPassword("");
+  }
+
+  async function submitEmail(event: FormEvent) {
     event.preventDefault();
-    if (!authRef.current || !verifierRef.current) return;
-    setBusy(true); setError("");
+    if (!authRef.current) return;
+    setBusy(true); setError(""); setNotice("");
     try {
-      const digits = phone.replace(/\D/g, "");
-      const selected = COUNTRIES.find(item => item.region === country) ?? COUNTRIES[0];
-      const normalized = phone.trim().startsWith("+") ? `+${digits}` : `${selected.dial}${digits.replace(/^0+/, "")}`;
-      if (normalized.length < 9) throw new FirebaseError("auth/invalid-phone-number", "Invalid phone number");
-      setConfirmation(await signInWithPhoneNumber(authRef.current, normalized, verifierRef.current));
+      const normalizedEmail = email.trim().toLowerCase();
+      if (mode === "reset") {
+        await sendPasswordResetEmail(authRef.current, normalizedEmail);
+        setNotice("If an account exists for this email, Firebase has sent password-reset instructions.");
+        return;
+      }
+      if (mode === "register") {
+        if (password.length < 8) throw new FirebaseError("auth/weak-password", "Use at least 8 characters");
+        if (password !== confirmPassword) throw new FirebaseError("auth/password-mismatch", "Passwords do not match");
+        const credential = await createUserWithEmailAndPassword(authRef.current, normalizedEmail, password);
+        await sendEmailVerification(credential.user);
+        await signOut(authRef.current);
+        setNotice("Account created. Open the verification email from Firebase, then return here to sign in.");
+        setMode("signin"); setPassword(""); setConfirmPassword("");
+        return;
+      }
+      const credential = await signInWithEmailAndPassword(authRef.current, normalizedEmail, password);
+      await credential.user.reload();
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user);
+        await signOut(authRef.current);
+        setNotice("Verify your email first. Firebase has sent a new verification message.");
+        return;
+      }
+      const idToken = await credential.user.getIdToken(true);
+      const response = await fetch("/api/auth/email", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken }),
+      });
+      if (!response.ok) throw new Error("Session could not be created");
+      window.location.assign(safeReturnTo());
     } catch (reason) {
       const code = reason instanceof FirebaseError ? reason.code : "";
       const messages: Record<string, string> = {
-        "auth/invalid-phone-number": "Enter a valid mobile number for the selected country.",
-        "auth/operation-not-allowed": "Phone sign-in is not enabled in Firebase yet.",
-        "auth/unauthorized-domain": "This WicketSplit domain must be authorized in Firebase.",
+        "auth/invalid-email": "Enter a valid email address.",
+        "auth/weak-password": "Use a password with at least 8 characters.",
+        "auth/password-mismatch": "The passwords do not match.",
+        "auth/email-already-in-use": "An account already exists. Sign in or reset the password.",
+        "auth/operation-not-allowed": "Email/password sign-in must be enabled in Firebase.",
         "auth/too-many-requests": "Too many attempts were made. Please wait and try again.",
-        "auth/quota-exceeded": "The SMS sending limit has been reached. Please try again later.",
-        "auth/captcha-check-failed": "The security check expired. Please try again.",
       };
-      setError(messages[code] ?? "The verification code could not be sent. Please try again.");
-      verifierRef.current.clear();
-      if (authRef.current && recaptchaRef.current) {
-        verifierRef.current = new RecaptchaVerifier(authRef.current, recaptchaRef.current, { size: "invisible" });
-      }
-    } finally { setBusy(false); }
-  }
-
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault();
-    if (!confirmation) return;
-    setBusy(true); setError("");
-    try {
-      const credential = await confirmation.confirm(code);
-      const idToken = await credential.user.getIdToken();
-      const response = await fetch("/api/auth/phone", {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken }),
-      });
-      if (!response.ok) throw new Error("Verification failed");
-      window.location.assign(safeReturnTo());
-    } catch {
-      setError("That code could not be verified. Check it and try again.");
+      setError(messages[code] ?? (mode === "signin" ? "Email or password is incorrect." : "This request could not be completed. Please try again."));
     } finally { setBusy(false); }
   }
 
@@ -147,28 +135,26 @@ export default function Login() {
     <section className="google-login-card">
       <span className="hero-kicker">SECURE TEAM WORKSPACE</span>
       <h1>Welcome to WicketSplit</h1>
-      <p>Sign in with Google or use a one-time code sent to your phone.</p>
+      <p>Continue with Google, or use any verified email address.</p>
       <div className="google-button" ref={buttonRef} />
-      {phoneEnabled && <>
+      {firebaseEnabled && <>
         <div className="login-divider"><span>or</span></div>
-        {!confirmation ? <form className="phone-login" onSubmit={sendCode}>
-          <label>Mobile number<div className="phone-number-row">
-            <select aria-label="Country code" value={country} onChange={event=>setCountry(event.target.value)}>
-              {COUNTRIES.map(item=><option value={item.region} key={item.region}>{item.flag} {item.dial} {item.name}</option>)}
-            </select>
-            <input type="tel" inputMode="tel" autoComplete="tel-national" required value={phone} onChange={event=>setPhone(event.target.value)} placeholder="Mobile number" />
-          </div></label>
-          <button className="primary" disabled={busy}>{busy ? "Sending…" : "Text me a code"}</button>
-        </form> : <form className="phone-login" onSubmit={verifyCode}>
-          <label>6-digit verification code<input inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,""))} placeholder="123456" /></label>
-          <button className="primary" disabled={busy || code.length !== 6}>{busy ? "Verifying…" : "Verify & continue"}</button>
-          <button className="phone-back" type="button" onClick={()=>{setConfirmation(null);setCode("");}}>Use a different number</button>
-        </form>}
+        <div className="email-mode-tabs" role="tablist" aria-label="Email account options">
+          <button type="button" className={mode==="signin"?"active":""} onClick={()=>switchMode("signin")}>Sign in</button>
+          <button type="button" className={mode==="register"?"active":""} onClick={()=>switchMode("register")}>Create account</button>
+        </div>
+        <form className="email-login" onSubmit={submitEmail}>
+          <label>Email address<input type="email" inputMode="email" autoComplete="email" required value={email} onChange={event=>setEmail(event.target.value)} placeholder="you@example.com" /></label>
+          {mode !== "reset" && <label>Password<input type="password" autoComplete={mode==="register"?"new-password":"current-password"} required minLength={8} value={password} onChange={event=>setPassword(event.target.value)} placeholder="At least 8 characters" /></label>}
+          {mode === "register" && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Enter it again" /></label>}
+          <button className="primary" disabled={busy}>{busy ? "Please wait…" : mode==="register" ? "Create free account" : mode==="reset" ? "Send reset email" : "Sign in with email"}</button>
+          {mode === "signin" && <button className="email-help" type="button" onClick={()=>switchMode("reset")}>Forgot password?</button>}
+          {mode === "reset" && <button className="email-help" type="button" onClick={()=>switchMode("signin")}>← Back to sign in</button>}
+        </form>
       </>}
-      <div ref={recaptchaRef} />
       {error && <div className="login-error">{error}</div>}
-      <small>WicketSplit never receives your Google password and never stores your SMS verification code. Standard messaging rates may apply.</small>
-      <a className="help-link" href="https://accounts.google.com/signin/recovery">Can’t access your Google account?</a>
+      {notice && <div className="login-notice">{notice}</div>}
+      <small>Firebase securely manages passwords and verification. WicketSplit never receives or stores your password.</small>
       <div className="login-legal"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a></div>
     </section>
   </main>;

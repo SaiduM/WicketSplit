@@ -10,7 +10,8 @@ type FirebasePayload = {
   exp: number;
   iat: number;
   auth_time: number;
-  phone_number?: string;
+  email?: string;
+  email_verified?: boolean;
   firebase?: { sign_in_provider?: string };
 };
 
@@ -36,7 +37,8 @@ async function verifyFirebaseToken(token: string): Promise<FirebasePayload | nul
     if (!projectId || header.alg !== "RS256" || !header.kid ||
         payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}` ||
         payload.exp <= now || payload.iat > now || payload.auth_time > now ||
-        payload.firebase?.sign_in_provider !== "phone" || !payload.phone_number || !payload.sub) return null;
+        payload.firebase?.sign_in_provider !== "password" || payload.email_verified !== true ||
+        !payload.email || !payload.sub) return null;
     const response = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
     if (!response.ok) return null;
     const keys = await response.json() as Record<string, JsonWebKey>;
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     ON CONFLICT(rate_key) DO UPDATE SET
       request_count = CASE WHEN window_start = excluded.window_start THEN request_count + 1 ELSE 1 END,
       window_start = excluded.window_start
-    RETURNING request_count`).bind(`phone-login:${identity}`, windowStart).first<{ request_count: number }>();
+    RETURNING request_count`).bind(`email-login:${identity}`, windowStart).first<{ request_count: number }>();
   if ((rate?.request_count ?? 11) > 10) {
     return Response.json({ error: "Too many sign-in attempts" }, { status: 429, headers: { "Retry-After": "60" } });
   }
@@ -71,14 +73,13 @@ export async function POST(request: Request) {
   try { idToken = String((await request.json() as { idToken?: unknown }).idToken ?? ""); } catch {}
   if (!idToken || idToken.length > 10_000) return Response.json({ error: "Invalid credential" }, { status: 400 });
   const profile = await verifyFirebaseToken(idToken);
-  if (!profile?.phone_number) return Response.json({ error: "Phone verification failed" }, { status: 401 });
-  const phoneNumber = profile.phone_number;
+  if (!profile?.email) return Response.json({ error: "Verified email required" }, { status: 401 });
+  const email = profile.email.toLowerCase();
   const token = await createSessionToken({
     sub: `firebase:${profile.sub}`,
-    email: `phone:${phoneNumber}`,
-    name: phoneNumber,
-    provider: "phone",
-    phoneNumber,
+    email,
+    name: email.split("@")[0],
+    provider: "password",
   });
   (await cookies()).set(sessionCookie.name, token, sessionCookie.options);
   return Response.json({ ok: true });

@@ -22,20 +22,19 @@ test("Google account recovery does not collect an app password", async () => {
   assert.doesNotMatch(recovery, /type=["']password["']/i);
 });
 
-test("phone login uses Firebase OTP and a server-verified session", async () => {
-  const [login, phoneApi, configApi] = await Promise.all([
+test("email login uses Firebase verification and a server-verified session", async () => {
+  const [login, emailApi, configApi] = await Promise.all([
     readFile(new URL("../app/login/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/auth/phone/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/auth/email/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/auth/firebase-config/route.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(login, /signInWithPhoneNumber/);
-  assert.match(login, /one-time-code/);
-  assert.match(login, /Country code/);
-  assert.match(login, /Intl\.Locale/);
-  assert.match(login, /auth\/unauthorized-domain/);
-  assert.match(phoneApi, /securetoken\.google\.com/);
-  assert.match(phoneApi, /sign_in_provider/);
-  assert.match(phoneApi, /phone-login:/);
+  assert.match(login, /createUserWithEmailAndPassword/);
+  assert.match(login, /sendEmailVerification/);
+  assert.match(login, /sendPasswordResetEmail/);
+  assert.match(login, /WicketSplit never receives or stores your password/);
+  assert.match(emailApi, /securetoken\.google\.com/);
+  assert.match(emailApi, /email_verified/);
+  assert.match(emailApi, /email-login:/);
   assert.match(configApi, /FIREBASE_PROJECT_ID/);
 });
 

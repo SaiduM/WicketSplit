@@ -7,7 +7,7 @@ export type GoogleUser = {
   email: string;
   name: string;
   picture?: string;
-  provider?: "google" | "phone";
+  provider?: "google" | "phone" | "password";
   phoneNumber?: string;
   exp: number;
 };
