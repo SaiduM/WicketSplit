@@ -30,6 +30,9 @@ test("phone login uses Firebase OTP and a server-verified session", async () => 
   ]);
   assert.match(login, /signInWithPhoneNumber/);
   assert.match(login, /one-time-code/);
+  assert.match(login, /Country code/);
+  assert.match(login, /Intl\.Locale/);
+  assert.match(login, /auth\/unauthorized-domain/);
   assert.match(phoneApi, /securetoken\.google\.com/);
   assert.match(phoneApi, /sign_in_provider/);
   assert.match(phoneApi, /phone-login:/);

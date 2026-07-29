@@ -2,10 +2,26 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
+import { FirebaseApp, FirebaseError, getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, ConfirmationResult, RecaptchaVerifier, getAuth, signInWithPhoneNumber } from "firebase/auth";
 
 const GOOGLE_CLIENT_ID = "308356327840-71gu5gabl7tt14st4pvo43t0ksv4n2m3.apps.googleusercontent.com";
+const COUNTRIES = [
+  { region: "US", name: "United States", dial: "+1", flag: "🇺🇸" },
+  { region: "CA", name: "Canada", dial: "+1", flag: "🇨🇦" },
+  { region: "IN", name: "India", dial: "+91", flag: "🇮🇳" },
+  { region: "GB", name: "United Kingdom", dial: "+44", flag: "🇬🇧" },
+  { region: "AU", name: "Australia", dial: "+61", flag: "🇦🇺" },
+  { region: "NZ", name: "New Zealand", dial: "+64", flag: "🇳🇿" },
+  { region: "AE", name: "United Arab Emirates", dial: "+971", flag: "🇦🇪" },
+  { region: "SA", name: "Saudi Arabia", dial: "+966", flag: "🇸🇦" },
+  { region: "PK", name: "Pakistan", dial: "+92", flag: "🇵🇰" },
+  { region: "BD", name: "Bangladesh", dial: "+880", flag: "🇧🇩" },
+  { region: "LK", name: "Sri Lanka", dial: "+94", flag: "🇱🇰" },
+  { region: "ZA", name: "South Africa", dial: "+27", flag: "🇿🇦" },
+  { region: "SG", name: "Singapore", dial: "+65", flag: "🇸🇬" },
+  { region: "MY", name: "Malaysia", dial: "+60", flag: "🇲🇾" },
+] as const;
 
 declare global {
   interface Window {
@@ -23,6 +39,12 @@ export default function Login() {
   const authRef = useRef<Auth | null>(null);
   const [error, setError] = useState("");
   const [phoneEnabled, setPhoneEnabled] = useState(false);
+  const [country, setCountry] = useState<string>(() => {
+    try {
+      const region = typeof navigator === "undefined" ? undefined : new Intl.Locale(navigator.language).region;
+      return region && COUNTRIES.some(item => item.region === region) ? region : "US";
+    } catch { return "US"; }
+  });
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
@@ -52,12 +74,14 @@ export default function Login() {
       });
     };
     const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
-    if (existing) { setup(); return; }
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true; script.defer = true; script.onload = setup;
-    script.onerror = () => setError("Google sign-in is temporarily unavailable.");
-    document.head.appendChild(script);
+    if (existing) setup();
+    else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true; script.defer = true; script.onload = setup;
+      script.onerror = () => setError("Google sign-in is temporarily unavailable.");
+      document.head.appendChild(script);
+    }
 
     fetch("/api/auth/firebase-config").then(response => response.json()).then(({ enabled, config }) => {
       if (!enabled || !recaptchaRef.current) return;
@@ -78,11 +102,22 @@ export default function Login() {
     if (!authRef.current || !verifierRef.current) return;
     setBusy(true); setError("");
     try {
-      const normalized = phone.replace(/[^\d+]/g, "");
-      if (!normalized.startsWith("+") || normalized.length < 9) throw new Error("Use a country code");
+      const digits = phone.replace(/\D/g, "");
+      const selected = COUNTRIES.find(item => item.region === country) ?? COUNTRIES[0];
+      const normalized = phone.trim().startsWith("+") ? `+${digits}` : `${selected.dial}${digits.replace(/^0+/, "")}`;
+      if (normalized.length < 9) throw new FirebaseError("auth/invalid-phone-number", "Invalid phone number");
       setConfirmation(await signInWithPhoneNumber(authRef.current, normalized, verifierRef.current));
-    } catch {
-      setError("Could not send the code. Include the country code, such as +1.");
+    } catch (reason) {
+      const code = reason instanceof FirebaseError ? reason.code : "";
+      const messages: Record<string, string> = {
+        "auth/invalid-phone-number": "Enter a valid mobile number for the selected country.",
+        "auth/operation-not-allowed": "Phone sign-in is not enabled in Firebase yet.",
+        "auth/unauthorized-domain": "This WicketSplit domain must be authorized in Firebase.",
+        "auth/too-many-requests": "Too many attempts were made. Please wait and try again.",
+        "auth/quota-exceeded": "The SMS sending limit has been reached. Please try again later.",
+        "auth/captcha-check-failed": "The security check expired. Please try again.",
+      };
+      setError(messages[code] ?? "The verification code could not be sent. Please try again.");
       verifierRef.current.clear();
       if (authRef.current && recaptchaRef.current) {
         verifierRef.current = new RecaptchaVerifier(authRef.current, recaptchaRef.current, { size: "invisible" });
@@ -117,7 +152,12 @@ export default function Login() {
       {phoneEnabled && <>
         <div className="login-divider"><span>or</span></div>
         {!confirmation ? <form className="phone-login" onSubmit={sendCode}>
-          <label>Mobile number<input type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={event=>setPhone(event.target.value)} placeholder="+1 480 555 0123" /></label>
+          <label>Mobile number<div className="phone-number-row">
+            <select aria-label="Country code" value={country} onChange={event=>setCountry(event.target.value)}>
+              {COUNTRIES.map(item=><option value={item.region} key={item.region}>{item.flag} {item.dial} {item.name}</option>)}
+            </select>
+            <input type="tel" inputMode="tel" autoComplete="tel-national" required value={phone} onChange={event=>setPhone(event.target.value)} placeholder="Mobile number" />
+          </div></label>
           <button className="primary" disabled={busy}>{busy ? "Sending…" : "Text me a code"}</button>
         </form> : <form className="phone-login" onSubmit={verifyCode}>
           <label>6-digit verification code<input inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,""))} placeholder="123456" /></label>
