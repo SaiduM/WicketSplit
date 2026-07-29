@@ -52,9 +52,10 @@ chat, bookings, merchandise, and payment processing.
 Only a current treasurer can create an invitation:
 
 1. Add or edit the person in **Team roster**. Add their email whenever possible.
-2. Select **Invite / access** on their roster card.
+2. Select **Invite** on their roster card.
 3. Choose **Team member** or **Co-treasurer**.
-4. Create the invitation and send the prepared email or share text.
+4. Create the invitation, review the exact prepared message, copy it, and send
+   it through your preferred messaging or email app.
 
 Roles are enforced by the server:
 

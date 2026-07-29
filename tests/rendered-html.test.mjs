@@ -75,11 +75,12 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Share summary/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.match(dashboard, /PLAYER CALCULATION/);
-  assert.match(dashboard, /Invite \/ access/);
-  assert.match(dashboard, /Create & share member invite/);
+  assert.match(dashboard, />↗ Invite<\/button>/);
+  assert.match(dashboard, /Message being sent/);
+  assert.match(dashboard, /Copy invitation/);
   assert.match(dashboard, /Phone number \(optional\)/);
-  assert.match(dashboard, /Create & email invite/);
-  assert.match(dashboard, /mailto:/);
+  assert.match(dashboard, /Create invitation/);
+  assert.doesNotMatch(dashboard, /mailto:/);
   assert.match(dashboard, /aria-label="Log out"/);
   assert.doesNotMatch(dashboard, /logout-header/);
   assert.match(dashboard, /app-nav-trigger/);
