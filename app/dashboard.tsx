@@ -45,6 +45,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editingCredit, setEditingCredit] = useState<Credit | null>(null);
   const [inviteTarget, setInviteTarget] = useState<Player | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [profileMenu, setProfileMenu] = useState(false);
   const loaded = useRef(false);
   const saveSequence = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
@@ -156,7 +159,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
 
   function selectTeam(id: number) {
     const selected = account.teams.find(t => t.id === id)!;
-    setTeamId(id); setLeagueId(selected.leagues[0]?.id ?? null); setView("overview"); setTeamMenu(false);
+    setTeamId(id); setLeagueId(selected.leagues[0]?.id ?? null); setView("overview"); setTeamMenu(false); setMobileNavOpen(false);
   }
 
   function exportCsv() {
@@ -185,8 +188,14 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   if (saveState === "loading") return <main className="workspace-loading"><span className="brand-mark">W</span><strong>Loading your workspace…</strong></main>;
   if (loadFailed) return <main className="workspace-loading load-error"><span>!</span><strong>We couldn’t load your workspace.</strong><p>Your saved data has not been changed.</p><button className="primary" onClick={()=>location.reload()}>Try again</button></main>;
 
-  return <main className="app-shell">
-    <aside className="sidebar">
+  const toggleNavigation=()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(open=>!open):setSidebarCollapsed(collapsed=>!collapsed);
+  const chooseView=(next:View)=>{setView(next);setMobileNavOpen(false)};
+
+  return <main className={`app-shell ${sidebarCollapsed?"sidebar-collapsed":""}`}>
+    <button className="app-nav-trigger" type="button" aria-label="Toggle navigation" onClick={toggleNavigation}><span></span><span></span><span></span></button>
+    {mobileNavOpen&&<button className="nav-scrim" type="button" aria-label="Close navigation" onClick={()=>setMobileNavOpen(false)}/>}
+    <aside className={`sidebar ${mobileNavOpen?"mobile-open":""} ${sidebarCollapsed?"desktop-collapsed":""}`}>
+      <button className="sidebar-close" type="button" aria-label="Close navigation" onClick={()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(false):setSidebarCollapsed(true)}>×</button>
       <a className="brand" href="/" aria-label="WicketSplit homepage"><span className="brand-mark">W</span><span>WicketSplit</span></a>
       <div className="team-switch-wrap">
         <button className="team-card team-switch" onClick={()=>setTeamMenu(!teamMenu)}>
@@ -199,12 +208,13 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </div>
       <nav aria-label="Main navigation">
         {([["overview","▦","Overview"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
-          <button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}
+          <button key={id} className={view===id?"active":""} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
-      <a className="mobile-logout" href="/api/auth/logout" aria-label="Log out"><span>↪</span><small>Log out</small></a>
       <div className="side-bottom">
-        <a className="side-logout" href="/api/auth/logout"><span>↪</span>Log out</a>
-        <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><span>•••</span></div>
+        <div className="profile-wrap">
+          {profileMenu&&<div className="profile-menu"><div><strong>Account</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
+          <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><button type="button" aria-label="Open account menu" aria-expanded={profileMenu} onClick={()=>setProfileMenu(open=>!open)}>•••</button></div>
+        </div>
       </div>
     </aside>
 

@@ -79,9 +79,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Phone number \(optional\)/);
   assert.match(dashboard, /Create & email invite/);
   assert.match(dashboard, /mailto:/);
-  assert.match(dashboard, /mobile-logout/);
   assert.match(dashboard, /aria-label="Log out"/);
   assert.doesNotMatch(dashboard, /logout-header/);
+  assert.match(dashboard, /app-nav-trigger/);
+  assert.match(dashboard, /Open account menu/);
+  assert.match(dashboard, /profile-menu/);
   assert.match(dashboard, /Submitted by you/);
 });
 
