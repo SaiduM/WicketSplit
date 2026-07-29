@@ -84,6 +84,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /app-nav-trigger/);
   assert.match(dashboard, /Open account menu/);
   assert.match(dashboard, /profile-menu/);
+  assert.match(dashboard, /deleted from the roster/);
   assert.match(dashboard, /Submitted by you/);
 });
 
@@ -104,4 +105,13 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(acceptApi, /invite\.invite_role/);
   assert.match(acceptApi, /invite\.intended_email/);
   assert.match(acceptApi, /invite-accept-ip:/);
+});
+
+test("player deletion is treasurer-only and protects historical records", async () => {
+  const playerApi = await readFile(new URL("../app/api/players/route.ts", import.meta.url), "utf8");
+  assert.match(playerApi, /Only a treasurer can delete players/);
+  assert.match(playerApi, /This player has team access/);
+  assert.match(playerApi, /used in a game or financial entry/);
+  assert.match(playerApi, /player-delete:/);
+  assert.match(playerApi, /DELETE FROM team_invites/);
 });

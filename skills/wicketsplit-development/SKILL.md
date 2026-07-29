@@ -22,6 +22,8 @@ Vinext, React, Firebase, and D1 architecture.
 - Exclude roster-only players without financial activity from exports; retain
   financially active players whose final balance is zero.
 - Preserve record IDs when editing names or entries.
+- Delete roster players only through the protected API; never silently remove a
+  player referenced by access, games, expenses, credits, or participant splits.
 
 ## Access invariants
 
