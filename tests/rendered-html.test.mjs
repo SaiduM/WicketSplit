@@ -65,14 +65,14 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Pending only/);
   assert.match(dashboard, /exportBalances/);
   assert.match(dashboard, /Edit expense/);
-  assert.match(dashboard, /Suggested payments/);
+  assert.match(dashboard, /Who should pay whom now/);
   assert.match(dashboard, /participants/);
   assert.match(dashboard, /Custom players/);
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /Credit a contribution/);
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
-  assert.match(dashboard, /Share summary/);
+  assert.match(dashboard, /Share remaining/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.match(dashboard, /PLAYER CALCULATION/);
   assert.match(dashboard, />↗ Invite<\/button>/);
@@ -100,6 +100,12 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Expense deleted and balances recalculated/);
   assert.match(dashboard, /Delete linked expenses or credits before deleting this game/);
   assert.match(dashboard, /delete-team-link/);
+  assert.match(dashboard, /Record payment/);
+  assert.match(dashboard, /Confirm payment received/);
+  assert.match(dashboard, /Who should pay whom now/);
+  assert.match(dashboard, /Confirmed payment history/);
+  assert.match(dashboard, /Settlement Sent/);
+  assert.match(dashboard, /originalBalance \+ sent - received/);
 });
 
 test("shared teams use authenticated invitations and server-side roles", async () => {
@@ -129,6 +135,15 @@ test("player deletion is treasurer-only and protects historical records", async 
   assert.match(playerApi, /used in a game or financial entry/);
   assert.match(playerApi, /player-delete:/);
   assert.match(playerApi, /DELETE FROM team_invites/);
+  assert.match(playerApi, /fromPlayerId/);
+});
+
+test("settlement payments are validated and members cannot modify them", async () => {
+  const stateApi = await readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8");
+  assert.match(stateApi, /record\.payments\.length > 10_000/);
+  assert.match(stateApi, /entry\.fromPlayerId===entry\.toPlayerId/);
+  assert.match(stateApi, /entry\.amount<=0/);
+  assert.match(stateApi, /payments: league\.payments\?\?\[\]/);
 });
 
 test("team deletion is owner-only, throttled, and removes shared access atomically", async () => {

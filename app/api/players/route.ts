@@ -8,6 +8,7 @@ type StoredTeam = {
     games?: Array<{players?:number[]}>;
     expenses?: Array<{paidBy?:number;participants?:number[]}>;
     credits?: Array<{playerId?:number;participants?:number[]}>;
+    payments?: Array<{fromPlayerId?:number;toPlayerId?:number}>;
   }>;
 };
 
@@ -33,7 +34,8 @@ export async function DELETE(request: Request) {
   const referenced=(team.leagues??[]).some(league=>
     (league.games??[]).some(game=>game.players?.includes(playerId))||
     (league.expenses??[]).some(expense=>expense.paidBy===playerId||expense.participants?.includes(playerId))||
-    (league.credits??[]).some(credit=>credit.playerId===playerId||credit.participants?.includes(playerId))
+    (league.credits??[]).some(credit=>credit.playerId===playerId||credit.participants?.includes(playerId))||
+    (league.payments??[]).some(payment=>payment.fromPlayerId===playerId||payment.toPlayerId===playerId)
   );
   if(referenced) return Response.json({error:"This player is used in a game or financial entry and cannot be deleted."},{status:409});
   team.players=(team.players??[]).filter(candidate=>candidate.id!==playerId);

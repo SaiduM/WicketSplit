@@ -25,7 +25,10 @@ calculates settlements but does not move money.
    `player share = league fee × player appearances ÷ total appearances`
 
 6. Add credits or waivers for umpiring and other contributions.
-7. Review player calculations, share the settlement, or export the ledger as CSV.
+7. Share the suggested transfers showing who should pay whom.
+8. After the receiver confirms money arrived, record the settlement payment.
+   Remaining balances and transfer suggestions recalculate automatically.
+9. Review the payment audit history or export the complete ledger as CSV.
 
 ## Lightweight feature set
 
@@ -40,6 +43,8 @@ calculates settlements but does not move money.
 - Expense categories for fruits and water, IV, practice, team funds, food, night outs, parties, and other costs
 - One appearance-weighted league fee per league
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
+- Confirmed repayment ledger with received date, sender, receiver, amount,
+  optional reference, remaining balances, and overpayment protection
 - Mobile-friendly PWA installation and responsive navigation
 - Google or Firebase email authentication with D1 persistence
 - Public Privacy Policy, Terms of Use, and self-service account deletion
@@ -71,6 +76,21 @@ replaces the previous unused invitation for that player. Member links without
 an email are bearer links: anyone who receives one can accept it, so share them
 privately. Prepared invite text states the team, role, permissions, expiration,
 and required email when applicable.
+
+## Settlement payments
+
+Expenses and credits calculate the original player balances. Repayments are
+stored separately so expense history is never rewritten:
+
+`remaining balance = original balance + payments sent − payments received`
+
+The Settlement page continuously suggests who should pay whom based on the
+remaining balances. A treasurer records a payment only after the receiver
+confirms it arrived. The form limits the amount to both the sender's remaining
+debt and the receiver's remaining amount due. Each confirmed payment retains
+its date, sender, receiver, amount, optional reference, and recorder. Deleting
+an incorrect payment restores the prior balances and recalculates suggestions.
+Confirmed payment history is included in the CSV export.
 
 ## Production security controls
 
@@ -133,8 +153,8 @@ Firebase web configuration is public by design; service credentials are not.
 Each verified identity has an account record. Teams are stored once in D1 and
 linked to users through memberships containing a role and optional roster player.
 A team has one roster and multiple leagues; leagues contain games, expenses,
-credits, and settlement inputs. The API validates the complete payload before
-writing it.
+credits, confirmed settlement payments, and settlement inputs. The API
+validates the complete payload before writing it.
 
 ## Release checklist
 

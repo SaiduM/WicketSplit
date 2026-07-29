@@ -82,10 +82,12 @@ function isValidState(value: unknown): boolean {
     const leagueIds = new Set<number>();
     return item.leagues.every((league: unknown) => {
       if (!league || typeof league !== "object") return false;
-      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[]; credits?: unknown[] };
+      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[]; credits?: unknown[]; payments?: unknown[] };
       if (!id(record.id) || leagueIds.has(record.id as number) || !text(record.name, 160) || !text(record.season, 40) ||
           !["Active","Completed"].includes(String(record.status)) || !Array.isArray(record.games) || record.games.length > 1_000 ||
-          !Array.isArray(record.expenses) || record.expenses.length > 10_000 || (record.credits !== undefined && (!Array.isArray(record.credits) || record.credits.length > 10_000))) return false;
+          !Array.isArray(record.expenses) || record.expenses.length > 10_000 ||
+          (record.credits !== undefined && (!Array.isArray(record.credits) || record.credits.length > 10_000)) ||
+          (record.payments !== undefined && (!Array.isArray(record.payments) || record.payments.length > 10_000))) return false;
       leagueIds.add(record.id as number);
       const gameIds = new Set<number>();
       if (!record.games.every(game => {
@@ -114,7 +116,7 @@ function isValidState(value: unknown): boolean {
         expenseIds.add(payment.id as number); return true;
       })) return false;
       const creditIds = new Set<number>();
-      return (record.credits??[]).every(credit => {
+      if (!(record.credits??[]).every(credit => {
         if (!credit || typeof credit !== "object") return false;
         const entry = credit as { id?: unknown; date?: unknown; label?: unknown; amount?: unknown; playerId?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[] };
         if (!id(entry.id) || creditIds.has(entry.id as number) || !text(entry.date,10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date)) ||
@@ -124,6 +126,17 @@ function isValidState(value: unknown): boolean {
             !entry.participants.every(playerId => id(playerId) && playerIds.has(playerId as number))) return false;
         if (entry.split === "players" && (!id(entry.gameId) || !gameIds.has(entry.gameId as number))) return false;
         creditIds.add(entry.id as number); return true;
+      })) return false;
+      const paymentIds = new Set<number>();
+      return (record.payments??[]).every(payment => {
+        if (!payment || typeof payment !== "object") return false;
+        const entry = payment as { id?: unknown; date?: unknown; fromPlayerId?: unknown; toPlayerId?: unknown; amount?: unknown; note?: unknown; recordedBy?: unknown };
+        if (!id(entry.id) || paymentIds.has(entry.id as number) || !text(entry.date,10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date)) ||
+            !id(entry.fromPlayerId) || !playerIds.has(entry.fromPlayerId as number) || !id(entry.toPlayerId) || !playerIds.has(entry.toPlayerId as number) ||
+            entry.fromPlayerId===entry.toPlayerId || typeof entry.amount!=="number" || !Number.isFinite(entry.amount) || entry.amount<=0 || entry.amount>100_000_000) return false;
+        if (entry.note!==undefined && !text(entry.note,240,false)) return false;
+        if (entry.recordedBy!==undefined && !text(entry.recordedBy,254)) return false;
+        paymentIds.add(entry.id as number); return true;
       });
     });
   });
@@ -205,7 +218,7 @@ export async function POST(request: Request) {
     const oldLeagues = (current.leagues as Array<Record<string, unknown>>)??[];
     const newLeagues = (clean.leagues as Array<Record<string, unknown>>)??[];
     const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players });
-    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[] });
+    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[], payments: league.payments??[] });
     if (teamShape(current)!==teamShape(clean)||oldLeagues.length!==newLeagues.length) return Response.json({ error: "Members cannot change team setup" }, { status: 403 });
     for (const oldLeague of oldLeagues) {
       const nextLeague = newLeagues.find(item=>item.id===oldLeague.id);

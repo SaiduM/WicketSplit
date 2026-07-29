@@ -27,6 +27,11 @@ Vinext, React, Firebase, and D1 architecture.
 - Block game deletion while an expense or credit directly references it; after
   safe deletion, recalculate appearance-based league-fee shares.
 - Confirm expense deletion and immediately recalculate all affected balances.
+- Keep confirmed settlement payments separate from expenses and credits.
+- A confirmed payment increases the sender's balance and decreases the
+  receiver's balance; recalculate remaining transfers after every change.
+- Never allow a payment to exceed both the sender's remaining debt and the
+  receiver's remaining amount due.
 
 ## Access invariants
 
@@ -34,6 +39,7 @@ Vinext, React, Firebase, and D1 architecture.
 - Enforce memberships and roles on the server, never only in the UI.
 - Allow members to view and add only expenses they personally paid.
 - Allow treasurers to manage setup, entries, credits, and invitations.
+- Allow only treasurers to record or delete confirmed settlement payments.
 - Restrict whole-team deletion to the original team treasurer and remove the
   shared workspace, memberships, and invitations in one database batch.
 - Require an email-bound invitation for co-treasurer access.
