@@ -69,10 +69,11 @@ these production environment values:
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_APP_ID`
 
-The login page only displays the phone option when all four values are
-configured. Firebase sends and verifies the SMS code; WicketSplit receives a
-verified Firebase ID token and creates its own secure session. The app never
-stores the SMS code.
+Firebase sends and verifies the SMS code; WicketSplit receives a verified
+Firebase ID token and creates its own secure session. The app never stores the
+SMS code. Firebase web configuration is public by design; hosted values may
+override the checked-in web defaults. Service-account credentials must never be
+committed.
 
 ## Data model
 

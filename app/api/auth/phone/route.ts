@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { createSessionToken, sessionCookie } from "../../../google-auth";
+import { firebaseWebDefaults } from "../../../firebase-web-config";
 
 type FirebasePayload = {
   sub: string;
@@ -30,7 +31,7 @@ async function verifyFirebaseToken(token: string): Promise<FirebasePayload | nul
     if (!headerPart || !payloadPart || !signaturePart) return null;
     const header = decodePart(headerPart) as { alg?: string; kid?: string };
     const payload = decodePart(payloadPart) as FirebasePayload;
-    const projectId = (env as unknown as Record<string, string>).FIREBASE_PROJECT_ID;
+    const projectId = (env as unknown as Record<string, string>).FIREBASE_PROJECT_ID || firebaseWebDefaults.projectId;
     const now = Math.floor(Date.now() / 1000);
     if (!projectId || header.alg !== "RS256" || !header.kid ||
         payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}` ||
