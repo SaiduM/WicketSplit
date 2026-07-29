@@ -37,6 +37,7 @@ calculates settlements but does not move money.
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
 - Custom-player and game-lineup splits
+- Expense categories for fruits and water, IV, practice, team funds, food, night outs, parties, and other costs
 - One appearance-weighted league fee per league
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Mobile-friendly PWA installation and responsive navigation
