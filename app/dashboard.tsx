@@ -51,6 +51,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const loaded = useRef(false);
   const saveSequence = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetch("/api/state").then(async r => {
@@ -86,6 +87,22 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     }, 300);
     return () => clearTimeout(timer);
   }, [account]);
+
+  useEffect(() => {
+    if (!profileMenu) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) setProfileMenu(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileMenu(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileMenu]);
 
   const team = account.teams.find(t => t.id === teamId) ?? account.teams[0];
   const league = team?.leagues.find(l => l.id === leagueId) ?? team?.leagues[0];
@@ -239,7 +256,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <button key={id} className={view===id?"active":""} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
-        <div className="profile-wrap">
+        <div className="profile-wrap" ref={profileMenuRef}>
           {profileMenu&&<div className="profile-menu"><div className="profile-menu-title"><strong>Account</strong><span>{team?.name}</span></div><dl><div><dt>Name</dt><dd>{accountDisplayName}</dd></div><div><dt>Role</dt><dd><span className="account-role">{accountRole}</span></dd></div><div><dt>Email</dt><dd>{accountEmail}</dd></div><div><dt>Phone</dt><dd>{accountPhone}</dd></div></dl><a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
           <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><button type="button" aria-label="Open account menu" aria-expanded={profileMenu} onClick={()=>setProfileMenu(open=>!open)}>•••</button></div>
         </div>

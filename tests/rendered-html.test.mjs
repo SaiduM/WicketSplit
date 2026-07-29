@@ -85,6 +85,9 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /app-nav-trigger/);
   assert.match(dashboard, /Open account menu/);
   assert.match(dashboard, /profile-menu/);
+  assert.match(dashboard, /document\.addEventListener\("pointerdown", closeOutside\)/);
+  assert.match(dashboard, /event\.key === "Escape"/);
+  assert.match(dashboard, /ref=\{profileMenuRef\}/);
   assert.match(dashboard, /Co-treasurer/);
   assert.match(dashboard, /<dt>Name<\/dt>/);
   assert.match(dashboard, /<dt>Role<\/dt>/);
