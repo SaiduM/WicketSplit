@@ -2,9 +2,15 @@ import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { createSessionToken, sessionCookie } from "../../../google-auth";
 
-type GooglePayload = {
-  sub: string; email: string; name?: string; picture?: string;
-  aud: string; iss: string; exp: number; email_verified?: boolean;
+type FirebasePayload = {
+  sub: string;
+  aud: string;
+  iss: string;
+  exp: number;
+  iat: number;
+  auth_time: number;
+  phone_number?: string;
+  firebase?: { sign_in_provider?: string };
 };
 
 function decodePart(value: string) {
@@ -18,26 +24,29 @@ function decodeSignature(value: string) {
   return Uint8Array.from(binary, char => char.charCodeAt(0));
 }
 
-async function verifyGoogleCredential(token: string): Promise<GooglePayload | null> {
+async function verifyFirebaseToken(token: string): Promise<FirebasePayload | null> {
   try {
     const [headerPart, payloadPart, signaturePart] = token.split(".");
     if (!headerPart || !payloadPart || !signaturePart) return null;
     const header = decodePart(headerPart) as { alg?: string; kid?: string };
-    const payload = decodePart(payloadPart) as GooglePayload;
-    if (header.alg !== "RS256" || !header.kid) return null;
-    const clientId = (env as unknown as Record<string, string>).GOOGLE_CLIENT_ID;
+    const payload = decodePart(payloadPart) as FirebasePayload;
+    const projectId = (env as unknown as Record<string, string>).FIREBASE_PROJECT_ID;
     const now = Math.floor(Date.now() / 1000);
-    if (!clientId || payload.aud !== clientId || !["accounts.google.com","https://accounts.google.com"].includes(payload.iss) ||
-        payload.exp <= now || payload.email_verified !== true || !payload.email || !payload.sub) return null;
-    const keysResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs");
-    if (!keysResponse.ok) return null;
-    const { keys } = await keysResponse.json() as { keys: JsonWebKey[] };
-    const jwk = keys.find(key => key.kid === header.kid);
+    if (!projectId || header.alg !== "RS256" || !header.kid ||
+        payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}` ||
+        payload.exp <= now || payload.iat > now || payload.auth_time > now ||
+        payload.firebase?.sign_in_provider !== "phone" || !payload.phone_number || !payload.sub) return null;
+    const response = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
+    if (!response.ok) return null;
+    const keys = await response.json() as Record<string, JsonWebKey>;
+    const jwk = keys[header.kid];
     if (!jwk) return null;
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
     const signed = new TextEncoder().encode(`${headerPart}.${payloadPart}`);
     return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, decodeSignature(signaturePart), signed) ? payload : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -53,15 +62,22 @@ export async function POST(request: Request) {
     ON CONFLICT(rate_key) DO UPDATE SET
       request_count = CASE WHEN window_start = excluded.window_start THEN request_count + 1 ELSE 1 END,
       window_start = excluded.window_start
-    RETURNING request_count`).bind(`google-login:${identity}`, windowStart).first<{ request_count: number }>();
-  if ((rate?.request_count ?? 21) > 20) return Response.json({ error: "Too many sign-in attempts" }, { status: 429, headers: { "Retry-After": "60" } });
-  let credential = "";
-  try { credential = String((await request.json() as { credential?: unknown }).credential ?? ""); } catch {}
-  if (!credential || credential.length > 10_000) return Response.json({ error: "Invalid credential" }, { status: 400 });
-  const profile = await verifyGoogleCredential(credential);
-  if (!profile) return Response.json({ error: "Google verification failed" }, { status: 401 });
+    RETURNING request_count`).bind(`phone-login:${identity}`, windowStart).first<{ request_count: number }>();
+  if ((rate?.request_count ?? 11) > 10) {
+    return Response.json({ error: "Too many sign-in attempts" }, { status: 429, headers: { "Retry-After": "60" } });
+  }
+  let idToken = "";
+  try { idToken = String((await request.json() as { idToken?: unknown }).idToken ?? ""); } catch {}
+  if (!idToken || idToken.length > 10_000) return Response.json({ error: "Invalid credential" }, { status: 400 });
+  const profile = await verifyFirebaseToken(idToken);
+  if (!profile?.phone_number) return Response.json({ error: "Phone verification failed" }, { status: 401 });
+  const phoneNumber = profile.phone_number;
   const token = await createSessionToken({
-    sub: profile.sub, email: profile.email.toLowerCase(), name: profile.name ?? profile.email, picture: profile.picture, provider: "google",
+    sub: `firebase:${profile.sub}`,
+    email: `phone:${phoneNumber}`,
+    name: phoneNumber,
+    provider: "phone",
+    phoneNumber,
   });
   (await cookies()).set(sessionCookie.name, token, sessionCookie.options);
   return Response.json({ ok: true });

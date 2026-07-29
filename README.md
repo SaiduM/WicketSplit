@@ -6,7 +6,7 @@ them fairly, and clearly show who should pay whom.
 
 ## Product workflow
 
-1. Sign in with Google and register one or more teams.
+1. Sign in with Google or a verified phone number and register one or more teams.
 2. Add a reusable team roster and create leagues or seasons.
 3. Record each game with its date, opponent, and Playing XI or XII.
 4. Add expenses, identify who paid, and choose either a game lineup or a custom
@@ -36,7 +36,7 @@ them fairly, and clearly show who should pay whom.
 - Copy-previous-lineup shortcut
 - Shareable settlement text and CSV export
 - Mobile-friendly PWA installation
-- Google OAuth, per-account D1 persistence, and API rate limiting
+- Google OAuth or Firebase phone OTP, per-account D1 persistence, and API rate limiting
 - Public Privacy Policy, Terms of Use, and self-service account deletion
 
 WicketSplit deliberately does not include ball-by-ball scoring, player
@@ -58,9 +58,26 @@ npm run lint
 Production secrets such as Google OAuth credentials are managed through the
 hosting environment and must not be committed.
 
+### Firebase phone sign-in
+
+Enable the Phone provider in Firebase Authentication, add the deployed
+WicketSplit domain to Firebase Authentication's authorized domains, and add
+these production environment values:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_APP_ID`
+
+The login page only displays the phone option when all four values are
+configured. Firebase sends and verifies the SMS code; WicketSplit receives a
+verified Firebase ID token and creates its own secure session. The app never
+stores the SMS code.
+
 ## Data model
 
-Each Google account owns an isolated workspace containing teams. A team has one
-roster and multiple leagues. Each league contains games, expenses, credits, and
-the information needed to calculate settlement transfers. The API validates
-the complete workspace payload before committing it atomically to D1.
+Each verified Google or phone identity owns an isolated workspace containing
+teams. A team has one roster and multiple leagues. Each league contains games,
+expenses, credits, and the information needed to calculate settlement
+transfers. The API validates the complete workspace payload before committing
+it atomically to D1.

@@ -22,6 +22,20 @@ test("Google account recovery does not collect an app password", async () => {
   assert.doesNotMatch(recovery, /type=["']password["']/i);
 });
 
+test("phone login uses Firebase OTP and a server-verified session", async () => {
+  const [login, phoneApi, configApi] = await Promise.all([
+    readFile(new URL("../app/login/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/auth/phone/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/auth/firebase-config/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(login, /signInWithPhoneNumber/);
+  assert.match(login, /one-time-code/);
+  assert.match(phoneApi, /securetoken\.google\.com/);
+  assert.match(phoneApi, /sign_in_provider/);
+  assert.match(phoneApi, /phone-login:/);
+  assert.match(configApi, /FIREBASE_PROJECT_ID/);
+});
+
 test("public legal and self-service deletion surfaces are present", async () => {
   const [privacy, terms, deletion, accountApi, home] = await Promise.all([
     readFile(new URL("../app/privacy/page.tsx", import.meta.url), "utf8"),

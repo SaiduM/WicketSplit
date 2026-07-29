@@ -2,7 +2,15 @@ import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export type GoogleUser = { sub: string; email: string; name: string; picture?: string; exp: number };
+export type GoogleUser = {
+  sub: string;
+  email: string;
+  name: string;
+  picture?: string;
+  provider?: "google" | "phone";
+  phoneNumber?: string;
+  exp: number;
+};
 const COOKIE_NAME = "wicketsplit_session";
 
 function base64UrlEncode(bytes: Uint8Array) {
@@ -37,7 +45,10 @@ export async function verifySessionToken(token: string): Promise<GoogleUser | nu
   if (!valid) return null;
   try {
     const user = JSON.parse(new TextDecoder().decode(base64UrlDecode(encoded))) as GoogleUser;
-    return user.exp > Math.floor(Date.now() / 1000) && typeof user.email === "string" ? user : null;
+    return user.exp > Math.floor(Date.now() / 1000) &&
+      typeof user.email === "string" &&
+      typeof user.sub === "string" &&
+      typeof user.name === "string" ? user : null;
   } catch { return null; }
 }
 
