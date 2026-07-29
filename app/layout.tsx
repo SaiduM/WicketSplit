@@ -21,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: "Pick your Playing XI or XII, split every team expense fairly, and settle the league in one CSV.",
     manifest: "/manifest.webmanifest",
     applicationName: "WicketSplit",
+    referrer: "no-referrer",
     appleWebApp: { capable: true, title: "WicketSplit", statusBarStyle: "black-translucent" },
     formatDetection: { telephone: false },
     icons: {

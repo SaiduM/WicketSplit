@@ -1,0 +1,4 @@
+interface:
+  display_name: "WicketSplit Development"
+  short_description: "Safely extend and deploy the WicketSplit app"
+  default_prompt: "Use $wicketsplit-development to add a tested WicketSplit feature without breaking finance or access rules."

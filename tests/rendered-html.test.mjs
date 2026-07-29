@@ -75,7 +75,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Possible duplicate expense/);
   assert.match(dashboard, /PLAYER CALCULATION/);
   assert.match(dashboard, /Invite \/ access/);
-  assert.match(dashboard, /Create & share invite/);
+  assert.match(dashboard, /Create & share member invite/);
   assert.match(dashboard, /Phone number \(optional\)/);
   assert.match(dashboard, /Create & email invite/);
   assert.match(dashboard, /mailto:/);
@@ -98,7 +98,10 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(inviteApi, /Only a treasurer can invite members/);
   assert.match(inviteApi, /invite_role/);
   assert.match(inviteApi, /intended_email/);
+  assert.match(inviteApi, /invite-create:/);
+  assert.match(inviteApi, /Add the player's email before granting co-treasurer access/);
   assert.match(acceptApi, /role, player_id/);
   assert.match(acceptApi, /invite\.invite_role/);
   assert.match(acceptApi, /invite\.intended_email/);
+  assert.match(acceptApi, /invite-accept-ip:/);
 });

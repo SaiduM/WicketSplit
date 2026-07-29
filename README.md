@@ -1,47 +1,97 @@
 # WicketSplit
 
 WicketSplit is a lightweight expense and settlement tracker for recreational
-cricket teams. It intentionally focuses on one job: record team costs, split
-them fairly, and clearly show who should pay whom.
+cricket teams. It records team costs, splits them fairly, and clearly shows who
+should pay whom.
+
+## Production
+
+The public production site is:
+
+<https://wicketsplit-wolfpacks.saidubabumallela.chatgpt.site>
+
+It can be shared for real-team feedback. Feedback users should use test-sized
+amounts until the team agrees on its roster and access roles. WicketSplit
+calculates settlements but does not move money.
 
 ## Product workflow
 
-1. Sign in with Google or a verified email/password account and register one or more teams.
-2. Add a reusable team roster and create leagues or seasons.
-3. Record each game with its date, opponent, and Playing XI or XII.
-4. Add expenses, identify who paid, and choose either a game lineup or a custom
-   group of players.
-5. Record one league fee per league. WicketSplit allocates it by completed-game
-   appearances:
+1. Sign in with Google or a verified Firebase email/password account.
+2. Register one or more teams, add a reusable roster, and create leagues.
+3. Record games with the date, opponent, and Playing XI or XII.
+4. Add expenses, identify who paid, and choose a game lineup or custom players.
+5. Record one league fee per league. It is allocated by completed-game appearances:
 
    `player share = league fee × player appearances ÷ total appearances`
 
 6. Add credits or waivers for umpiring and other contributions.
-7. Review each player's calculation, share the suggested settlement, or export
-   the complete ledger as CSV.
+7. Review player calculations, share the settlement, or export the ledger as CSV.
 
 ## Lightweight feature set
 
-- Multiple teams, rosters, and leagues
-- Private player invitation links with shared team access
-- Multiple treasurers plus member roles with server-enforced permissions
-- Members can view the team and submit expenses they personally paid
-- Editable players, leagues, games, expenses, and credits
-- Optional game venue and automatic completed status for past dates
-- Custom-player and game-lineup expense splits
+- Multiple teams, rosters, leagues, and treasurers
+- Server-enforced treasurer and team-member roles
+- Editable players, games, expenses, credits, and leagues
+- Custom-player and game-lineup splits
 - One appearance-weighted league fee per league
-- Player calculation breakdowns
-- Duplicate-expense protection
-- Search and filters for finance entries
-- Copy-previous-lineup shortcut
-- Shareable settlement text and CSV export
-- Mobile-friendly PWA installation
-- Google OAuth or Firebase-managed email/password, per-account D1 persistence, and API rate limiting
+- Player calculation breakdowns, filters, duplicate protection, and CSV export
+- Mobile-friendly PWA installation and responsive navigation
+- Google or Firebase email authentication with D1 persistence
 - Public Privacy Policy, Terms of Use, and self-service account deletion
 
-WicketSplit deliberately does not include ball-by-ball scoring, player
-performance statistics, auctions, tournament brackets, chat, ground booking,
-merchandise, or payment processing.
+WicketSplit deliberately excludes scoring, statistics, auctions, brackets,
+chat, bookings, merchandise, and payment processing.
+
+## Team access and invitations
+
+Only a current treasurer can create an invitation:
+
+1. Add or edit the person in **Team roster**. Add their email whenever possible.
+2. Select **Invite / access** on their roster card.
+3. Choose **Team member** or **Co-treasurer**.
+4. Create the invitation and send the prepared email or share text.
+
+Roles are enforced by the server:
+
+- **Team member:** can view shared records and submit a new expense only when
+  that roster player is the payer. Members cannot change the roster, leagues,
+  games, credits, existing expenses, or invitations.
+- **Co-treasurer:** has full team-management access. These invitations require
+  a roster email and can only be accepted by that verified email identity.
+
+Invitation links contain a 256-bit random bearer token. Only its SHA-256 hash is
+stored. Links are single-use, expire after seven days, and a new invitation
+replaces the previous unused invitation for that player. Member links without
+an email are bearer links: anyone who receives one can accept it, so share them
+privately. Prepared invite text states the team, role, permissions, expiration,
+and required email when applicable.
+
+## Production security controls
+
+- Google and Firebase ID tokens are checked server-side for signature, issuer,
+  audience, expiry, provider, and verified email.
+- Sessions are HMAC-signed `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
+- Private routes require authentication; team roles come from D1 rather than
+  browser state.
+- Mutation endpoints reject cross-origin browser requests.
+- Workspace payloads are size-limited and structurally validated, including
+  player, game, expense, credit, and participant references.
+- D1 unique keys, batches, and atomic upserts protect invitation, membership,
+  deletion, and rate-counter operations.
+- State reads are limited to 120/minute/account and writes to 40/minute/account.
+  Google login allows 20/minute/IP and email login 10/minute/IP. Invite creation
+  allows 20/hour/account and 60/hour/IP; acceptance allows 20/minute/account and
+  30/minute/IP. Account deletion allows 3/hour/account.
+- Sensitive production values remain in the hosting environment. Passwords,
+  verification codes, raw invitation tokens, and session secrets are not stored
+  in workspace JSON.
+- Referrer data is disabled to avoid forwarding invitation tokens.
+
+These controls are appropriate for a lightweight feedback release. They do not
+replace an independent penetration test, monitoring and alerting, tested
+backups, or a compliance review if regulated or high-value data is introduced.
+Concurrent workspace edits remain last-write-wins, so multiple treasurers
+should avoid editing the same team at exactly the same time.
 
 ## Local development
 
@@ -55,30 +105,36 @@ npm run lint
 ```
 
 `.openai/hosting.json` contains the Sites project and logical D1 binding.
-Production secrets such as Google OAuth credentials are managed through the
-hosting environment and must not be committed.
+Production credentials are managed in the hosting environment and must not be
+committed.
 
 ### Firebase email sign-in
 
 Enable Email/Password and email verification in Firebase Authentication, add
-the deployed WicketSplit domain to Firebase Authentication's authorized domains,
-and add
-these production environment values:
+the deployed domain to Firebase Authentication's authorized domains, and set:
 
 - `FIREBASE_API_KEY`
 - `FIREBASE_AUTH_DOMAIN`
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_APP_ID`
 
-Firebase securely hashes passwords and sends verification/reset emails.
-WicketSplit receives only a verified Firebase ID token and creates its own secure
-session; it never receives or stores a password. Firebase web configuration is
-public by design, while service-account credentials must never be committed.
+Firebase hashes passwords and sends verification/reset emails. WicketSplit
+receives a verified Firebase ID token and never receives or stores the password.
+Firebase web configuration is public by design; service credentials are not.
 
 ## Data model
 
-Each verified email identity owns an isolated workspace containing
-teams. A team has one roster and multiple leagues. Each league contains games,
-expenses, credits, and the information needed to calculate settlement
-transfers. The API validates the complete workspace payload before committing
-it atomically to D1.
+Each verified identity has an account record. Teams are stored once in D1 and
+linked to users through memberships containing a role and optional roster player.
+A team has one roster and multiple leagues; leagues contain games, expenses,
+credits, and settlement inputs. The API validates the complete payload before
+writing it.
+
+## Release checklist
+
+1. Confirm member and treasurer authorization for every changed mutation.
+2. Validate request origin, size, IDs, strings, amounts, and references.
+3. Add throttling to new login, invitation, write, or destructive endpoints.
+4. Run `npm test`, `npm run lint`, and `git diff --check`.
+5. Push, package, save, and deploy the exact validated commit through Sites.
+6. Smoke-test sign-in, both invitation roles, expense entry, CSV, and logout.

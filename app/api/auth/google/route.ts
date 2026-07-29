@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { createSessionToken, sessionCookie } from "../../../google-auth";
+import { isSameOrigin } from "../../security";
 
 type GooglePayload = {
   sub: string; email: string; name?: string; picture?: string;
@@ -41,6 +42,7 @@ async function verifyGoogleCredential(token: string): Promise<GooglePayload | nu
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return Response.json({ error: "Invalid request origin" }, { status: 403 });
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS api_rate_limits (
     rate_key TEXT PRIMARY KEY,
     window_start INTEGER NOT NULL,

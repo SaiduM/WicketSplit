@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
+import { isSameOrigin } from "../security";
 
 const MAX_PAYLOAD_BYTES = 256_000;
 const READS_PER_MINUTE = 120;
@@ -158,6 +159,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return Response.json({ error: "Invalid request origin" }, { status: 403 });
   const user = await getGoogleUser();
   if (!user) return Response.json({ error: "Sign in required" }, { status: 401 });
   const declaredLength = Number(request.headers.get("content-length") ?? "0");

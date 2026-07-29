@@ -99,9 +99,13 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const invitePlayer = async (player: Player, role: "member"|"treasurer") => {
     if(!team)return;
     const response=await fetch("/api/invites",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,playerId:player.id,role})});
-    if(!response.ok){notify("Invitation could not be created");return}
+    if(!response.ok){const result=await response.json().catch(()=>({})) as {error?:string};notify(result.error??"Invitation could not be created");return}
     const {url}=await response.json() as {url:string};
-    const text=`Join ${team.name} on WicketSplit as ${role==="treasurer"?"a co-treasurer":player.name}: ${url}`;
+    const access=role==="treasurer"
+      ? "Co-treasurer access: manage the roster, leagues, games, expenses, settlements, and invitations."
+      : `Team member access for ${player.name}: view team records and add expenses you paid.`;
+    const restriction=player.email?` Sign in with ${player.email} to accept.`:"";
+    const text=`You’re invited to join ${team.name} on WicketSplit.\n\n${access}\n\nThis private, single-use link expires in 7 days.${restriction}\n${url}`;
     try{
       if(player.email){
         const subject=encodeURIComponent(`Join ${team.name} on WicketSplit`);
@@ -350,7 +354,7 @@ function PlayerModal({teamName,player,onClose,onSave}:{teamName:string;player?:P
 }
 function InviteAccessModal({player,teamName,onClose,onInvite}:{player:Player;teamName:string;onClose:()=>void;onInvite:(role:"member"|"treasurer")=>void}) {
   const [role,setRole]=useState<"member"|"treasurer">("member");
-  return <div className="modal-backdrop"><form className="modal small-modal" onSubmit={e=>{e.preventDefault();onInvite(role)}}><ModalHead eyebrow="TEAM ACCESS" title={`Invite ${player.name}`} description={player.email?`The private link will be prepared for ${player.email} and restricted to that verified email.`:`Create a private link for ${teamName}. Add an email to the roster first if you want email-restricted access.`} close={onClose}/><div className="access-options"><label className={role==="member"?"selected":""}><input type="radio" name="role" checked={role==="member"} onChange={()=>setRole("member")}/><span><strong>Team member</strong><small>View shared records and add expenses they paid.</small></span></label><label className={role==="treasurer"?"selected":""}><input type="radio" name="role" checked={role==="treasurer"} onChange={()=>setRole("treasurer")}/><span><strong>Co-treasurer</strong><small>Full access to roster, leagues, games, expenses and invites.</small></span></label></div><div className="modal-actions"><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary">{player.email?"Create & email invite":"Create & share invite"}</button></div></form></div>;
+  return <div className="modal-backdrop"><form className="modal small-modal" onSubmit={e=>{e.preventDefault();onInvite(role)}}><ModalHead eyebrow="TEAM ACCESS" title={`Invite ${player.name}`} description={player.email?`The single-use link will expire in 7 days and only ${player.email} can accept it.`:`Create a single-use member link for ${teamName}. Add an email to the roster before granting co-treasurer access.`} close={onClose}/><div className="access-options"><label className={role==="member"?"selected":""}><input type="radio" name="role" checked={role==="member"} onChange={()=>setRole("member")}/><span><strong>Team member</strong><small>View shared records and add expenses they personally paid.</small></span></label><label className={`${role==="treasurer"?"selected":""} ${!player.email?"disabled":""}`}><input type="radio" name="role" disabled={!player.email} checked={role==="treasurer"} onChange={()=>setRole("treasurer")}/><span><strong>Co-treasurer</strong><small>{player.email?"Full access to roster, leagues, games, expenses, settlements, and invites.":"Add this player’s email before granting full access."}</small></span></label></div><div className="invite-security-note">Invite links are private, single-use, and expire after 7 days. Creating a new invite replaces any unused invite for this player.</div><div className="modal-actions"><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary">{player.email?"Create & email invite":"Create & share member invite"}</button></div></form></div>;
 }
 function GameModal({game,suggestedPlayers,players,onClose,onSave}:{game?:Game;suggestedPlayers?:number[];players:Player[];onClose:()=>void;onSave:(g:Omit<Game,"id">)=>void}) {
   const [opponent,setOpponent]=useState(game?.opponent??""); const [date,setDate]=useState(game?.date??""); const [venue,setVenue]=useState(game?.venue??""); const [selected,setSelected]=useState<number[]>(game?.players??[]);
