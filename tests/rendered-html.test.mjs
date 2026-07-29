@@ -60,6 +60,9 @@ test("finance workflow includes editable dated expenses and settlement transfers
   const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /Expense date/);
   assert.match(dashboard, /Fruits &amp; Water/);
+  assert.match(dashboard, /Add a player not listed/);
+  assert.match(dashboard, /Pending only/);
+  assert.match(dashboard, /exportBalances/);
   assert.match(dashboard, /Edit expense/);
   assert.match(dashboard, /Suggested payments/);
   assert.match(dashboard, /participants/);
