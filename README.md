@@ -34,6 +34,8 @@ calculates settlements but does not move money.
 - Account dropdown showing team-specific name, role, email, and roster phone
 - Editable players, games, expenses, credits, and leagues
 - Safe roster deletion for unused players; historical or access-linked players are protected
+- Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
+- Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
 - Custom-player and game-lineup splits
 - One appearance-weighted league fee per league
 - Player calculation breakdowns, filters, duplicate protection, and CSV export

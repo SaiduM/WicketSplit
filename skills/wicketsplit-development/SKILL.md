@@ -24,6 +24,9 @@ Vinext, React, Firebase, and D1 architecture.
 - Preserve record IDs when editing names or entries.
 - Delete roster players only through the protected API; never silently remove a
   player referenced by access, games, expenses, credits, or participant splits.
+- Block game deletion while an expense or credit directly references it; after
+  safe deletion, recalculate appearance-based league-fee shares.
+- Confirm expense deletion and immediately recalculate all affected balances.
 
 ## Access invariants
 
@@ -31,6 +34,8 @@ Vinext, React, Firebase, and D1 architecture.
 - Enforce memberships and roles on the server, never only in the UI.
 - Allow members to view and add only expenses they personally paid.
 - Allow treasurers to manage setup, entries, credits, and invitations.
+- Restrict whole-team deletion to the original team treasurer and remove the
+  shared workspace, memberships, and invitations in one database batch.
 - Require an email-bound invitation for co-treasurer access.
 - Keep invitation tokens random, hashed, single-use, expiring, and throttled.
 
