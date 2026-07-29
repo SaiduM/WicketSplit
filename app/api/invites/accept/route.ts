@@ -8,10 +8,12 @@ export async function GET(request: Request) {
   if(!token||token.length>200) return Response.redirect(new URL("/?invite=invalid",url));
   const user=await getGoogleUser();
   if(!user) return Response.redirect(new URL(`/login?return_to=${encodeURIComponent(`/api/invites/accept?token=${token}`)}`,url));
+  try { await env.DB.prepare("ALTER TABLE team_invites ADD COLUMN intended_email TEXT").run(); } catch {}
   const tokenHash=await hashToken(token);
-  const invite=await env.DB.prepare("SELECT team_id, player_id, expires_at, accepted_by, invite_role FROM team_invites WHERE token_hash = ?").bind(tokenHash).first<{team_id:number;player_id:number;expires_at:string;accepted_by:string|null;invite_role:"treasurer"|"member"}>();
+  const invite=await env.DB.prepare("SELECT team_id, player_id, expires_at, accepted_by, invite_role, intended_email FROM team_invites WHERE token_hash = ?").bind(tokenHash).first<{team_id:number;player_id:number;expires_at:string;accepted_by:string|null;invite_role:"treasurer"|"member";intended_email:string|null}>();
   if(!invite||invite.accepted_by||Date.parse(invite.expires_at)<=Date.now()) return Response.redirect(new URL("/app?invite=invalid",url));
   const email=user.email.toLowerCase(); const now=new Date().toISOString();
+  if(invite.intended_email&&invite.intended_email!==email) return Response.redirect(new URL("/app?invite=email-mismatch",url));
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(team_id,email) DO UPDATE SET role = excluded.role, player_id = excluded.player_id`).bind(invite.team_id,email,invite.invite_role??"member",invite.player_id,now),

@@ -72,9 +72,10 @@ function isValidState(value: unknown): boolean {
     const playerIds = new Set<number>();
     if (!item.players.every(player => {
       if (!player || typeof player !== "object") return false;
-      const record = player as { id?: unknown; name?: unknown; initials?: unknown; email?: unknown; color?: unknown };
+      const record = player as { id?: unknown; name?: unknown; initials?: unknown; email?: unknown; phone?: unknown; color?: unknown };
       if (!id(record.id) || playerIds.has(record.id as number) || !text(record.name, 160) || !text(record.initials, 8) || !text(record.color, 40)) return false;
       if (record.email !== undefined && !text(record.email, 254, false)) return false;
+      if (record.phone !== undefined && !text(record.phone, 40, false)) return false;
       playerIds.add(record.id as number); return true;
     })) return false;
     const leagueIds = new Set<number>();

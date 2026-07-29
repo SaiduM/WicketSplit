@@ -18,6 +18,7 @@ async function ensureInviteTables() {
     )`),
   ]);
   try { await env.DB.prepare("ALTER TABLE team_invites ADD COLUMN invite_role TEXT NOT NULL DEFAULT 'member'").run(); } catch {}
+  try { await env.DB.prepare("ALTER TABLE team_invites ADD COLUMN intended_email TEXT").run(); } catch {}
 }
 
 export async function POST(request: Request) {
@@ -31,13 +32,14 @@ export async function POST(request: Request) {
   const membership=await env.DB.prepare("SELECT role FROM team_memberships WHERE team_id = ? AND email = ?").bind(teamId,email).first<{role:string}>();
   if (membership?.role!=="treasurer") return Response.json({ error: "Only a treasurer can invite members" }, { status: 403 });
   const team=await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{payload:string}>();
-  const playerExists=Boolean(team&&(JSON.parse(team.payload) as {players?:Array<{id:number}>}).players?.some(player=>player.id===playerId));
-  if(!playerExists) return Response.json({ error: "Player not found" }, { status: 404 });
+  const player=team&&(JSON.parse(team.payload) as {players?:Array<{id:number;email?:string}>}).players?.find(candidate=>candidate.id===playerId);
+  if(!player) return Response.json({ error: "Player not found" }, { status: 404 });
+  const intendedEmail=player.email?.trim().toLowerCase()||null;
   const token=crypto.randomUUID().replaceAll("-","")+crypto.randomUUID().replaceAll("-","");
   const tokenHash=await hashToken(token); const expiresAt=new Date(Date.now()+7*24*60*60*1000).toISOString();
   await env.DB.batch([
     env.DB.prepare("DELETE FROM team_invites WHERE team_id = ? AND player_id = ? AND accepted_by IS NULL").bind(teamId,playerId),
-    env.DB.prepare("INSERT INTO team_invites (token_hash, team_id, player_id, created_by, expires_at, invite_role) VALUES (?, ?, ?, ?, ?, ?)").bind(tokenHash,teamId,playerId,email,expiresAt,role),
+    env.DB.prepare("INSERT INTO team_invites (token_hash, team_id, player_id, created_by, expires_at, invite_role, intended_email) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(tokenHash,teamId,playerId,email,expiresAt,role,intendedEmail),
   ]);
   return Response.json({ url: `${new URL(request.url).origin}/api/invites/accept?token=${token}`, expiresAt, role });
 }
