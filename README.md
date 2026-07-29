@@ -31,6 +31,7 @@ calculates settlements but does not move money.
 
 - Multiple teams, rosters, leagues, and treasurers
 - Server-enforced treasurer and team-member roles
+- Account dropdown showing team-specific name, role, email, and roster phone
 - Editable players, games, expenses, credits, and leagues
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Custom-player and game-lineup splits

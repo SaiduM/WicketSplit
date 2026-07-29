@@ -151,10 +151,15 @@ export async function GET() {
       ]);
     }
   }
-  const memberships = await env.DB.prepare(`SELECT m.team_id, m.role, m.player_id, t.payload
+  const memberships = await env.DB.prepare(`SELECT m.team_id, m.role, m.player_id, t.payload,
+      CASE WHEN m.email = (
+        SELECT owner.email FROM team_memberships owner
+        WHERE owner.team_id = m.team_id AND owner.role = 'treasurer'
+        ORDER BY owner.joined_at, owner.email LIMIT 1
+      ) THEN 1 ELSE 0 END AS is_owner
     FROM team_memberships m JOIN shared_teams t ON t.team_id = m.team_id
-    WHERE m.email = ? ORDER BY m.joined_at`).bind(email).all<{ team_id: number; role: "treasurer"|"member"; player_id: number|null; payload: string }>();
-  const teams = memberships.results.map(entry => ({ ...JSON.parse(entry.payload), access: { role: entry.role, playerId: entry.player_id } }));
+    WHERE m.email = ? ORDER BY m.joined_at`).bind(email).all<{ team_id: number; role: "treasurer"|"member"; player_id: number|null; payload: string; is_owner:number }>();
+  const teams = memberships.results.map(entry => ({ ...JSON.parse(entry.payload), access: { role: entry.role, playerId: entry.player_id, isOwner: entry.is_owner===1 } }));
   return Response.json({ registered: Boolean(legacy.registered)||teams.length>0, name: legacy.name||user.name, teams }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }
 

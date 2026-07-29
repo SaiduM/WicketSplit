@@ -10,7 +10,7 @@ type ExpenseSplitMode = SplitMode | "appearances";
 type Expense = { id: number; date: string; label: string; category: string; amount: number; paidBy: number; gameId?: number; split: ExpenseSplitMode; participants?: number[]; submittedBy?: string };
 type Credit = { id: number; date: string; label: string; amount: number; playerId: number; gameId?: number; split: SplitMode; participants: number[] };
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[] };
-type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; access?: { role: "treasurer"|"member"; playerId?: number|null } };
+type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
 type Account = { registered: boolean; name: string; teams: Team[] };
 type View = "overview" | "roster" | "games" | "expenses" | "settlement" | "leagues";
 type SaveState = "loading" | "saved" | "saving" | "error";
@@ -92,6 +92,11 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const isTreasurer = !team?.access || team.access.role === "treasurer";
   const memberPlayerId = team?.access?.role==="member" ? team.access.playerId??undefined : undefined;
   const players = useMemo(()=>team?.players ?? [],[team]);
+  const accountPlayer = players.find(player=>player.id===team?.access?.playerId)||players.find(player=>player.email?.toLowerCase()===user.email.toLowerCase());
+  const accountRole = team?.access?.role==="member"?"Player":team?.access?.isOwner===false?"Co-treasurer":"Treasurer";
+  const accountDisplayName = accountPlayer?.name||account.name;
+  const accountEmail = user.email.startsWith("phone:")?"Not added":user.email;
+  const accountPhone = accountPlayer?.phone||"Not added";
   const games = useMemo(()=>league?.games ?? [],[league]);
   const expenses = useMemo(()=>league?.expenses ?? [],[league]);
   const credits = useMemo(()=>league?.credits ?? [],[league]);
@@ -224,7 +229,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </nav>
       <div className="side-bottom">
         <div className="profile-wrap">
-          {profileMenu&&<div className="profile-menu"><div><strong>Account</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
+          {profileMenu&&<div className="profile-menu"><div className="profile-menu-title"><strong>Account</strong><span>{team?.name}</span></div><dl><div><dt>Name</dt><dd>{accountDisplayName}</dd></div><div><dt>Role</dt><dd><span className="account-role">{accountRole}</span></dd></div><div><dt>Email</dt><dd>{accountEmail}</dd></div><div><dt>Phone</dt><dd>{accountPhone}</dd></div></dl><a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
           <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><button type="button" aria-label="Open account menu" aria-expanded={profileMenu} onClick={()=>setProfileMenu(open=>!open)}>•••</button></div>
         </div>
       </div>
