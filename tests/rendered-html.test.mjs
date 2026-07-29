@@ -39,6 +39,7 @@ test("email login uses Firebase verification and a server-verified session", asy
   assert.match(emailApi, /email-login:/);
   assert.match(emailApi, /keys\.find/);
   assert.match(configApi, /FIREBASE_PROJECT_ID/);
+  assert.doesNotMatch(`${emailApi}${configApi}`, /firebaseWebDefaults|AIzaSy/);
 });
 
 test("public legal and self-service deletion surfaces are present", async () => {

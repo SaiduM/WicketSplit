@@ -151,7 +151,11 @@ the deployed domain to Firebase Authentication's authorized domains, and set:
 
 Firebase hashes passwords and sends verification/reset emails. WicketSplit
 receives a verified Firebase ID token and never receives or stores the password.
-Firebase web configuration is public by design; service credentials are not.
+Firebase web configuration is public by design, but it is supplied only through
+the hosting environment so automated secret scanners do not flag literal keys
+in source control. Never commit service-account credentials or configuration
+values. Restrict the Firebase browser key to the Firebase APIs and approved
+website origins in Google Cloud Console.
 
 ## Data model
 
