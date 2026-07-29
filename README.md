@@ -4,6 +4,11 @@ WicketSplit is a lightweight expense and settlement tracker for recreational
 cricket teams. It records team costs, splits them fairly, and clearly shows who
 should pay whom.
 
+## Architecture documentation
+
+- [High-level design](docs/HLD.md)
+- [Low-level design](docs/LLD.md)
+
 ## Production
 
 The public production site is:
