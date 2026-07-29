@@ -186,6 +186,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         {([["overview","▦","Overview"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
           <button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
+      <a className="mobile-logout" href="/api/auth/logout" aria-label="Log out"><span>↪</span><small>Log out</small></a>
       <div className="side-bottom">
         <a className="side-logout" href="/api/auth/logout"><span>↪</span>Log out</a>
         <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><span>•••</span></div>
