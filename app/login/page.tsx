@@ -33,6 +33,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -78,7 +80,7 @@ export default function Login() {
   }, []);
 
   function switchMode(next: EmailMode) {
-    setMode(next); setError(""); setNotice(""); setPassword(""); setConfirmPassword("");
+    setMode(next); setError(""); setNotice(""); setPassword(""); setConfirmPassword(""); setShowPassword(false); setShowConfirmPassword(false);
   }
 
   async function submitEmail(event: FormEvent) {
@@ -114,7 +116,7 @@ export default function Login() {
       const response = await fetch("/api/auth/email", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken }),
       });
-      if (!response.ok) throw new Error("Session could not be created");
+      if (!response.ok) throw new FirebaseError("wicketsplit/session-failed", "Session could not be created");
       window.location.assign(safeReturnTo());
     } catch (reason) {
       const code = reason instanceof FirebaseError ? reason.code : "";
@@ -125,6 +127,7 @@ export default function Login() {
         "auth/email-already-in-use": "An account already exists. Sign in or reset the password.",
         "auth/operation-not-allowed": "Email/password sign-in must be enabled in Firebase.",
         "auth/too-many-requests": "Too many attempts were made. Please wait and try again.",
+        "wicketsplit/session-failed": "Firebase accepted your sign-in, but WicketSplit could not start the session. Please try again.",
       };
       setError(messages[code] ?? (mode === "signin" ? "Email or password is incorrect." : "This request could not be completed. Please try again."));
     } finally { setBusy(false); }
@@ -145,8 +148,8 @@ export default function Login() {
         </div>
         <form className="email-login" onSubmit={submitEmail}>
           <label>Email address<input type="email" inputMode="email" autoComplete="email" required value={email} onChange={event=>setEmail(event.target.value)} placeholder="you@example.com" /></label>
-          {mode !== "reset" && <label>Password<input type="password" autoComplete={mode==="register"?"new-password":"current-password"} required minLength={8} value={password} onChange={event=>setPassword(event.target.value)} placeholder="At least 8 characters" /></label>}
-          {mode === "register" && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Enter it again" /></label>}
+          {mode !== "reset" && <label>Password<div className="password-field"><input type={showPassword?"text":"password"} autoComplete={mode==="register"?"new-password":"current-password"} required minLength={8} value={password} onChange={event=>setPassword(event.target.value)} placeholder="At least 8 characters" /><button type="button" aria-label={showPassword?"Hide password":"Show password"} onClick={()=>setShowPassword(!showPassword)}>{showPassword?"Hide":"Show"}</button></div></label>}
+          {mode === "register" && <label>Confirm password<div className="password-field"><input type={showConfirmPassword?"text":"password"} autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Enter it again" /><button type="button" aria-label={showConfirmPassword?"Hide confirmation password":"Show confirmation password"} onClick={()=>setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword?"Hide":"Show"}</button></div></label>}
           <button className="primary" disabled={busy}>{busy ? "Please wait…" : mode==="register" ? "Create free account" : mode==="reset" ? "Send reset email" : "Sign in with email"}</button>
           {mode === "signin" && <button className="email-help" type="button" onClick={()=>switchMode("reset")}>Forgot password?</button>}
           {mode === "reset" && <button className="email-help" type="button" onClick={()=>switchMode("signin")}>← Back to sign in</button>}

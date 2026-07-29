@@ -41,8 +41,8 @@ async function verifyFirebaseToken(token: string): Promise<FirebasePayload | nul
         !payload.email || !payload.sub) return null;
     const response = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
     if (!response.ok) return null;
-    const keys = await response.json() as Record<string, JsonWebKey>;
-    const jwk = keys[header.kid];
+    const { keys } = await response.json() as { keys: JsonWebKey[] };
+    const jwk = keys.find(key => key.kid === header.kid);
     if (!jwk) return null;
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
     const signed = new TextEncoder().encode(`${headerPart}.${payloadPart}`);

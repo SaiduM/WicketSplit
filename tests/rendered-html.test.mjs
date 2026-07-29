@@ -31,10 +31,13 @@ test("email login uses Firebase verification and a server-verified session", asy
   assert.match(login, /createUserWithEmailAndPassword/);
   assert.match(login, /sendEmailVerification/);
   assert.match(login, /sendPasswordResetEmail/);
+  assert.match(login, /Show password/);
+  assert.match(login, /wicketsplit\/session-failed/);
   assert.match(login, /WicketSplit never receives or stores your password/);
   assert.match(emailApi, /securetoken\.google\.com/);
   assert.match(emailApi, /email_verified/);
   assert.match(emailApi, /email-login:/);
+  assert.match(emailApi, /keys\.find/);
   assert.match(configApi, /FIREBASE_PROJECT_ID/);
 });
 
