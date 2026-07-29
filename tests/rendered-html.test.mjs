@@ -59,6 +59,7 @@ test("public legal and self-service deletion surfaces are present", async () => 
 test("finance workflow includes editable dated expenses and settlement transfers", async () => {
   const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /Expense date/);
+  assert.match(dashboard, /Fruits &amp; Water/);
   assert.match(dashboard, /Edit expense/);
   assert.match(dashboard, /Suggested payments/);
   assert.match(dashboard, /participants/);
