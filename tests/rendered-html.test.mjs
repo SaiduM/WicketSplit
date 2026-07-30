@@ -87,6 +87,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /umpiringDetails\.join/);
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
+  assert.match(dashboard, /View \{lineupTitle\}/);
+  assert.match(dashboard, /Playing XII/);
   assert.match(dashboard, /Share remaining/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.doesNotMatch(dashboard, /\["overview","expenses"\]\.includes\(view\)/);
