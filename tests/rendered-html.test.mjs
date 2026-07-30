@@ -88,6 +88,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
   assert.match(dashboard, /View \{lineupTitle\}/);
+  assert.match(dashboard, /filter\(\(player\):player is Player=>Boolean\(player\)\)\.sort\(\(a,b\)=>a\.name\.localeCompare/);
   assert.match(dashboard, /Playing XII/);
   assert.match(dashboard, /Share remaining/);
   assert.match(dashboard, /Possible duplicate expense/);
