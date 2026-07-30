@@ -32,7 +32,9 @@ calculates settlements but does not move money.
 
 5. Choose custom players or a games-played split for Restaurant and Other.
 6. Use the Calculator to review appearances, weights, and each cost component.
-7. Add credits or waivers for umpiring and other contributions.
+7. Record umpiring credits by selecting the player and completed game, then
+   entering the agreed amount per umpiring assignment. The game date and lineup
+   are attached automatically.
 8. Share the suggested transfers showing who should pay whom.
 9. After the receiver confirms money arrived, record the settlement payment.
    Remaining balances and transfer suggestions recalculate automatically.
@@ -51,6 +53,8 @@ calculates settlements but does not move money.
 - Four expense categories: Fruits / Water, League Fee, Restaurant, and Other
 - Appearance-weighted league fees and refreshment costs
 - League calculator showing games played, percentage weight, and cost components
+- Structured umpiring credits with duplicate prevention, game details, per-player
+  umpiring counts, and total credit earned
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Confirmed repayment ledger with received date, sender, receiver, amount,
   optional reference, remaining balances, and overpayment protection
