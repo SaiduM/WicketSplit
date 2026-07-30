@@ -13,7 +13,7 @@ type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPla
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[] };
 type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
 type Account = { registered: boolean; name: string; teams: Team[] };
-type View = "overview" | "roster" | "games" | "expenses" | "settlement" | "leagues";
+type View = "overview" | "roster" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
 type SaveState = "loading" | "saved" | "saving" | "error";
 
 const colors = ["#d9f99d","#bfdbfe","#fed7aa","#ddd6fe","#fecdd3","#bae6fd","#fde68a","#bbf7d0","#e9d5ff","#c7d2fe","#fbcfe8","#a7f3d0"];
@@ -21,11 +21,19 @@ const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD
 const emptyAccount = (name: string): Account => ({ registered: false, name, teams: [] });
 const initials = (name: string) => name.trim().split(/\s+/).slice(0,2).map(part => part[0]).join("").toUpperCase();
 const playerShare = (amount:number,participants:number[],playerId:number) => participants.includes(playerId)&&participants.length ? amount/participants.length : 0;
+const appearanceCategories = new Set(["League fee","Fruits & Water","Fruits","Water"]);
+const usesAppearanceSplit = (expense:Pick<Expense,"category"|"split">) => expense.split==="appearances"||appearanceCategories.has(expense.category);
+const appearanceShare = (amount:number,playerId:number,games:Game[]) => {
+  const completed=games.filter(game=>game.status==="Completed");
+  const totalAppearances=completed.reduce((total,game)=>total+game.players.length,0);
+  const appearances=completed.filter(game=>game.players.includes(playerId)).length;
+  return totalAppearances?amount*appearances/totalAppearances:0;
+};
 const expenseParticipants = (expense:Expense,players:Player[],games:Game[]) =>
   expense.participants?.length ? expense.participants :
   expense.split==="players" ? games.find(g=>g.id===expense.gameId)?.players??[] : players.map(p=>p.id);
-const splitDescription = (entry:{split:ExpenseSplitMode;participants?:number[];gameId?:number},players:Player[],games:Game[]) => {
-  if(entry.split==="appearances") return `By games played (${games.filter(game=>game.status==="Completed").reduce((sum,game)=>sum+game.players.length,0)} appearances)`;
+const splitDescription = (entry:{split:ExpenseSplitMode;category?:string;participants?:number[];gameId?:number},players:Player[],games:Game[]) => {
+  if(entry.split==="appearances"||(entry.category&&appearanceCategories.has(entry.category))) return `By games played (${games.filter(game=>game.status==="Completed").reduce((sum,game)=>sum+game.players.length,0)} appearances)`;
   const count=entry.participants?.length??(entry.split==="players"?games.find(g=>g.id===entry.gameId)?.players.length:players.length)??0;
   if(entry.split==="players") return `Game vs ${games.find(g=>g.id===entry.gameId)?.opponent??"Unknown"} (${count})`;
   return entry.split==="custom"?`Custom group (${count})`:`Full roster (${count})`;
@@ -171,12 +179,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     const paid = expenses.filter(e => e.paidBy === player.id).reduce((s,e) => s + e.amount, 0);
     const credit = credits.filter(e => e.playerId === player.id).reduce((s,e) => s + e.amount, 0);
     const expenseShare = expenses.reduce((sum,e) => {
-      if(e.split==="appearances"){
-        const completedGames=games.filter(game=>game.status==="Completed");
-        const totalAppearances=completedGames.reduce((total,game)=>total+game.players.length,0);
-        const appearances=completedGames.filter(game=>game.players.includes(player.id)).length;
-        return sum+(totalAppearances?e.amount*appearances/totalAppearances:0);
-      }
+      if(usesAppearanceSplit(e)) return sum+appearanceShare(e.amount,player.id,games);
       return sum+playerShare(e.amount,expenseParticipants(e,players,games),player.id);
     }, 0);
     const creditShare = credits.reduce((sum,e) => sum + playerShare(e.amount,e.participants,player.id),0);
@@ -253,7 +256,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         </div>}
       </div>
       <nav aria-label="Main navigation">
-        {([["overview","▦","Overview"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
+        {([["overview","▦","Overview"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
           <button key={id} className={view===id?"active":""} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
@@ -295,6 +298,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);setView("overview")}} onAdd={()=>setModal("league")} onEdit={setEditingLeague}/>}
         {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onRoster={()=>setView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
         {view==="expenses" && league && <ExpensesView expenses={expenses} credits={credits} players={players} games={games} canManage={isTreasurer} memberEmail={user.email} onAdd={()=>setModal("expense")} onCredit={()=>setModal("credit")} onRoster={()=>setView("roster")} onEdit={setEditingExpense} onDelete={expense=>{if(confirm(`Delete “${expense.label}”? This will recalculate every balance.`)){updateLeague(current=>({...current,expenses:current.expenses.filter(entry=>entry.id!==expense.id)}));notify("Expense deleted and balances recalculated")}}} onEditCredit={setEditingCredit}/>}
+        {view==="calculator" && league && <CalculatorView players={players} games={games} expenses={expenses} credits={credits} balances={balances}/>}
         {view==="settlement" && league && <SettlementView team={team} league={league} balances={balances} games={games} expenses={expenses} credits={credits} payments={payments} players={players} canManage={isTreasurer} onRecord={()=>setModal("payment")} onDelete={payment=>{if(confirm(`Delete this ${money.format(payment.amount)} payment record? Remaining balances will be recalculated.`)){updateLeague(current=>({...current,payments:(current.payments??[]).filter(entry=>entry.id!==payment.id)}));notify("Payment record deleted and balances restored")}}} exportCsv={exportCsv} notify={notify}/>}
       </>}
     </section>
@@ -315,7 +319,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   </main>;
 }
 
-function title(view: View) { return ({roster:"Team roster",leagues:"Leagues",games:"Games",expenses:"Expenses",settlement:"Settlement",overview:"Overview"})[view]; }
+function title(view: View) { return ({roster:"Team roster",leagues:"Leagues",games:"Games",expenses:"Expenses",calculator:"Calculator",settlement:"Settlement",overview:"Overview"})[view]; }
 
 function Registration({user,onRegister}:{user:{name:string;email:string};onRegister:(name:string,team:string,league:string)=>void}) {
   const [name,setName]=useState(user.name); const [team,setTeam]=useState(""); const [league,setLeague]=useState("");
@@ -360,6 +364,22 @@ function ExpensesView({expenses,credits,players,games,canManage,memberEmail,onAd
 
 type PlayerBalance = Player&{paid:number;credit:number;share:number;sent:number;received:number;originalBalance:number;balance:number};
 
+function CalculatorView({players,games,expenses,credits,balances}:{players:Player[];games:Game[];expenses:Expense[];credits:Credit[];balances:PlayerBalance[]}) {
+  const completed=games.filter(game=>game.status==="Completed");
+  const totalAppearances=completed.reduce((sum,game)=>sum+game.players.length,0);
+  const weightedExpenses=expenses.filter(usesAppearanceSplit);
+  const weightedTotal=weightedExpenses.reduce((sum,expense)=>sum+expense.amount,0);
+  const rows=players.map(player=>{
+    const appearances=completed.filter(game=>game.players.includes(player.id)).length;
+    const leagueFeeShare=weightedExpenses.filter(expense=>expense.category==="League fee").reduce((sum,expense)=>sum+appearanceShare(expense.amount,player.id,games),0);
+    const refreshmentShare=weightedExpenses.filter(expense=>expense.category!=="League fee").reduce((sum,expense)=>sum+appearanceShare(expense.amount,player.id,games),0);
+    const otherExpenseShare=expenses.filter(expense=>!usesAppearanceSplit(expense)).reduce((sum,expense)=>sum+playerShare(expense.amount,expenseParticipants(expense,players,games),player.id),0);
+    const creditShare=credits.reduce((sum,credit)=>sum+playerShare(credit.amount,credit.participants,player.id),0);
+    return {player,appearances,weight:totalAppearances?appearances/totalAppearances:0,leagueFeeShare,refreshmentShare,otherExpenseShare,creditShare,total:leagueFeeShare+refreshmentShare+otherExpenseShare+creditShare};
+  }).filter(row=>row.appearances||row.total>.004);
+  return <><div className="view-toolbar"><div><h2>League share calculator</h2><p>See exactly how games played turn into each player’s fair share.</p></div></div><section className="calculator-formula"><div><span>Completed games</span><strong>{completed.length}</strong></div><div><span>Total player appearances</span><strong>{totalAppearances}</strong></div><div><span>Appearance-weighted costs</span><strong>{money.format(weightedTotal)}</strong></div><p><b>Formula</b> Player share = expense × player appearances ÷ total appearances. League fee, Fruits, Water, and Fruits &amp; Water use this calculation automatically.</p></section>{totalAppearances===0&&weightedTotal>0&&<div className="calculator-warning"><strong>No completed appearances yet</strong><span>Mark games Completed to calculate the appearance-weighted shares.</span></div>}{rows.length?<div className="table-panel calculator-table"><table><thead><tr><th>Player</th><th>Games played</th><th>Weight</th><th>League fee</th><th>Fruits / water</th><th>Other costs</th><th>Credits funded</th><th>Total fair share</th></tr></thead><tbody>{rows.map(row=><tr key={row.player.id}><td><div className="player-cell"><span className="avatar" style={{background:row.player.color}}>{row.player.initials}</span><strong>{row.player.name}</strong></div></td><td>{row.appearances}</td><td>{(row.weight*100).toFixed(2)}%</td><td>{money.format(row.leagueFeeShare)}</td><td>{money.format(row.refreshmentShare)}</td><td>{money.format(row.otherExpenseShare)}</td><td>{money.format(row.creditShare)}</td><td><strong>{money.format(row.total)}</strong></td></tr>)}</tbody><tfoot><tr><td colSpan={7}>Calculated fair shares</td><td><strong>{money.format(balances.reduce((sum,balance)=>sum+balance.share,0))}</strong></td></tr></tfoot></table></div>:<MiniEmpty text="Add completed games and expenses to calculate player shares."/>}</>;
+}
+
 function SettlementView({team,league,balances,games,expenses,credits,payments,players,canManage,onRecord,onDelete,exportCsv,notify}:{team:Team;league:League;balances:PlayerBalance[];games:Game[];expenses:Expense[];credits:Credit[];payments:SettlementPayment[];players:Player[];canManage:boolean;onRecord:()=>void;onDelete:(payment:SettlementPayment)=>void;exportCsv:()=>void;notify:(s:string)=>void}) {
   const [detail,setDetail]=useState<number|null>(null);
   const [balanceFilter,setBalanceFilter]=useState<"all"|"pending">("pending");
@@ -373,8 +393,7 @@ function SettlementView({team,league,balances,games,expenses,credits,payments,pl
 }
 
 function PlayerBreakdown({player,expenses,credits,games,players,onClose}:{player:PlayerBalance;expenses:Expense[];credits:Credit[];games:Game[];players:Player[];onClose:()=>void}) {
-  const completed=games.filter(g=>g.status==="Completed"); const totalAppearances=completed.reduce((sum,g)=>sum+g.players.length,0); const appearances=completed.filter(g=>g.players.includes(player.id)).length;
-  const expenseRows=expenses.map(expense=>{const share=expense.split==="appearances"?(totalAppearances?expense.amount*appearances/totalAppearances:0):playerShare(expense.amount,expenseParticipants(expense,players,games),player.id);return {label:expense.label,share}}).filter(row=>row.share>.004);
+  const expenseRows=expenses.map(expense=>{const share=usesAppearanceSplit(expense)?appearanceShare(expense.amount,player.id,games):playerShare(expense.amount,expenseParticipants(expense,players,games),player.id);return {label:expense.label,share}}).filter(row=>row.share>.004);
   const creditRows=credits.map(credit=>({label:`${credit.label} contribution`,share:playerShare(credit.amount,credit.participants,player.id)})).filter(row=>row.share>.004);
   return <div className="modal-backdrop"><section className="modal breakdown-modal"><ModalHead eyebrow="PLAYER CALCULATION" title={player.name} description="Every amount included in this player’s remaining balance." close={onClose}/><div className="breakdown-summary"><div><span>Original balance</span><strong>{money.format(player.originalBalance)}</strong></div><div><span>Sent</span><strong>{money.format(player.sent)}</strong></div><div><span>Received</span><strong>{money.format(player.received)}</strong></div><div><span>Remaining</span><strong className={player.balance>=0?"positive":"negative"}>{player.balance>=0?"+":"−"}{money.format(Math.abs(player.balance))}</strong></div></div><div className="breakdown-list"><div><strong>Shared costs</strong><span>Amount</span></div>{[...expenseRows,...creditRows].map((row,i)=><div key={`${row.label}-${i}`}><span>{row.label}</span><b>{money.format(row.share)}</b></div>)}{!expenseRows.length&&!creditRows.length&&<p>No costs currently assigned to this player.</p>}</div><div className="modal-actions"><button className="primary" onClick={onClose}>Done</button></div></section></div>;
 }
@@ -434,11 +453,26 @@ function GameModal({game,suggestedPlayers,players,onClose,onSave,onDelete}:{game
 function ExpenseModal({expense,memberPlayerId,existingExpenses,leagueFeeExists,players,games,onAddPlayer,onClose,onSave,onDelete}:{expense?:Expense;memberPlayerId?:number;existingExpenses:Expense[];leagueFeeExists:boolean;players:Player[];games:Game[];onAddPlayer?:(name:string)=>number;onClose:()=>void;onSave:(e:Omit<Expense,"id">)=>void;onDelete?:()=>void}) {
   const localToday=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`};
   const sortedPlayers=useMemo(()=>[...players].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:"base",numeric:true})),[players]);
-  const [label,setLabel]=useState(expense?.label??""); const [amount,setAmount]=useState(expense?String(expense.amount):""); const [category,setCategory]=useState(expense?.category??"Fruits & Water"); const [paidBy,setPaidBy]=useState(expense?.paidBy??memberPlayerId??sortedPlayers[0]?.id??0); const [gameId,setGameId]=useState(expense?.gameId??games[0]?.id??0); const [split,setSplit]=useState<ExpenseSplitMode>(expense?.category==="League fee"?"appearances":expense?.split==="team"?"custom":expense?.split??"custom"); const [date,setDate]=useState(expense?.date??localToday()); const [customPlayers,setCustomPlayers]=useState<number[]>(expense?.split==="custom"?expense.participants??[]:[]);
+  const [label,setLabel]=useState(expense?.label??""); const [amount,setAmount]=useState(expense?String(expense.amount):""); const [category,setCategory]=useState(expense?.category??"Fruits & Water"); const [paidBy,setPaidBy]=useState(expense?.paidBy??memberPlayerId??sortedPlayers[0]?.id??0); const [gameId,setGameId]=useState(expense?.gameId??games[0]?.id??0); const [split,setSplit]=useState<ExpenseSplitMode>(expense&&usesAppearanceSplit(expense)?"appearances":expense?.split==="team"?"custom":expense?.split??"appearances"); const [date,setDate]=useState(expense?.date??localToday()); const [customPlayers,setCustomPlayers]=useState<number[]>(expense?.split==="custom"?expense.participants??[]:[]);
   const participants=split==="team"?players.map(p=>p.id):split==="players"?games.find(g=>g.id===gameId)?.players??[]:split==="custom"?customPlayers:[];
   const totalAppearances=games.filter(game=>game.status==="Completed").reduce((sum,game)=>sum+game.players.length,0); const canSave=split==="appearances"||participants.length>0;
   const duplicate=existingExpenses.find(entry=>entry.id!==expense?.id&&entry.date===date&&entry.amount===Number(amount)&&entry.label.trim().toLowerCase()===label.trim().toLowerCase());
-  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(canSave&&!duplicate)onSave({label:label.trim(),amount:Number(amount),category,paidBy,gameId:split==="players"?gameId:undefined,split,date,participants:split==="appearances"?undefined:[...participants]})}}><ModalHead eyebrow={expense?"EDIT PAYMENT":"NEW PAYMENT"} title={expense?"Edit expense":"Add an expense"} description={memberPlayerId?"Record an expense you paid and choose who should share it.":"Choose who paid and exactly how this cost should be shared."} close={onClose}/><div className="form-grid"><label className="wide">Description<input autoFocus required value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Practice ground rental"/></label><label>Amount ($)<input required min=".01" step=".01" type="number" value={amount} onChange={e=>setAmount(e.target.value)}/></label><label>Expense date<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>Category<select value={category} onChange={e=>{const next=e.target.value;setCategory(next);setSplit(next==="League fee"?"appearances":"custom")}}><option>Fruits &amp; Water</option><option>Fruits</option><option>Water</option><option>IV</option><option>Practice</option><option>Team fund</option><option disabled={leagueFeeExists||Boolean(memberPlayerId)}>League fee{memberPlayerId?" (treasurer only)":leagueFeeExists?" (already recorded)":""}</option><option>Other</option><option>Food</option><option>Night out</option><option>Party</option></select></label><label>Paid by<select required disabled={Boolean(memberPlayerId)} value={paidBy} onChange={e=>setPaidBy(Number(e.target.value))}>{sortedPlayers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>{category==="League fee"?<label>How it is shared<select value="appearances" disabled><option value="appearances">By games played</option></select></label>:<SplitFields split={split} setSplit={setSplit} gameId={gameId} setGameId={setGameId} games={games}/>}</div>{duplicate&&<div className="duplicate-warning"><strong>Possible duplicate expense</strong><span>An entry with the same description, date, and amount already exists. Edit that entry instead.</span></div>}{split==="custom"&&<ParticipantPicker players={sortedPlayers} selected={customPlayers} setSelected={setCustomPlayers} onAddPlayer={onAddPlayer} title="Select everyone who should share this expense"/>}{split==="appearances"&&<div className={totalAppearances?"split-note":"split-note warning"}><strong>One league fee · {totalAppearances} completed-game appearances</strong><span>{totalAppearances?"Each player pays in proportion to the number of league games they played.":"Mark games Completed later; this one-time fee will recalculate automatically."}</span></div>}<div className="modal-actions">{onDelete&&<button type="button" className="danger-action" onClick={onDelete}>Delete expense</button>}<span className={canSave&&!duplicate?"ready":"warning"}>{duplicate?"Duplicate found":split==="appearances"?`${totalAppearances} appearances`: `${participants.length} sharing`}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!canSave||Boolean(duplicate)}>{expense?"Save changes":"Add & split"}</button></div></form></div>;
+  const appearanceCategory=appearanceCategories.has(category);
+  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(canSave&&!duplicate)onSave({label:label.trim(),amount:Number(amount),category,paidBy,gameId:split==="players"?gameId:undefined,split,date,participants:split==="appearances"?undefined:[...participants]})}}>
+    <ModalHead eyebrow={expense?"EDIT PAYMENT":"NEW PAYMENT"} title={expense?"Edit expense":"Add an expense"} description={memberPlayerId?"Record an expense you paid and choose who should share it.":"Choose who paid and exactly how this cost should be shared."} close={onClose}/>
+    <div className="form-grid">
+      <label className="wide">Description<input autoFocus required value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Practice ground rental"/></label>
+      <label>Amount ($)<input required min=".01" step=".01" type="number" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+      <label>Expense date<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+      <label>Category<select value={category} onChange={e=>{const next=e.target.value;setCategory(next);setSplit(appearanceCategories.has(next)?"appearances":"custom")}}><option>Fruits &amp; Water</option><option>Fruits</option><option>Water</option><option>IV</option><option>Practice</option><option>Team fund</option><option disabled={leagueFeeExists||Boolean(memberPlayerId)}>League fee{memberPlayerId?" (treasurer only)":leagueFeeExists?" (already recorded)":""}</option><option>Other</option><option>Food</option><option>Night out</option><option>Party</option></select></label>
+      <label>Paid by<select required disabled={Boolean(memberPlayerId)} value={paidBy} onChange={e=>setPaidBy(Number(e.target.value))}>{sortedPlayers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+      {appearanceCategory?<label>How it is shared<select value="appearances" disabled><option value="appearances">By games played</option></select></label>:<SplitFields split={split} setSplit={setSplit} gameId={gameId} setGameId={setGameId} games={games}/>}
+    </div>
+    {duplicate&&<div className="duplicate-warning"><strong>Possible duplicate expense</strong><span>An entry with the same description, date, and amount already exists. Edit that entry instead.</span></div>}
+    {split==="custom"&&<ParticipantPicker players={sortedPlayers} selected={customPlayers} setSelected={setCustomPlayers} onAddPlayer={onAddPlayer} title="Select everyone who should share this expense"/>}
+    {split==="appearances"&&<div className={totalAppearances?"split-note":"split-note warning"}><strong>{category} · {totalAppearances} completed-game appearances</strong><span>{totalAppearances?"Each player pays in proportion to the number of completed league games they played.":"Mark games Completed later; this expense will recalculate automatically."}</span></div>}
+    <div className="modal-actions">{onDelete&&<button type="button" className="danger-action" onClick={onDelete}>Delete expense</button>}<span className={canSave&&!duplicate?"ready":"warning"}>{duplicate?"Duplicate found":split==="appearances"?`${totalAppearances} appearances`: `${participants.length} sharing`}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!canSave||Boolean(duplicate)}>{expense?"Save changes":"Add & split"}</button></div>
+  </form></div>;
 }
 
 function CreditModal({credit,players,games,onClose,onSave,onDelete}:{credit?:Credit;players:Player[];games:Game[];onClose:()=>void;onSave:(credit:Omit<Credit,"id">)=>void;onDelete?:()=>void}) {

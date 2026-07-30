@@ -24,16 +24,18 @@ calculates settlements but does not move money.
 1. Sign in with Google or a verified Firebase email/password account.
 2. Register one or more teams, add a reusable roster, and create leagues.
 3. Record games with the date, opponent, and Playing XI or XII.
-4. Add expenses, identify who paid, and choose a game lineup or custom players.
-5. Record one league fee per league. It is allocated by completed-game appearances:
+4. Add expenses and identify who paid. League fees, fruits, water, and the
+   combined fruits-and-water category are allocated by completed-game appearances:
 
-   `player share = league fee × player appearances ÷ total appearances`
+   `player share = expense × player appearances ÷ total appearances`
 
-6. Add credits or waivers for umpiring and other contributions.
-7. Share the suggested transfers showing who should pay whom.
-8. After the receiver confirms money arrived, record the settlement payment.
+5. Choose a game lineup or custom players for all other expenses.
+6. Use the Calculator to review appearances, weights, and each cost component.
+7. Add credits or waivers for umpiring and other contributions.
+8. Share the suggested transfers showing who should pay whom.
+9. After the receiver confirms money arrived, record the settlement payment.
    Remaining balances and transfer suggestions recalculate automatically.
-9. Review the payment audit history or export the complete ledger as CSV.
+10. Review the payment audit history or export the complete ledger as CSV.
 
 ## Lightweight feature set
 
@@ -46,7 +48,8 @@ calculates settlements but does not move money.
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
 - Custom-player and game-lineup splits
 - Expense categories for fruits and water, IV, practice, team funds, food, night outs, parties, and other costs
-- One appearance-weighted league fee per league
+- Appearance-weighted league fees, fruits, water, and combined refreshment costs
+- League calculator showing games played, percentage weight, and cost components
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Confirmed repayment ledger with received date, sender, receiver, amount,
   optional reference, remaining balances, and overpayment protection

@@ -70,6 +70,10 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /participants/);
   assert.match(dashboard, /Custom players/);
   assert.match(dashboard, /By games played/);
+  assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","Fruits & Water","Fruits","Water"\]\)/);
+  assert.match(dashboard, /League share calculator/);
+  assert.match(dashboard, /Player share = expense × player appearances ÷ total appearances/);
+  assert.match(dashboard, /Fruits \/ water/);
   assert.match(dashboard, /Credit a contribution/);
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
