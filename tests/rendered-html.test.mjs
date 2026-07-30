@@ -74,6 +74,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /League share calculator/);
   assert.match(dashboard, /Player share = expense × player appearances ÷ total appearances/);
   assert.match(dashboard, /Fruits \/ water/);
+  assert.match(dashboard, /playersWhoPlayed=new Set\(games\.filter\(game=>game\.status==="Completed"\)/);
+  assert.match(dashboard, /Played in completed games/);
   assert.match(dashboard, /Credit a contribution/);
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
