@@ -298,7 +298,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <span className={`save-state ${saveState}`}>{saveState==="saving"?"Saving…":saveState==="error"?"Not saved":"✓ Saved"}</span>
           {view==="roster" && isTreasurer && <button className="primary" onClick={()=>setModal("player")}>＋ Add player</button>}
           {view==="leagues" && isTreasurer && <button className="primary" onClick={()=>setModal("league")}>＋ Create league</button>}
-          {["overview","expenses"].includes(view) && league && players.length>0 && <>{isTreasurer&&<button className="ghost" onClick={()=>setModal("credit")}>＋ Add credit</button>}<button className="primary" onClick={()=>setModal("expense")}>＋ Add expense</button></>}
+          {view==="overview" && league && players.length>0 && <>{isTreasurer&&<button className="ghost" onClick={()=>setModal("credit")}>＋ Add credit</button>}<button className="primary" onClick={()=>setModal("expense")}>＋ Add expense</button></>}
         </div>
       </header>
 
