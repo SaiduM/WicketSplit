@@ -21,9 +21,10 @@ Vinext, React, Firebase, and D1 architecture.
 - For Restaurant and Other expenses, offer only completed-game appearances or
   custom players. Do not add a game-lineup split.
 - Keep payer, participant, credit, and balance calculations explainable.
-- Record one umpiring credit per player and completed game. Derive its date from
-  the game, fund it from that game's lineup, prevent duplicates, and show the
-  player's umpired-game count and opponents in the calculator.
+- Treat umpiring as an unfunded debt waiver: games umpired times a fixed rate.
+  Do not attach it to a team game, payer, funding group, or user-entered date.
+  Cap the waiver at the player’s amount owed and show its count, rate, and total
+  in the calculator.
 - Exclude roster-only players without financial activity from exports; retain
   financially active players whose final balance is zero.
 - Preserve record IDs when editing names or entries.

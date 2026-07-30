@@ -8,7 +8,7 @@ type Game = { id: number; date: string; opponent: string; venue: string; players
 type SplitMode = "players" | "team" | "custom";
 type ExpenseSplitMode = SplitMode | "appearances";
 type Expense = { id: number; date: string; label: string; category: string; amount: number; paidBy: number; gameId?: number; split: ExpenseSplitMode; participants?: number[]; submittedBy?: string };
-type Credit = { id: number; date: string; label: string; amount: number; playerId: number; gameId?: number; split: SplitMode; participants: number[] };
+type Credit = { id: number; date: string; label: string; amount: number; playerId: number; gameId?: number; split: SplitMode; participants?: number[]; kind?: "umpiring-waiver"; units?: number; rate?: number };
 type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPlayerId: number; amount: number; note?: string; recordedBy?: string };
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[] };
 type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
@@ -30,6 +30,7 @@ const expenseCategoryForForm = (category?:string) => {
   return "Other";
 };
 const usesAppearanceSplit = (expense:Pick<Expense,"category"|"split">) => expense.split==="appearances"||appearanceCategories.has(expense.category);
+const isUmpiringWaiver = (credit:Credit) => credit.kind==="umpiring-waiver";
 const appearanceShare = (amount:number,playerId:number,games:Game[]) => {
   const completed=games.filter(game=>game.status==="Completed");
   const totalAppearances=completed.reduce((total,game)=>total+game.players.length,0);
@@ -39,12 +40,15 @@ const appearanceShare = (amount:number,playerId:number,games:Game[]) => {
 const expenseParticipants = (expense:Expense,players:Player[],games:Game[]) =>
   expense.participants?.length ? expense.participants :
   expense.split==="players" ? games.find(g=>g.id===expense.gameId)?.players??[] : players.map(p=>p.id);
-const splitDescription = (entry:{split:ExpenseSplitMode;category?:string;participants?:number[];gameId?:number},players:Player[],games:Game[]) => {
+const splitDescription = (entry:{split:ExpenseSplitMode;category?:string;participants?:number[];gameId?:number;kind?:string},players:Player[],games:Game[]) => {
+  if(entry.kind==="umpiring-waiver") return "Debt waiver · nobody funds it";
   if(entry.split==="appearances"||(entry.category&&appearanceCategories.has(entry.category))) return `By games played (${games.filter(game=>game.status==="Completed").reduce((sum,game)=>sum+game.players.length,0)} appearances)`;
   const count=entry.participants?.length??(entry.split==="players"?games.find(g=>g.id===entry.gameId)?.players.length:players.length)??0;
   if(entry.split==="players") return `Game vs ${games.find(g=>g.id===entry.gameId)?.opponent??"Unknown"} (${count})`;
   return entry.split==="custom"?`Custom group (${count})`:`Full roster (${count})`;
 };
+const creditSplitDescription = (credit:Credit,players:Player[],games:Game[]) =>
+  isUmpiringWaiver(credit) ? "Debt waiver · nobody funds it" : splitDescription(credit,players,games);
 
 export default function Dashboard({ user }: { user: { name: string; email: string } }) {
   const [account, setAccount] = useState<Account>(() => emptyAccount(user.name));
@@ -189,7 +193,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       if(usesAppearanceSplit(e)) return sum+appearanceShare(e.amount,player.id,games);
       return sum+playerShare(e.amount,expenseParticipants(e,players,games),player.id);
     }, 0);
-    const creditShare = credits.reduce((sum,e) => sum + playerShare(e.amount,e.participants,player.id),0);
+    const creditShare = credits.reduce((sum,e) => sum + (isUmpiringWaiver(e)?0:playerShare(e.amount,e.participants??[],player.id)),0);
     const share = expenseShare + creditShare;
     const sent = payments.filter(payment=>payment.fromPlayerId===player.id).reduce((sum,payment)=>sum+payment.amount,0);
     const received = payments.filter(payment=>payment.toPlayerId===player.id).reduce((sum,payment)=>sum+payment.amount,0);
@@ -229,7 +233,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       ...expenses.map(e=>[e.date,e.label,e.category,players.find(p=>p.id===e.paidBy)?.name??"Unknown",
         splitDescription(e,players,games),e.amount.toFixed(2)]),
       [],["CREDIT / WAIVER DETAILS"],["Date","Description","Credited player","Shared by","Amount"],
-      ...credits.map(c=>[c.date,c.label,players.find(p=>p.id===c.playerId)?.name??"Unknown",splitDescription(c,players,games),c.amount.toFixed(2)])];
+      ...credits.map(c=>[c.date,c.label,players.find(p=>p.id===c.playerId)?.name??"Unknown",creditSplitDescription(c,players,games),c.amount.toFixed(2)])];
     const safeCell=(value:unknown)=>{const text=String(value);return /^[=+\-@]/.test(text)?`'${text}`:text};
     const csv = rows.map(r => r.map(c => `"${safeCell(c).replaceAll('"','""')}"`).join(",")).join("\n");
     const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
@@ -237,7 +241,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     URL.revokeObjectURL(link.href); notify("Settlement CSV downloaded");
   }
 
-  const total = expenses.reduce((s,e)=>s+e.amount,0) + credits.reduce((s,e)=>s+e.amount,0);
+  const total = expenses.reduce((s,e)=>s+e.amount,0) + credits.filter(credit=>!isUmpiringWaiver(credit)).reduce((s,e)=>s+e.amount,0);
   const outstanding = balances.filter(b=>b.balance<0).reduce((s,b)=>s+Math.abs(b.balance),0);
 
   if (saveState === "loading") return <main className="workspace-loading"><span className="brand-mark">W</span><strong>Loading your workspace…</strong></main>;
@@ -318,9 +322,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     {modal==="game" && league && <GameModal suggestedPlayers={games.at(-1)?.players} players={players} onClose={()=>setModal(null)} onSave={game=>{updateLeague(l=>({...l,games:[...l.games,{...game,id:Date.now()}]}));setModal(null);notify("Game and lineup added")}}/>}
     {modal==="expense" && league && <ExpenseModal memberPlayerId={memberPlayerId} existingExpenses={expenses} leagueFeeExists={expenses.some(e=>isLeagueFee(e.category))} players={players} games={games} onAddPlayer={isTreasurer?addPlayerFromExpense:undefined} onClose={()=>setModal(null)} onSave={expense=>{updateLeague(l=>({...l,expenses:[...l.expenses,{...expense,id:Date.now(),submittedBy:user.email.toLowerCase()}]}));setModal(null);notify("Expense added and split recalculated")}}/>}
     {editingExpense && league && <ExpenseModal expense={editingExpense} existingExpenses={expenses} leagueFeeExists={expenses.some(e=>isLeagueFee(e.category)&&e.id!==editingExpense.id)} players={players} games={games} onAddPlayer={isTreasurer?addPlayerFromExpense:undefined} onClose={()=>setEditingExpense(null)} onDelete={()=>{if(confirm(`Delete “${editingExpense.label}”? This will recalculate every balance.`)){updateLeague(l=>({...l,expenses:l.expenses.filter(e=>e.id!==editingExpense.id)}));setEditingExpense(null);notify("Expense deleted and balances recalculated")}}} onSave={expense=>{updateLeague(l=>({...l,expenses:l.expenses.map(e=>e.id===editingExpense.id?{...expense,id:e.id}:e)}));setEditingExpense(null);notify("Expense updated and split recalculated")}}/>}
-    {modal==="credit" && league && <CreditModal players={players} games={games} existingCredits={credits} onClose={()=>setModal(null)} onSave={credit=>{updateLeague(l=>({...l,credits:[...(l.credits??[]),{...credit,id:Date.now()}]}));setModal(null);notify("Umpiring credit added and settlement recalculated")}}/>}
+    {modal==="credit" && league && <CreditModal players={players} balances={balances} onClose={()=>setModal(null)} onSave={credit=>{updateLeague(l=>({...l,credits:[...(l.credits??[]),{...credit,id:Date.now()}]}));setModal(null);notify("Umpiring waiver added and amount owed recalculated")}}/>}
     {modal==="payment" && league && <SettlementPaymentModal players={players} balances={balances} suggestions={settlementTransfers(balances)} onClose={()=>setModal(null)} onSave={payment=>{updateLeague(l=>({...l,payments:[...(l.payments??[]),{...payment,id:Date.now(),recordedBy:user.email.toLowerCase()}]}));setModal(null);notify("Payment confirmed and remaining balances recalculated")}}/>}
-    {editingCredit && league && <CreditModal credit={editingCredit} players={players} games={games} existingCredits={credits} onClose={()=>setEditingCredit(null)} onDelete={()=>{if(confirm(`Delete credit “${editingCredit.label}”? This will recalculate every balance.`)){updateLeague(l=>({...l,credits:(l.credits??[]).filter(c=>c.id!==editingCredit.id)}));setEditingCredit(null);notify("Credit deleted and balances recalculated")}}} onSave={credit=>{updateLeague(l=>({...l,credits:(l.credits??[]).map(c=>c.id===editingCredit.id?{...credit,id:c.id}:c)}));setEditingCredit(null);notify("Umpiring credit updated and settlement recalculated")}}/>}
+    {editingCredit && league && <CreditModal credit={editingCredit} players={players} balances={balances} onClose={()=>setEditingCredit(null)} onDelete={()=>{if(confirm(`Delete credit “${editingCredit.label}”? This will recalculate every balance.`)){updateLeague(l=>({...l,credits:(l.credits??[]).filter(c=>c.id!==editingCredit.id)}));setEditingCredit(null);notify("Credit deleted and balances recalculated")}}} onSave={credit=>{updateLeague(l=>({...l,credits:(l.credits??[]).map(c=>c.id===editingCredit.id?{...credit,id:c.id}:c)}));setEditingCredit(null);notify("Umpiring waiver updated and amount owed recalculated")}}/>}
     {inviteTarget&&team&&<InviteAccessModal player={inviteTarget} teamName={team.name} preview={invitePreview} onClose={()=>{setInviteTarget(null);setInvitePreview("")}} onInvite={role=>invitePlayer(inviteTarget,role)} onCopy={async()=>{try{await navigator.clipboard.writeText(invitePreview);notify("Invitation copied — paste it into your team chat")}catch{notify("Could not copy automatically — select the message and copy it")}}}/>}
     {toast && <div className="toast">✓ {toast}</div>}
   </main>;
@@ -379,16 +383,17 @@ function CalculatorView({players,games,expenses,credits,balances}:{players:Playe
   const weightedTotal=weightedExpenses.reduce((sum,expense)=>sum+expense.amount,0);
   const rows=players.map(player=>{
     const appearances=completed.filter(game=>game.players.includes(player.id)).length;
-    const umpiringCredits=credits.filter(credit=>credit.playerId===player.id&&credit.gameId);
-    const umpiredGames=umpiringCredits.map(credit=>games.find(game=>game.id===credit.gameId)).filter((game):game is Game=>Boolean(game));
+    const umpiringCredits=credits.filter(credit=>credit.playerId===player.id&&isUmpiringWaiver(credit));
+    const umpiredGames=umpiringCredits.reduce((sum,credit)=>sum+(credit.units??0),0);
+    const umpiringDetails=umpiringCredits.map(credit=>`${credit.units??0} × ${money.format(credit.rate??0)}`);
     const umpiringCredit=umpiringCredits.reduce((sum,credit)=>sum+credit.amount,0);
     const leagueFeeShare=weightedExpenses.filter(expense=>isLeagueFee(expense.category)).reduce((sum,expense)=>sum+appearanceShare(expense.amount,player.id,games),0);
     const refreshmentShare=weightedExpenses.filter(expense=>!isLeagueFee(expense.category)).reduce((sum,expense)=>sum+appearanceShare(expense.amount,player.id,games),0);
     const otherExpenseShare=expenses.filter(expense=>!usesAppearanceSplit(expense)).reduce((sum,expense)=>sum+playerShare(expense.amount,expenseParticipants(expense,players,games),player.id),0);
-    const creditShare=credits.reduce((sum,credit)=>sum+playerShare(credit.amount,credit.participants,player.id),0);
-    return {player,appearances,umpiredGames,umpiringCredit,weight:totalAppearances?appearances/totalAppearances:0,leagueFeeShare,refreshmentShare,otherExpenseShare,creditShare,total:leagueFeeShare+refreshmentShare+otherExpenseShare+creditShare};
+    const creditShare=credits.reduce((sum,credit)=>sum+(isUmpiringWaiver(credit)?0:playerShare(credit.amount,credit.participants??[],player.id)),0);
+    return {player,appearances,umpiredGames,umpiringDetails,umpiringCredit,weight:totalAppearances?appearances/totalAppearances:0,leagueFeeShare,refreshmentShare,otherExpenseShare,creditShare,total:leagueFeeShare+refreshmentShare+otherExpenseShare+creditShare};
   }).filter(row=>row.appearances||row.umpiringCredit>.004||row.total>.004);
-  return <><div className="view-toolbar"><div><h2>League share calculator</h2><p>See exactly how games played and umpiring credits affect each player.</p></div></div><section className="calculator-formula"><div><span>Completed games</span><strong>{completed.length}</strong></div><div><span>Total player appearances</span><strong>{totalAppearances}</strong></div><div><span>Appearance-weighted costs</span><strong>{money.format(weightedTotal)}</strong></div><p><b>Formula</b> Player share = expense × player appearances ÷ total appearances. League Fee and Fruits / Water use this calculation automatically.</p></section>{totalAppearances===0&&weightedTotal>0&&<div className="calculator-warning"><strong>No completed appearances yet</strong><span>Mark games Completed to calculate the appearance-weighted shares.</span></div>}{rows.length?<div className="table-panel calculator-table"><table><thead><tr><th>Player</th><th>Games played</th><th>Games umpired</th><th>Umpiring credit</th><th>Weight</th><th>League fee</th><th>Fruits / water</th><th>Other costs</th><th>Credits funded</th><th>Total fair share</th></tr></thead><tbody>{rows.map(row=><tr key={row.player.id}><td><div className="player-cell"><span className="avatar" style={{background:row.player.color}}>{row.player.initials}</span><strong>{row.player.name}</strong></div></td><td>{row.appearances}</td><td><strong>{row.umpiredGames.length}</strong>{row.umpiredGames.length>0&&<small className="umpired-games">{row.umpiredGames.map(game=>`vs ${game.opponent}`).join(" · ")}</small>}</td><td className="positive">{money.format(row.umpiringCredit)}</td><td>{(row.weight*100).toFixed(2)}%</td><td>{money.format(row.leagueFeeShare)}</td><td>{money.format(row.refreshmentShare)}</td><td>{money.format(row.otherExpenseShare)}</td><td>{money.format(row.creditShare)}</td><td><strong>{money.format(row.total)}</strong></td></tr>)}</tbody><tfoot><tr><td colSpan={9}>Calculated fair shares</td><td><strong>{money.format(balances.reduce((sum,balance)=>sum+balance.share,0))}</strong></td></tr></tfoot></table></div>:<MiniEmpty text="Add completed games and expenses to calculate player shares."/>}</>;
+  return <><div className="view-toolbar"><div><h2>League share calculator</h2><p>See exactly how games played and umpiring waivers affect each player.</p></div></div><section className="calculator-formula"><div><span>Completed games</span><strong>{completed.length}</strong></div><div><span>Total player appearances</span><strong>{totalAppearances}</strong></div><div><span>Appearance-weighted costs</span><strong>{money.format(weightedTotal)}</strong></div><p><b>Formula</b> Player share = expense × player appearances ÷ total appearances. Umpiring waiver = games umpired × fixed credit per game.</p></section>{totalAppearances===0&&weightedTotal>0&&<div className="calculator-warning"><strong>No completed appearances yet</strong><span>Mark games Completed to calculate the appearance-weighted shares.</span></div>}{rows.length?<div className="table-panel calculator-table"><table><thead><tr><th>Player</th><th>Games played</th><th>Games umpired</th><th>Umpiring waiver</th><th>Weight</th><th>League fee</th><th>Fruits / water</th><th>Other costs</th><th>Legacy credits funded</th><th>Total fair share</th></tr></thead><tbody>{rows.map(row=><tr key={row.player.id}><td><div className="player-cell"><span className="avatar" style={{background:row.player.color}}>{row.player.initials}</span><strong>{row.player.name}</strong></div></td><td>{row.appearances}</td><td><strong>{row.umpiredGames}</strong>{row.umpiringDetails.length>0&&<small className="umpired-games">{row.umpiringDetails.join(" · ")}</small>}</td><td className="positive">−{money.format(row.umpiringCredit)}</td><td>{(row.weight*100).toFixed(2)}%</td><td>{money.format(row.leagueFeeShare)}</td><td>{money.format(row.refreshmentShare)}</td><td>{money.format(row.otherExpenseShare)}</td><td>{money.format(row.creditShare)}</td><td><strong>{money.format(row.total)}</strong></td></tr>)}</tbody><tfoot><tr><td colSpan={9}>Calculated fair shares</td><td><strong>{money.format(balances.reduce((sum,balance)=>sum+balance.share,0))}</strong></td></tr></tfoot></table></div>:<MiniEmpty text="Add completed games and expenses to calculate player shares."/>}</>;
 }
 
 function SettlementView({team,league,balances,games,expenses,credits,payments,players,canManage,onRecord,onDelete,exportCsv,notify}:{team:Team;league:League;balances:PlayerBalance[];games:Game[];expenses:Expense[];credits:Credit[];payments:SettlementPayment[];players:Player[];canManage:boolean;onRecord:()=>void;onDelete:(payment:SettlementPayment)=>void;exportCsv:()=>void;notify:(s:string)=>void}) {
@@ -405,7 +410,9 @@ function SettlementView({team,league,balances,games,expenses,credits,payments,pl
 
 function PlayerBreakdown({player,expenses,credits,games,players,onClose}:{player:PlayerBalance;expenses:Expense[];credits:Credit[];games:Game[];players:Player[];onClose:()=>void}) {
   const expenseRows=expenses.map(expense=>{const share=usesAppearanceSplit(expense)?appearanceShare(expense.amount,player.id,games):playerShare(expense.amount,expenseParticipants(expense,players,games),player.id);return {label:expense.label,share}}).filter(row=>row.share>.004);
-  const creditRows=credits.map(credit=>({label:`${credit.label} contribution`,share:playerShare(credit.amount,credit.participants,player.id)})).filter(row=>row.share>.004);
+  const creditRows=credits.map(credit=>isUmpiringWaiver(credit)&&credit.playerId===player.id
+    ? {label:`Umpiring waiver · ${credit.units} × ${money.format(credit.rate??0)}`,share:-credit.amount}
+    : {label:`${credit.label} contribution`,share:playerShare(credit.amount,credit.participants??[],player.id)}).filter(row=>Math.abs(row.share)>.004);
   return <div className="modal-backdrop"><section className="modal breakdown-modal"><ModalHead eyebrow="PLAYER CALCULATION" title={player.name} description="Every amount included in this player’s remaining balance." close={onClose}/><div className="breakdown-summary"><div><span>Original balance</span><strong>{money.format(player.originalBalance)}</strong></div><div><span>Sent</span><strong>{money.format(player.sent)}</strong></div><div><span>Received</span><strong>{money.format(player.received)}</strong></div><div><span>Remaining</span><strong className={player.balance>=0?"positive":"negative"}>{player.balance>=0?"+":"−"}{money.format(Math.abs(player.balance))}</strong></div></div><div className="breakdown-list"><div><strong>Shared costs</strong><span>Amount</span></div>{[...expenseRows,...creditRows].map((row,i)=><div key={`${row.label}-${i}`}><span>{row.label}</span><b>{money.format(row.share)}</b></div>)}{!expenseRows.length&&!creditRows.length&&<p>No costs currently assigned to this player.</p>}</div><div className="modal-actions"><button className="primary" onClick={onClose}>Done</button></div></section></div>;
 }
 
@@ -486,27 +493,27 @@ function ExpenseModal({expense,memberPlayerId,existingExpenses,leagueFeeExists,p
   </form></div>;
 }
 
-function CreditModal({credit,players,games,existingCredits,onClose,onSave,onDelete}:{credit?:Credit;players:Player[];games:Game[];existingCredits:Credit[];onClose:()=>void;onSave:(credit:Omit<Credit,"id">)=>void;onDelete?:()=>void}) {
+function CreditModal({credit,players,balances,onClose,onSave,onDelete}:{credit?:Credit;players:Player[];balances:PlayerBalance[];onClose:()=>void;onSave:(credit:Omit<Credit,"id">)=>void;onDelete?:()=>void}) {
   const sortedPlayers=useMemo(()=>[...players].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:"base",numeric:true})),[players]);
-  const completedGames=useMemo(()=>games.filter(game=>game.status==="Completed"||game.id===credit?.gameId).sort((a,b)=>b.date.localeCompare(a.date)),[games,credit?.gameId]);
   const [playerId,setPlayerId]=useState(credit?.playerId??sortedPlayers[0]?.id??0);
-  const [gameId,setGameId]=useState(credit?.gameId??completedGames[0]?.id??0);
-  const [amount,setAmount]=useState(credit?String(credit.amount):"");
-  const game=completedGames.find(candidate=>candidate.id===gameId);
-  const duplicate=existingCredits.find(candidate=>candidate.id!==credit?.id&&candidate.playerId===playerId&&candidate.gameId===gameId);
-  const valid=Boolean(game&&Number(amount)>0&&!duplicate);
-  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={event=>{event.preventDefault();if(valid&&game)onSave({label:`Umpiring vs ${game.opponent}`,amount:Number(amount),playerId,date:game.date,gameId:game.id,split:"players",participants:[...game.players]})}}>
-    <ModalHead eyebrow={credit?"EDIT UMPIRING CREDIT":"NEW UMPIRING CREDIT"} title={credit?"Edit umpiring credit":"Record umpiring"} description="Select the completed game and enter the agreed credit for one umpiring assignment. The game date and funding lineup are added automatically." close={onClose}/>
+  const [units,setUnits]=useState(String(credit?.units??1));
+  const [rate,setRate]=useState(String(credit?.rate??(credit?.amount||"")));
+  const unitCount=Number(units); const fixedRate=Number(rate); const amount=unitCount*fixedRate;
+  const playerBalance=balances.find(balance=>balance.id===playerId);
+  const currentWaiver=credit&&isUmpiringWaiver(credit)&&credit.playerId===playerId?credit.amount:0;
+  const maximum=Math.max(0,-(playerBalance?.originalBalance??0)+currentWaiver);
+  const valid=Number.isSafeInteger(unitCount)&&unitCount>0&&unitCount<=1_000&&fixedRate>0&&amount<=maximum+.005;
+  const today=(()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`})();
+  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={event=>{event.preventDefault();if(valid)onSave({label:`Umpiring waiver · ${unitCount} ${unitCount===1?"game":"games"}`,amount,playerId,date:today,split:"custom",kind:"umpiring-waiver",units:unitCount,rate:fixedRate})}}>
+    <ModalHead eyebrow={credit?"EDIT UMPIRING WAIVER":"NEW UMPIRING WAIVER"} title={credit?"Edit umpiring waiver":"Credit umpiring"} description="Reduce this player’s amount owed. Nobody pays or funds this waiver, and the umpired matches do not need to belong to your team." close={onClose}/>
     <div className="form-grid">
       <label>Contribution<select value="Umpiring" disabled><option>Umpiring</option></select></label>
       <label>Player who umpired<select required value={playerId} onChange={event=>setPlayerId(Number(event.target.value))}>{sortedPlayers.map(player=><option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
-      <label className="wide">Game umpired<select required value={gameId} onChange={event=>setGameId(Number(event.target.value))}><option value={0} disabled>Select a completed game</option>{completedGames.map(candidate=><option key={candidate.id} value={candidate.id}>Game {games.findIndex(item=>item.id===candidate.id)+1} vs {candidate.opponent} · {new Date(candidate.date+"T12:00").toLocaleDateString()} · {candidate.players.length} players</option>)}</select></label>
-      <label>Amount for this umpiring ($)<input required min=".01" step=".01" type="number" value={amount} onChange={event=>setAmount(event.target.value)} placeholder="e.g. 25.00"/></label>
-      <label>Funded by<input readOnly value={game?`${game.players.length} players from this game`:"Select a game"}/></label>
+      <label>Number of games umpired<input required min="1" max="1000" step="1" type="number" value={units} onChange={event=>setUnits(event.target.value)}/></label>
+      <label>Fixed credit per game ($)<input required min=".01" step=".01" type="number" value={rate} onChange={event=>setRate(event.target.value)} placeholder="e.g. 25.00"/></label>
     </div>
-    {!completedGames.length&&<div className="duplicate-warning"><strong>No completed games available</strong><span>Mark a game Completed before recording who umpired it.</span></div>}
-    {duplicate&&<div className="duplicate-warning"><strong>Umpiring already recorded</strong><span>This player already has a credit for the selected game. Edit the existing record instead.</span></div>}
-    <div className="modal-actions">{onDelete&&<button type="button" className="danger-action" onClick={onDelete}>Delete credit</button>}<span className={valid?"ready":"warning"}>{valid&&game?`${money.format(Number(amount))} credit · ${game.players.length} funding`:"Select a game and amount"}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!valid}>{credit?"Save changes":"Add umpiring credit"}</button></div>
+    <div className={amount>maximum+.005?"duplicate-warning":"payment-confirmation"}><strong>{unitCount||0} × {money.format(fixedRate||0)} = {money.format(amount||0)} waiver</strong><span>{amount>maximum+.005?`This exceeds the player’s maximum available waiver of ${money.format(maximum)}.`:`This reduces their debt only. Nobody else is charged. Maximum available waiver: ${money.format(maximum)}.`}</span></div>
+    <div className="modal-actions">{onDelete&&<button type="button" className="danger-action" onClick={onDelete}>Delete credit</button>}<span className={valid?"ready":"warning"}>{valid?`${money.format(amount)} deducted from amount owed`:"Check games, rate, and available debt"}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!valid}>{credit?"Save changes":"Add umpiring waiver"}</button></div>
   </form></div>;
 }
 

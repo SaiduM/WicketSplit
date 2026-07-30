@@ -77,12 +77,14 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /playersWhoPlayed=new Set\(games\.filter\(game=>game\.status==="Completed"\)/);
   assert.match(dashboard, /Played in completed games/);
-  assert.match(dashboard, /Record umpiring/);
+  assert.match(dashboard, /Credit umpiring/);
   assert.match(dashboard, /Player who umpired/);
-  assert.match(dashboard, /Amount for this umpiring/);
-  assert.match(dashboard, /Umpiring already recorded/);
+  assert.match(dashboard, /Number of games umpired/);
+  assert.match(dashboard, /Fixed credit per game/);
+  assert.match(dashboard, /Nobody else is charged/);
+  assert.match(dashboard, /maximum available waiver/);
   assert.match(dashboard, /Games umpired/);
-  assert.match(dashboard, /row\.umpiredGames\.map\(game=>`vs \$\{game\.opponent\}`\)/);
+  assert.match(dashboard, /umpiringDetails\.join/);
   assert.match(dashboard, /Not saved/);
   assert.match(dashboard, /Copy previous lineup/);
   assert.match(dashboard, /Share remaining/);

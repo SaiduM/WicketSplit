@@ -118,11 +118,19 @@ function isValidState(value: unknown): boolean {
       const creditIds = new Set<number>();
       if (!(record.credits??[]).every(credit => {
         if (!credit || typeof credit !== "object") return false;
-        const entry = credit as { id?: unknown; date?: unknown; label?: unknown; amount?: unknown; playerId?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[] };
+        const entry = credit as { id?: unknown; date?: unknown; label?: unknown; amount?: unknown; playerId?: unknown; gameId?: unknown; split?: unknown; participants?: unknown[]; kind?: unknown; units?: unknown; rate?: unknown };
         if (!id(entry.id) || creditIds.has(entry.id as number) || !text(entry.date,10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date)) ||
             !text(entry.label,240) || typeof entry.amount !== "number" || !Number.isFinite(entry.amount) || entry.amount <= 0 || entry.amount > 100_000_000 ||
-            !id(entry.playerId) || !playerIds.has(entry.playerId as number) || !["players","team","custom"].includes(String(entry.split)) ||
-            !Array.isArray(entry.participants) || entry.participants.length === 0 || new Set(entry.participants).size !== entry.participants.length ||
+            !id(entry.playerId) || !playerIds.has(entry.playerId as number) || !["players","team","custom"].includes(String(entry.split))) return false;
+        if (entry.kind === "umpiring-waiver") {
+          if (entry.split !== "custom" || entry.gameId !== undefined || entry.participants !== undefined ||
+              typeof entry.units !== "number" || !Number.isSafeInteger(entry.units) || entry.units <= 0 || entry.units > 1_000 ||
+              typeof entry.rate !== "number" || !Number.isFinite(entry.rate) || entry.rate <= 0 || entry.rate > 100_000_000 ||
+              Math.abs(entry.amount - entry.units * entry.rate) > .005) return false;
+          creditIds.add(entry.id as number); return true;
+        }
+        if (entry.kind !== undefined || !Array.isArray(entry.participants) || entry.participants.length === 0 ||
+            new Set(entry.participants).size !== entry.participants.length ||
             !entry.participants.every(playerId => id(playerId) && playerIds.has(playerId as number))) return false;
         if (entry.split === "players" && (!id(entry.gameId) || !gameIds.has(entry.gameId as number))) return false;
         creditIds.add(entry.id as number); return true;
