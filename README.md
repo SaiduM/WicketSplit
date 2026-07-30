@@ -24,12 +24,13 @@ calculates settlements but does not move money.
 1. Sign in with Google or a verified Firebase email/password account.
 2. Register one or more teams, add a reusable roster, and create leagues.
 3. Record games with the date, opponent, and Playing XI or XII.
-4. Add expenses and identify who paid. League fees, fruits, water, and the
-   combined fruits-and-water category are allocated by completed-game appearances:
+4. Add expenses using one of four categories: Fruits / Water, League Fee,
+   Restaurant, or Other. League Fee and Fruits / Water are allocated by
+   completed-game appearances:
 
    `player share = expense × player appearances ÷ total appearances`
 
-5. Choose a game lineup or custom players for all other expenses.
+5. Choose custom players or a games-played split for Restaurant and Other.
 6. Use the Calculator to review appearances, weights, and each cost component.
 7. Add credits or waivers for umpiring and other contributions.
 8. Share the suggested transfers showing who should pay whom.
@@ -46,9 +47,9 @@ calculates settlements but does not move money.
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
-- Custom-player and game-lineup splits
-- Expense categories for fruits and water, IV, practice, team funds, food, night outs, parties, and other costs
-- Appearance-weighted league fees, fruits, water, and combined refreshment costs
+- Custom-player and games-played splits
+- Four expense categories: Fruits / Water, League Fee, Restaurant, and Other
+- Appearance-weighted league fees and refreshment costs
 - League calculator showing games played, percentage weight, and cost components
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Confirmed repayment ledger with received date, sender, receiver, amount,

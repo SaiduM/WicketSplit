@@ -60,8 +60,8 @@ test("public legal and self-service deletion surfaces are present", async () => 
 test("finance workflow includes editable dated expenses and settlement transfers", async () => {
   const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
   assert.match(dashboard, /Expense date/);
-  assert.match(dashboard, /Fruits &amp; Water/);
-  assert.match(dashboard, /<option>Other<\/option><option>Food<\/option><option>Night out<\/option><option>Party<\/option>/);
+  assert.match(dashboard, /<option>Fruits \/ Water<\/option>/);
+  assert.match(dashboard, /<option>Restaurant<\/option><option>Other<\/option>/);
   assert.match(dashboard, /Add a player not listed/);
   assert.match(dashboard, /Pending only/);
   assert.match(dashboard, /exportBalances/);
@@ -70,10 +70,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /participants/);
   assert.match(dashboard, /Custom players/);
   assert.match(dashboard, /By games played/);
-  assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","Fruits & Water","Fruits","Water"\]\)/);
+  assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","League Fee","Fruits & Water","Fruits \/ Water","Fruits","Water"\]\)/);
   assert.match(dashboard, /League share calculator/);
   assert.match(dashboard, /Player share = expense × player appearances ÷ total appearances/);
   assert.match(dashboard, /Fruits \/ water/);
+  assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /playersWhoPlayed=new Set\(games\.filter\(game=>game\.status==="Completed"\)/);
   assert.match(dashboard, /Played in completed games/);
   assert.match(dashboard, /Credit a contribution/);

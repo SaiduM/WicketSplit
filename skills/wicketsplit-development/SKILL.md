@@ -16,9 +16,10 @@ Vinext, React, Firebase, and D1 architecture.
 
 ## Finance invariants
 
-- Split the single league fee and all Fruits, Water, or Fruits & Water expenses
-  by completed-game appearances.
-- Split other expenses only among the selected game lineup or custom players.
+- Split the single League Fee and all Fruits / Water expenses by completed-game
+  appearances.
+- For Restaurant and Other expenses, offer only completed-game appearances or
+  custom players. Do not add a game-lineup split.
 - Keep payer, participant, credit, and balance calculations explainable.
 - Exclude roster-only players without financial activity from exports; retain
   financially active players whose final balance is zero.
