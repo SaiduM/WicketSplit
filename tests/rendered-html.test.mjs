@@ -128,6 +128,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /originalBalance \+ sent - received/);
 });
 
+test("mobile game cards display two per row", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /\.game-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}/);
+});
+
 test("shared teams use authenticated invitations and server-side roles", async () => {
   const [stateApi, inviteApi, acceptApi] = await Promise.all([
     readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
