@@ -21,8 +21,9 @@ Vinext, React, Firebase, and D1 architecture.
 - For Restaurant and Other expenses, offer only completed-game appearances or
   custom players. Do not add a game-lineup split.
 - Keep payer, participant, credit, and balance calculations explainable.
-- Treat umpiring as an unfunded debt waiver: games umpired times a fixed rate.
-  Do not attach it to a team game, payer, funding group, or user-entered date.
+- Treat umpiring as an unfunded debt waiver: enter one fixed rate, record game
+  counts for any/all players in a batch, and save only non-zero rows. Do not
+  attach it to a team game, payer, funding group, or user-entered date.
   Cap the waiver at the player’s amount owed and show its count, rate, and total
   in the calculator.
 - Exclude roster-only players without financial activity from exports; retain
