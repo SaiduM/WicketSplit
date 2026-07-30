@@ -92,6 +92,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Share remaining/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.doesNotMatch(dashboard, /\["overview","expenses"\]\.includes\(view\)/);
+  assert.doesNotMatch(dashboard, /view==="overview" && league && players\.length>0/);
   assert.match(dashboard, /PLAYER CALCULATION/);
   assert.match(dashboard, />↗ Invite<\/button>/);
   assert.match(dashboard, /Message being sent/);
