@@ -209,6 +209,8 @@ test("CricClubs sync previews completed games and preserves duplicate identifier
   assert.match(dashboard, /game\.externalId===match\.externalId/);
   assert.match(syncApi, /core-prod-origin\.cricclubs\.com/);
   assert.match(syncApi, /x-content-token/);
+  assert.match(syncApi, /4392f2cedc79257/);
+  assert.doesNotMatch(syncApi, /4392f2cede1c79257/);
   assert.match(syncApi, /completed\.map/);
   assert.match(syncApi, /teamInnings\?\.batting/);
   assert.match(syncApi, /cricclubs:\$\{user\.email\.toLowerCase\(\)\}/);
