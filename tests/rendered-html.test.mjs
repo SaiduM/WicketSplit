@@ -114,6 +114,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /aria-label="Log out"/);
   assert.doesNotMatch(dashboard, /logout-header/);
   assert.match(dashboard, /app-nav-trigger/);
+  assert.match(dashboard, /className="mobile-back"/);
+  assert.match(dashboard, /addEventListener\("popstate",restoreView\)/);
+  assert.match(dashboard, /history\.pushState/);
+  assert.match(dashboard, /standalone!==true/);
+  assert.match(dashboard, /horizontal>=75&&horizontal>vertical\*1\.35/);
   assert.match(dashboard, /Open account menu/);
   assert.match(dashboard, /profile-menu/);
   assert.match(dashboard, /document\.addEventListener\("pointerdown", closeOutside\)/);

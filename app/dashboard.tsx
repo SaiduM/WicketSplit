@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Player = { id: number; name: string; initials: string; email?: string; phone?: string; color: string };
 type Game = { id: number; date: string; opponent: string; venue: string; players: number[]; status: "Upcoming" | "Completed" };
@@ -73,6 +73,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const saveSequence = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const edgeSwipeStart = useRef<{x:number;y:number}|null>(null);
 
   useEffect(() => {
     fetch("/api/state").then(async r => {
@@ -124,6 +125,17 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [profileMenu]);
+
+  useEffect(()=>{
+    history.replaceState({...history.state,wicketView:"overview"},"");
+    const restoreView=(event:PopStateEvent)=>{
+      const next=event.state?.wicketView as View|undefined;
+      setView(next&&["overview","roster","leagues","games","expenses","calculator","settlement"].includes(next)?next:"overview");
+      setMobileNavOpen(false);
+    };
+    addEventListener("popstate",restoreView);
+    return()=>removeEventListener("popstate",restoreView);
+  },[]);
 
   const team = account.teams.find(t => t.id === teamId) ?? account.teams[0];
   const league = team?.leagues.find(l => l.id === leagueId) ?? team?.leagues[0];
@@ -254,10 +266,17 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   if (loadFailed) return <main className="workspace-loading load-error"><span>!</span><strong>We couldn’t load your workspace.</strong><p>Your saved data has not been changed.</p><button className="primary" onClick={()=>location.reload()}>Try again</button></main>;
 
   const toggleNavigation=()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(open=>!open):setSidebarCollapsed(collapsed=>!collapsed);
-  const chooseView=(next:View)=>{setView(next);setMobileNavOpen(false)};
+  const chooseView=(next:View)=>{
+    if(next!==view)history.pushState({...history.state,wicketView:next},"");
+    setView(next);setMobileNavOpen(false);
+  };
+  const goBack=()=>view==="overview"?undefined:history.back();
+  const beginEdgeSwipe=(event:TouchEvent)=>{const touch=event.touches[0];edgeSwipeStart.current=touch.clientX<=28?{x:touch.clientX,y:touch.clientY}:null};
+  const finishEdgeSwipe=(event:TouchEvent)=>{const start=edgeSwipeStart.current;edgeSwipeStart.current=null;if(!start||(navigator as Navigator&{standalone?:boolean}).standalone!==true)return;const touch=event.changedTouches[0];const horizontal=touch.clientX-start.x;const vertical=Math.abs(touch.clientY-start.y);if(horizontal>=75&&horizontal>vertical*1.35)goBack()};
 
   return <main className={`app-shell ${sidebarCollapsed?"sidebar-collapsed":""}`}>
     <button className="app-nav-trigger" type="button" aria-label="Toggle navigation" onClick={toggleNavigation}><span></span><span></span><span></span></button>
+    {view!=="overview"&&<button className="mobile-back" type="button" aria-label="Go back" onClick={goBack}><span>‹</span> Back</button>}
     {mobileNavOpen&&<button className="nav-scrim" type="button" aria-label="Close navigation" onClick={()=>setMobileNavOpen(false)}/>}
     <aside className={`sidebar ${mobileNavOpen?"mobile-open":""} ${sidebarCollapsed?"desktop-collapsed":""}`}>
       <button className="sidebar-close" type="button" aria-label="Close navigation" onClick={()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(false):setSidebarCollapsed(true)}>×</button>
@@ -284,7 +303,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </div>
     </aside>
 
-    <section className="workspace">
+    <section className="workspace" onTouchStart={beginEdgeSwipe} onTouchEnd={finishEdgeSwipe}>
       <header>
         <div>
           <div className="league-picker">
@@ -292,7 +311,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
               <div className="league-select-label"><span className="eyebrow">CURRENT LEAGUE</span><span className={`league-status-dot ${league.status.toLowerCase()}`}>{league.status}</span></div>
               <div className="league-select-shell">
                 <span className="league-icon">▤</span>
-                <select aria-label="Current league" value={league.id} onChange={e=>{setLeagueId(Number(e.target.value));setView("overview")}}>{team?.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>
+                <select aria-label="Current league" value={league.id} onChange={e=>{setLeagueId(Number(e.target.value));chooseView("overview")}}>{team?.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>
                 <span className="league-chevron">⌄</span>
               </div>
             </> : <span className="season-pill"><i /> NO LEAGUE SELECTED</span>}
@@ -309,11 +328,11 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
 
       {!team ? <EmptyState icon="♙" title="Register your first team" text="Create a team workspace, add its roster, then organize expenses by league." action="Register team" onAction={()=>setModal("team")}/> :
        !league && view!=="roster" && view!=="leagues" ? <EmptyState icon="▤" title="Create your first league" text="A team can have as many leagues and seasons as you need." action="Create league" onAction={()=>setModal("league")}/> : <>
-        {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={setView} onPlayer={()=>setModal("player")}/>}
+        {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={chooseView} onPlayer={()=>setModal("player")}/>}
         {view==="roster" && <RosterView team={team} canManage={isTreasurer} onInvite={player=>{setInviteTarget(player);setInvitePreview("")}} onAdd={()=>setModal("player")} onEdit={setEditingPlayer} onDelete={deletePlayer}/>}
-        {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);setView("overview")}} onAdd={()=>setModal("league")} onEdit={setEditingLeague}/>}
-        {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onRoster={()=>setView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
-        {view==="expenses" && league && <ExpensesView expenses={expenses} credits={credits} players={players} games={games} canManage={isTreasurer} memberEmail={user.email} onAdd={()=>setModal("expense")} onCredit={()=>setModal("credit")} onRoster={()=>setView("roster")} onEdit={setEditingExpense} onDelete={expense=>{if(confirm(`Delete “${expense.label}”? This will recalculate every balance.`)){updateLeague(current=>({...current,expenses:current.expenses.filter(entry=>entry.id!==expense.id)}));notify("Expense deleted and balances recalculated")}}} onEditCredit={setEditingCredit}/>}
+        {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);chooseView("overview")}} onAdd={()=>setModal("league")} onEdit={setEditingLeague}/>}
+        {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onRoster={()=>chooseView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
+        {view==="expenses" && league && <ExpensesView expenses={expenses} credits={credits} players={players} games={games} canManage={isTreasurer} memberEmail={user.email} onAdd={()=>setModal("expense")} onCredit={()=>setModal("credit")} onRoster={()=>chooseView("roster")} onEdit={setEditingExpense} onDelete={expense=>{if(confirm(`Delete “${expense.label}”? This will recalculate every balance.`)){updateLeague(current=>({...current,expenses:current.expenses.filter(entry=>entry.id!==expense.id)}));notify("Expense deleted and balances recalculated")}}} onEditCredit={setEditingCredit}/>}
         {view==="calculator" && league && <CalculatorView players={players} games={games} expenses={expenses} credits={credits} balances={balances}/>}
         {view==="settlement" && league && <SettlementView team={team} league={league} balances={balances} games={games} expenses={expenses} credits={credits} payments={payments} players={players} canManage={isTreasurer} onRecord={()=>setModal("payment")} onDelete={payment=>{if(confirm(`Delete this ${money.format(payment.amount)} payment record? Remaining balances will be recalculated.`)){updateLeague(current=>({...current,payments:(current.payments??[]).filter(entry=>entry.id!==payment.id)}));notify("Payment record deleted and balances restored")}}} exportCsv={exportCsv} notify={notify}/>}
       </>}

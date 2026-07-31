@@ -64,6 +64,8 @@ calculates settlements but does not move money.
 - Confirmed repayment ledger with received date, sender, receiver, amount,
   optional reference, remaining balances, and overpayment protection
 - Mobile-friendly PWA installation and responsive navigation
+- History-aware mobile navigation with an on-screen Back button and guarded
+  left-edge swipe gesture for returning to the previous WicketSplit section
 - Google or Firebase email authentication with D1 persistence
 - Public Privacy Policy, Terms of Use, and self-service account deletion
 

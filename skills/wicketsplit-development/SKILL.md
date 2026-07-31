@@ -66,6 +66,8 @@ Vinext, React, Firebase, and D1 architecture.
 
 - Keep iPhone controls usable without horizontal navigation scrolling.
 - Maintain the mobile hamburger drawer and desktop collapsible sidebar.
+- Preserve browser history for section navigation, the mobile Back control, and
+  the guarded left-edge swipe gesture without intercepting normal scrolling.
 - Sort player selections alphabetically and provide accessible touch targets.
 - Explain role, split, and invitation consequences before confirmation.
 - Keep Home personal to the roster player linked to the signed-in account;
