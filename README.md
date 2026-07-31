@@ -51,8 +51,9 @@ calculates settlements but does not move money.
 - One-time protected account-to-roster linking for treasurers or members whose
   signed-in identity is not already associated with a roster player
 - Editable players, games, expenses, credits, and leagues
-- Treasurer-only CricClubs import: paste a public team results URL, preview new
-  completed matches, reconcile each Playing XI/XII name to the WicketSplit
+- Treasurer-only CricClubs import: connect a public team results URL once,
+  discover recent leagues containing that team, link each CricClubs series to
+  the matching WicketSplit league, reconcile each Playing XI/XII name to the
   roster, and import selected games with duplicate protection
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
@@ -144,12 +145,18 @@ should avoid editing the same team at exactly the same time.
 
 ### CricClubs game import
 
-From **Games**, a treasurer can select **Sync CricClubs** and paste a public
-CricClubs team results URL. WicketSplit reads CricClubs' public league, match,
-and scorecard feeds, displays only completed matches not already imported, and
-requires every scorecard player to be mapped to a unique local roster player
-before saving. Imported games retain the public CricClubs result ID and link,
-which makes repeated sync checks idempotent.
+From **Games**, a treasurer can select **Sync CricClubs** and paste one current
+public team results URL. WicketSplit saves the team identity, checks the most
+recent CricClubs series for that team name, and lets the treasurer link the
+correct series to the current WicketSplit league. This lookup is necessary
+because CricClubs can assign the same team a different ID in each series.
+
+When another season begins, use **Check for new leagues**, choose the discovered
+series, and link it once. Later completed-game checks reuse that saved
+connection. WicketSplit displays only completed matches not already imported
+and requires every scorecard player to be mapped to a unique local roster
+player before saving. Imported games retain the public CricClubs result ID and
+link, which makes repeated sync checks idempotent.
 
 The sync endpoint requires a signed-in treasurer, accepts only CricClubs hosts
 and validated public identifiers, allows 12 checks per account per hour, and

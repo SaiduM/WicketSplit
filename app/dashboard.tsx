@@ -6,13 +6,16 @@ import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 type Player = { id: number; name: string; initials: string; email?: string; phone?: string; color: string };
 type Game = { id: number; date: string; opponent: string; venue: string; players: number[]; status: "Upcoming" | "Completed"; source?: "cricclubs"; externalId?: string; sourceUrl?: string };
 type CricClubsMatch = { externalId:string;sourceUrl:string;seriesName:string;date:string;opponent:string;venue:string;result:string;players:Array<{externalId:string;name:string}> };
+type CricClubsTeamConnection = { shortCode:string;teamName:string };
+type CricClubsLeagueConnection = { seriesId:string;seriesName:string;teamId:string };
+type CricClubsSeries = CricClubsLeagueConnection & { startDate:string };
 type SplitMode = "players" | "team" | "custom";
 type ExpenseSplitMode = SplitMode | "appearances";
 type Expense = { id: number; date: string; label: string; category: string; amount: number; paidBy: number; gameId?: number; split: ExpenseSplitMode; participants?: number[]; submittedBy?: string };
 type Credit = { id: number; date: string; label: string; amount: number; playerId: number; gameId?: number; split: SplitMode; participants?: number[]; kind?: "umpiring-waiver"; units?: number; rate?: number };
 type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPlayerId: number; amount: number; note?: string; recordedBy?: string };
-type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[] };
-type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
+type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[]; cricclubs?: CricClubsLeagueConnection };
+type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; cricclubs?: CricClubsTeamConnection; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
 type Account = { registered: boolean; name: string; teams: Team[] };
 type View = "overview" | "roster" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
 type SaveState = "loading" | "saved" | "saving" | "error";
@@ -345,7 +348,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     {modal==="player" && team && <PlayerModal teamName={team.name} onClose={()=>setModal(null)} onSave={(name,email,phone)=>{const id=Date.now();updateTeam(t=>({...t,players:[...t.players,{id,name,email,phone,initials:initials(name),color:colors[t.players.length%colors.length]}]}));setModal(null);notify(`${name} added to ${team.name}`)}}/>}
     {editingPlayer && team && <PlayerModal teamName={team.name} player={editingPlayer} onClose={()=>setEditingPlayer(null)} onSave={(name,email,phone)=>{updateTeam(t=>({...t,players:t.players.map(p=>p.id===editingPlayer.id?{...p,name,email,phone,initials:initials(name)}:p)}));setEditingPlayer(null);notify("Player details updated")}}/>}
     {modal==="game" && league && <GameModal suggestedPlayers={games.at(-1)?.players} players={players} onClose={()=>setModal(null)} onSave={game=>{updateLeague(l=>({...l,games:[...l.games,{...game,id:Date.now()}]}));setModal(null);notify("Game and lineup added")}}/>}
-    {modal==="cricclubs" && league && <CricClubsImportModal players={players} existingGames={games} onClose={()=>setModal(null)} onImport={imported=>{const base=Date.now();updateLeague(current=>({...current,games:[...current.games,...imported.map((game,index)=>({...game,id:base+index}))]}));setModal(null);notify(`${imported.length} ${imported.length===1?"game":"games"} imported from CricClubs`)}}/>}
+    {modal==="cricclubs" && team && league && <CricClubsImportModal teamName={team.name} connection={team.cricclubs} leagueConnection={league.cricclubs} players={players} existingGames={games} onClose={()=>setModal(null)} onLink={(connection,leagueConnection)=>{updateTeam(current=>({...current,cricclubs:connection,leagues:current.leagues.map(item=>item.id===league.id?{...item,cricclubs:leagueConnection}:item)}));notify(`${leagueConnection.seriesName} linked to ${league.name}`)}} onImport={imported=>{const base=Date.now();updateLeague(current=>({...current,games:[...current.games,...imported.map((game,index)=>({...game,id:base+index}))]}));setModal(null);notify(`${imported.length} ${imported.length===1?"game":"games"} imported from CricClubs`)}}/>}
     {modal==="expense" && league && <ExpenseModal memberPlayerId={memberPlayerId} existingExpenses={expenses} leagueFeeExists={expenses.some(e=>isLeagueFee(e.category))} players={players} games={games} onAddPlayer={isTreasurer?addPlayerFromExpense:undefined} onClose={()=>setModal(null)} onSave={expense=>{updateLeague(l=>({...l,expenses:[...l.expenses,{...expense,id:Date.now(),submittedBy:user.email.toLowerCase()}]}));setModal(null);notify("Expense added and split recalculated")}}/>}
     {editingExpense && league && <ExpenseModal expense={editingExpense} existingExpenses={expenses} leagueFeeExists={expenses.some(e=>isLeagueFee(e.category)&&e.id!==editingExpense.id)} players={players} games={games} onAddPlayer={isTreasurer?addPlayerFromExpense:undefined} onClose={()=>setEditingExpense(null)} onDelete={()=>{if(confirm(`Delete “${editingExpense.label}”? This will recalculate every balance.`)){updateLeague(l=>({...l,expenses:l.expenses.filter(e=>e.id!==editingExpense.id)}));setEditingExpense(null);notify("Expense deleted and balances recalculated")}}} onSave={expense=>{updateLeague(l=>({...l,expenses:l.expenses.map(e=>e.id===editingExpense.id?{...expense,id:e.id}:e)}));setEditingExpense(null);notify("Expense updated and split recalculated")}}/>}
     {modal==="credit" && league && <CreditModal players={players} balances={balances} onClose={()=>setModal(null)} onSave={entries=>{const base=Date.now();updateLeague(l=>({...l,credits:[...(l.credits??[]),...entries.map((entry,index)=>({...entry,id:base+index}))]}));setModal(null);notify(`${entries.length} umpiring ${entries.length===1?"waiver":"waivers"} added and balances recalculated`)}}/>}
@@ -493,8 +496,12 @@ function SettlementPaymentModal({players,balances,suggestions,onClose,onSave}:{p
   const chooseSuggestion=(index:number)=>{const suggestion=suggestions[index];if(!suggestion)return;setFromPlayerId(suggestion.fromPlayerId);setToPlayerId(suggestion.toPlayerId);setAmount(suggestion.amount.toFixed(2))};
   return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={event=>{event.preventDefault();if(valid)onSave({date,fromPlayerId,toPlayerId,amount:numericAmount,note:note.trim()})}}><ModalHead eyebrow="CONFIRMED REPAYMENT" title="Record a received payment" description="Use this only after the receiver confirms the money arrived. It reduces both players’ remaining settlement balances." close={onClose}/>{suggestions.length>0&&<div className="payment-suggestions"><strong>Current suggestions</strong><div>{suggestions.map((suggestion,index)=><button type="button" key={`${suggestion.fromPlayerId}-${suggestion.toPlayerId}`} onClick={()=>chooseSuggestion(index)}><span>{suggestion.from} → {suggestion.to}</span><b>{money.format(suggestion.amount)}</b></button>)}</div></div>}<div className="form-grid"><label>Money sent by<select required value={fromPlayerId} onChange={event=>{const id=Number(event.target.value);setFromPlayerId(id);const next=balances.find(balance=>balance.id===id);setAmount(Math.min(-(next?.balance??0),toBalance?.balance??0).toFixed(2))}}>{debtors.map(player=><option key={player.id} value={player.id}>{player.name} · owes {money.format(-player.balance)}</option>)}</select></label><label>Money received by<select required value={toPlayerId} onChange={event=>{const id=Number(event.target.value);setToPlayerId(id);const next=balances.find(balance=>balance.id===id);setAmount(Math.min(-(fromBalance?.balance??0),next?.balance??0).toFixed(2))}}>{creditors.map(player=><option key={player.id} value={player.id}>{player.name} · due {money.format(player.balance)}</option>)}</select></label><label>Amount received ($)<input required min=".01" max={maximum.toFixed(2)} step=".01" type="number" value={amount} onChange={event=>setAmount(event.target.value)}/><small className="field-help">Maximum for this pair: {money.format(maximum)}</small></label><label>Received date<input required type="date" value={date} onChange={event=>setDate(event.target.value)}/></label><label className="wide">Reference / note (optional)<input maxLength={240} value={note} onChange={event=>setNote(event.target.value)} placeholder="e.g. Zelle received, bank reference, cash"/></label></div><div className="payment-confirmation"><strong>This records confirmation—it does not move money.</strong><span>{valid?`${players.find(player=>player.id===fromPlayerId)?.name} will owe ${money.format(Math.max(0,-(fromBalance?.balance??0)-numericAmount))} after this payment.`:"Choose a valid payer, receiver, and amount within their remaining balances."}</span></div><div className="modal-actions"><span className={valid?"ready":"warning"}>{valid?"Ready to confirm":"Check payment"}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!valid}>Confirm payment received</button></div></form></div>;
 }
-function CricClubsImportModal({players,existingGames,onClose,onImport}:{players:Player[];existingGames:Game[];onClose:()=>void;onImport:(games:Array<Omit<Game,"id">>)=>void}) {
-  const [teamUrl,setTeamUrl]=useState("https://www.cricclubs.com/CL/teams/cXMXWyLoKOUCJNfwKS_2IA?seriesId=YW-UvACrNg47qagdZJbDIw&teamName=Wolfpacks&seriesName=2026+Super+30+Leather&tab=results");
+function CricClubsImportModal({teamName,connection:initialConnection,leagueConnection:initialLeague,players,existingGames,onClose,onLink,onImport}:{teamName:string;connection?:CricClubsTeamConnection;leagueConnection?:CricClubsLeagueConnection;players:Player[];existingGames:Game[];onClose:()=>void;onLink:(connection:CricClubsTeamConnection,league:CricClubsLeagueConnection)=>void;onImport:(games:Array<Omit<Game,"id">>)=>void}) {
+  const [teamUrl,setTeamUrl]=useState("");
+  const [connection,setConnection]=useState(initialConnection);
+  const [linkedLeague,setLinkedLeague]=useState(initialLeague);
+  const [series,setSeries]=useState<CricClubsSeries[]>([]);
+  const [selectedSeriesId,setSelectedSeriesId]=useState(initialLeague?.seriesId??"");
   const [matches,setMatches]=useState<CricClubsMatch[]>([]);
   const [selected,setSelected]=useState<string[]>([]);
   const [mapping,setMapping]=useState<Record<string,number>>({});
@@ -503,26 +510,61 @@ function CricClubsImportModal({players,existingGames,onClose,onImport}:{players:
   const sortedPlayers=useMemo(()=>[...players].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:"base",numeric:true})),[players]);
   const normalized=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]/g,"");
   const mappingKey=(matchId:string,externalId:string)=>`${matchId}:${externalId}`;
-  const check=async()=>{
+  const prepareMatches=(remoteMatches:CricClubsMatch[])=>{
+    const incoming=remoteMatches.filter(match=>!existingGames.some(game=>game.source==="cricclubs"&&game.externalId===match.externalId));
+    const nextMapping:Record<string,number>={};
+    for(const match of incoming)for(const remote of match.players){
+      const local=players.find(player=>normalized(player.name)===normalized(remote.name));
+      if(local)nextMapping[mappingKey(match.externalId,remote.externalId)]=local.id;
+    }
+    setMapping(nextMapping);setMatches(incoming);setSelected(incoming.map(match=>match.externalId));
+  };
+  const discover=async()=>{
     setLoading(true);setError("");setMatches([]);
     try{
-      const response=await fetch("/api/cricclubs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({teamUrl})});
+      const response=await fetch("/api/cricclubs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"discover",connection,teamUrl:connection?undefined:teamUrl})});
+      const result=await response.json() as {connection?:CricClubsTeamConnection;series?:CricClubsSeries[];error?:string};
+      if(!response.ok||!result.connection)throw new Error(result.error??"CricClubs leagues could not be checked");
+      setConnection(result.connection);setSeries(result.series??[]);
+      const preferred=(result.series??[]).find(item=>item.seriesId===linkedLeague?.seriesId)??(result.series??[])[0];
+      setSelectedSeriesId(preferred?.seriesId??"");
+      if(!(result.series??[]).length)setError(`No recent CricClubs leagues were found for ${result.connection.teamName}.`);
+    }catch(reason){setError((reason as Error).message)}finally{setLoading(false)}
+  };
+  const check=async(nextConnection=connection,nextLeague=linkedLeague)=>{
+    if(!nextConnection||!nextLeague){setError("Choose a CricClubs league to link first.");return}
+    setLoading(true);setError("");setMatches([]);
+    try{
+      const response=await fetch("/api/cricclubs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"matches",connection:nextConnection,league:nextLeague})});
       const result=await response.json() as {matches?:CricClubsMatch[];error?:string};
       if(!response.ok)throw new Error(result.error??"CricClubs sync failed");
-      const incoming=(result.matches??[]).filter(match=>!existingGames.some(game=>game.source==="cricclubs"&&game.externalId===match.externalId));
-      const nextMapping:Record<string,number>={};
-      for(const match of incoming)for(const remote of match.players){
-        const local=players.find(player=>normalized(player.name)===normalized(remote.name));
-        if(local)nextMapping[mappingKey(match.externalId,remote.externalId)]=local.id;
-      }
-      setMapping(nextMapping);setMatches(incoming);setSelected(incoming.map(match=>match.externalId));
+      prepareMatches(result.matches??[]);
     }catch(reason){setError((reason as Error).message)}finally{setLoading(false)}
+  };
+  const linkAndCheck=async()=>{
+    const next=series.find(item=>item.seriesId===selectedSeriesId);
+    if(!connection||!next)return;
+    const leagueLink:CricClubsLeagueConnection={seriesId:next.seriesId,seriesName:next.seriesName,teamId:next.teamId};
+    setLinkedLeague(leagueLink);onLink(connection,leagueLink);await check(connection,leagueLink);
   };
   const selectedMatches=matches.filter(match=>selected.includes(match.externalId));
   const mappedIds=(match:CricClubsMatch)=>match.players.map(remote=>mapping[mappingKey(match.externalId,remote.externalId)]).filter((id):id is number=>Boolean(id));
   const invalid=selectedMatches.some(match=>{const ids=mappedIds(match);return ids.length<11||ids.length>12||new Set(ids).size!==ids.length});
   const importGames=()=>onImport(selectedMatches.map(match=>({date:match.date,opponent:match.opponent,venue:match.venue,players:mappedIds(match),status:"Completed",source:"cricclubs",externalId:match.externalId,sourceUrl:match.sourceUrl})));
-  return <div className="modal-backdrop"><section className="modal cricclubs-modal"><ModalHead eyebrow="CRICCLUBS IMPORT" title="Sync completed games" description="Preview new results, match every CricClubs player to your roster, then import. Existing CricClubs match IDs are skipped automatically." close={onClose}/><div className="cricclubs-source"><label>Wolfpacks CricClubs results URL<input value={teamUrl} onChange={event=>setTeamUrl(event.target.value)} placeholder="https://www.cricclubs.com/.../teams/..."/></label><button className="primary" disabled={loading||!teamUrl.trim()} onClick={check}>{loading?"Checking…":"Check for completed games"}</button></div>{error&&<div className="sync-error">{error}</div>}{!loading&&!error&&matches.length===0&&<div className="sync-guidance">Paste a CricClubs team results link and check for completed games. Nothing is saved until you confirm the preview.</div>}{matches.length>0&&<div className="sync-match-list">{matches.map(match=>{const ids=mappedIds(match);const valid=ids.length>=11&&ids.length<=12&&new Set(ids).size===ids.length;return <article key={match.externalId} className={selected.includes(match.externalId)?"selected":""}><label className="sync-match-head"><input type="checkbox" checked={selected.includes(match.externalId)} onChange={()=>setSelected(current=>current.includes(match.externalId)?current.filter(id=>id!==match.externalId):[...current,match.externalId])}/><span><strong>{match.date} · vs {match.opponent}</strong><small>{match.seriesName} · {match.venue||"Venue not specified"} · {match.result}</small></span><b className={valid?"matched":"unmatched"}>{ids.length}/{match.players.length} matched</b></label>{selected.includes(match.externalId)&&<div className="sync-player-map">{match.players.map(remote=><label key={remote.externalId}><span>{remote.name}</span><select aria-label={`Match ${remote.name} to roster`} value={mapping[mappingKey(match.externalId,remote.externalId)]??""} onChange={event=>setMapping(current=>({...current,[mappingKey(match.externalId,remote.externalId)]:Number(event.target.value)}))}><option value="">Select roster player…</option>{sortedPlayers.map(player=><option key={player.id} value={player.id}>{player.name}</option>)}</select></label>)}</div>}</article>})}</div>}<div className="modal-actions"><span className={selectedMatches.length&&!invalid?"ready":"warning"}>{selectedMatches.length?invalid?"Match all 11 or 12 unique players":`${selectedMatches.length} ready to import`:"No new games selected"}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!selectedMatches.length||invalid} onClick={importGames}>Import selected games</button></div></section></div>;
+  return <div className="modal-backdrop"><section className="modal cricclubs-modal"><ModalHead eyebrow="CRICCLUBS IMPORT" title="Sync completed games" description="Connect the team once, discover its CricClubs leagues, and link the right series to this WicketSplit league." close={onClose}/>
+    <div className="cricclubs-source">
+      {connection?<div className="cricclubs-connection"><span>CONNECTED TEAM</span><strong>{connection.teamName}</strong><small>cricclubs.com/{connection.shortCode}</small></div>:<label>{teamName} CricClubs results URL<input value={teamUrl} onChange={event=>setTeamUrl(event.target.value)} placeholder="https://www.cricclubs.com/.../teams/...?seriesId=..."/></label>}
+      <button className="ghost" disabled={loading||(!connection&&!teamUrl.trim())} onClick={discover}>{loading?"Checking…":connection?"Check for new leagues":"Discover leagues"}</button>
+      {series.length>0&&<label>CricClubs league<select value={selectedSeriesId} onChange={event=>setSelectedSeriesId(event.target.value)}>{series.map(item=><option key={item.seriesId} value={item.seriesId}>{item.seriesName}{item.startDate?` · ${item.startDate}`:""}</option>)}</select></label>}
+      {series.length>0&&<button className="primary" disabled={loading||!selectedSeriesId} onClick={linkAndCheck}>Link & check games</button>}
+      {!series.length&&connection&&linkedLeague&&<button className="primary" disabled={loading} onClick={()=>check()}>{loading?"Checking…":"Check completed games"}</button>}
+    </div>
+    {linkedLeague&&<div className="sync-linked"><span>Linked to this WicketSplit league</span><strong>{linkedLeague.seriesName}</strong></div>}
+    {error&&<div className="sync-error">{error}</div>}
+    {!loading&&!error&&matches.length===0&&<div className="sync-guidance">{connection?"Use “Check for new leagues” whenever a new season starts. Select it once, then future game checks reuse the saved connection.":"Paste one current CricClubs team results link. WicketSplit will remember the team and find its recent leagues."}</div>}
+    {matches.length>0&&<div className="sync-match-list">{matches.map(match=>{const ids=mappedIds(match);const valid=ids.length>=11&&ids.length<=12&&new Set(ids).size===ids.length;return <article key={match.externalId} className={selected.includes(match.externalId)?"selected":""}><label className="sync-match-head"><input type="checkbox" checked={selected.includes(match.externalId)} onChange={()=>setSelected(current=>current.includes(match.externalId)?current.filter(id=>id!==match.externalId):[...current,match.externalId])}/><span><strong>{match.date} · vs {match.opponent}</strong><small>{match.seriesName} · {match.venue||"Venue not specified"} · {match.result}</small></span><b className={valid?"matched":"unmatched"}>{ids.length}/{match.players.length} matched</b></label>{selected.includes(match.externalId)&&<div className="sync-player-map">{match.players.map(remote=><label key={remote.externalId}><span>{remote.name}</span><select aria-label={`Match ${remote.name} to roster`} value={mapping[mappingKey(match.externalId,remote.externalId)]??""} onChange={event=>setMapping(current=>({...current,[mappingKey(match.externalId,remote.externalId)]:Number(event.target.value)}))}><option value="">Select roster player…</option>{sortedPlayers.map(player=><option key={player.id} value={player.id}>{player.name}</option>)}</select></label>)}</div>}</article>})}</div>}
+    <div className="modal-actions"><span className={selectedMatches.length&&!invalid?"ready":"warning"}>{selectedMatches.length?invalid?"Match all 11 or 12 unique players":`${selectedMatches.length} ready to import`:"No new games selected"}</span><button type="button" className="ghost" onClick={onClose}>Cancel</button><button className="primary" disabled={!selectedMatches.length||invalid} onClick={importGames}>Import selected games</button></div>
+  </section></div>;
 }
 function GameModal({game,suggestedPlayers,players,onClose,onSave,onDelete}:{game?:Game;suggestedPlayers?:number[];players:Player[];onClose:()=>void;onSave:(g:Omit<Game,"id">)=>void;onDelete?:()=>void}) {
   const [opponent,setOpponent]=useState(game?.opponent??""); const [date,setDate]=useState(game?.date??""); const [venue,setVenue]=useState(game?.venue??""); const [selected,setSelected]=useState<number[]>(game?.players??[]);

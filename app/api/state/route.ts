@@ -67,8 +67,13 @@ function isValidState(value: unknown): boolean {
   if (state.teams.length > 50) return false;
   return state.teams.every((team: unknown) => {
     if (!team || typeof team !== "object") return false;
-    const item = team as { id?: unknown; name?: unknown; sport?: unknown; players?: unknown[]; leagues?: unknown[] };
+    const item = team as { id?: unknown; name?: unknown; sport?: unknown; players?: unknown[]; leagues?: unknown[]; cricclubs?: unknown };
     if (!id(item.id) || !text(item.name, 160) || !text(item.sport, 80) || !Array.isArray(item.players) || !Array.isArray(item.leagues)) return false;
+    if (item.cricclubs !== undefined) {
+      if (!item.cricclubs || typeof item.cricclubs !== "object") return false;
+      const connection = item.cricclubs as { shortCode?: unknown; teamName?: unknown };
+      if (!text(connection.shortCode, 30) || !/^[A-Za-z0-9_-]+$/.test(String(connection.shortCode)) || !text(connection.teamName, 160)) return false;
+    }
     if (item.players.length > 500 || item.leagues.length > 100) return false;
     const playerIds = new Set<number>();
     if (!item.players.every(player => {
@@ -82,12 +87,19 @@ function isValidState(value: unknown): boolean {
     const leagueIds = new Set<number>();
     return item.leagues.every((league: unknown) => {
       if (!league || typeof league !== "object") return false;
-      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[]; credits?: unknown[]; payments?: unknown[] };
+      const record = league as { id?: unknown; name?: unknown; season?: unknown; status?: unknown; games?: unknown[]; expenses?: unknown[]; credits?: unknown[]; payments?: unknown[]; cricclubs?: unknown };
       if (!id(record.id) || leagueIds.has(record.id as number) || !text(record.name, 160) || !text(record.season, 40) ||
           !["Active","Completed"].includes(String(record.status)) || !Array.isArray(record.games) || record.games.length > 1_000 ||
           !Array.isArray(record.expenses) || record.expenses.length > 10_000 ||
           (record.credits !== undefined && (!Array.isArray(record.credits) || record.credits.length > 10_000)) ||
           (record.payments !== undefined && (!Array.isArray(record.payments) || record.payments.length > 10_000))) return false;
+      if (record.cricclubs !== undefined) {
+        if (!record.cricclubs || typeof record.cricclubs !== "object") return false;
+        const connection = record.cricclubs as { seriesId?: unknown; seriesName?: unknown; teamId?: unknown };
+        if (!text(connection.seriesId, 80) || !/^[A-Za-z0-9_-]+$/.test(String(connection.seriesId)) ||
+            !text(connection.teamId, 80) || !/^[A-Za-z0-9_-]+$/.test(String(connection.teamId)) ||
+            !text(connection.seriesName, 160)) return false;
+      }
       leagueIds.add(record.id as number);
       const gameIds = new Set<number>();
       if (!record.games.every(game => {
@@ -229,8 +241,8 @@ export async function POST(request: Request) {
     const current = JSON.parse(existingTeam.payload) as Record<string, unknown>;
     const oldLeagues = (current.leagues as Array<Record<string, unknown>>)??[];
     const newLeagues = (clean.leagues as Array<Record<string, unknown>>)??[];
-    const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players });
-    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[], payments: league.payments??[] });
+    const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players, cricclubs: team.cricclubs });
+    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[], payments: league.payments??[], cricclubs: league.cricclubs });
     if (teamShape(current)!==teamShape(clean)||oldLeagues.length!==newLeagues.length) return Response.json({ error: "Members cannot change team setup" }, { status: 403 });
     for (const oldLeague of oldLeagues) {
       const nextLeague = newLeagues.find(item=>item.id===oldLeague.id);
