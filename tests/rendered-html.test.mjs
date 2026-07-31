@@ -207,7 +207,9 @@ test("CricClubs sync previews completed games and preserves duplicate identifier
   assert.match(dashboard, /Sync CricClubs/);
   assert.match(dashboard, /Match all 11 or 12 unique players/);
   assert.match(dashboard, /Check for new leagues/);
-  assert.match(dashboard, /Link & check games/);
+  assert.match(dashboard, /Create league & check games/);
+  assert.match(dashboard, /Create league & import games/);
+  assert.match(dashboard, /name:leagueConnection\.seriesName/);
   assert.match(dashboard, /game\.externalId===match\.externalId/);
   assert.match(syncApi, /core-prod-origin\.cricclubs\.com/);
   assert.match(syncApi, /x-content-token/);
