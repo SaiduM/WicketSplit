@@ -92,10 +92,14 @@ function isValidState(value: unknown): boolean {
       const gameIds = new Set<number>();
       if (!record.games.every(game => {
         if (!game || typeof game !== "object") return false;
-        const fixture = game as { id?: unknown; date?: unknown; opponent?: unknown; venue?: unknown; players?: unknown[]; status?: unknown };
+        const fixture = game as { id?: unknown; date?: unknown; opponent?: unknown; venue?: unknown; players?: unknown[]; status?: unknown; source?: unknown; externalId?: unknown; sourceUrl?: unknown };
         if (!id(fixture.id) || gameIds.has(fixture.id as number) || !text(fixture.date, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(fixture.date)) ||
             !text(fixture.opponent, 160) || !text(fixture.venue, 240, false) || !Array.isArray(fixture.players) ||
             fixture.players.length > 12 || !["Upcoming","Completed"].includes(String(fixture.status))) return false;
+        if (fixture.source !== undefined && fixture.source !== "cricclubs") return false;
+        if (fixture.source === "cricclubs" && (!text(fixture.externalId, 80) || !text(fixture.sourceUrl, 1_000) ||
+            !String(fixture.sourceUrl).startsWith("https://www.cricclubs.com/"))) return false;
+        if (fixture.source === undefined && (fixture.externalId !== undefined || fixture.sourceUrl !== undefined)) return false;
         if (new Set(fixture.players).size !== fixture.players.length || !fixture.players.every(playerId => id(playerId) && playerIds.has(playerId as number))) return false;
         gameIds.add(fixture.id as number); return true;
       })) return false;

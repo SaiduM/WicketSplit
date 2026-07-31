@@ -51,6 +51,9 @@ calculates settlements but does not move money.
 - One-time protected account-to-roster linking for treasurers or members whose
   signed-in identity is not already associated with a roster player
 - Editable players, games, expenses, credits, and leagues
+- Treasurer-only CricClubs import: paste a public team results URL, preview new
+  completed matches, reconcile each Playing XI/XII name to the WicketSplit
+  roster, and import selected games with duplicate protection
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
@@ -138,6 +141,22 @@ replace an independent penetration test, monitoring and alerting, tested
 backups, or a compliance review if regulated or high-value data is introduced.
 Concurrent workspace edits remain last-write-wins, so multiple treasurers
 should avoid editing the same team at exactly the same time.
+
+### CricClubs game import
+
+From **Games**, a treasurer can select **Sync CricClubs** and paste a public
+CricClubs team results URL. WicketSplit reads CricClubs' public league, match,
+and scorecard feeds, displays only completed matches not already imported, and
+requires every scorecard player to be mapped to a unique local roster player
+before saving. Imported games retain the public CricClubs result ID and link,
+which makes repeated sync checks idempotent.
+
+The sync endpoint requires a signed-in treasurer, accepts only CricClubs hosts
+and validated public identifiers, allows 12 checks per account per hour, and
+does not send WicketSplit roster or financial data to CricClubs. CricClubs is an
+external service; its public feed availability and format are outside
+WicketSplit's control. Manual game entry remains available if the feed changes
+or is temporarily unavailable.
 
 ## Local development
 

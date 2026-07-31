@@ -197,3 +197,21 @@ test("team deletion is owner-only, throttled, and removes shared access atomical
   assert.match(teamApi, /DELETE FROM team_memberships/);
   assert.match(teamApi, /DELETE FROM shared_teams/);
 });
+
+test("CricClubs sync previews completed games and preserves duplicate identifiers", async () => {
+  const [dashboard, syncApi, stateApi] = await Promise.all([
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/cricclubs/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(dashboard, /Sync CricClubs/);
+  assert.match(dashboard, /Match all 11 or 12 unique players/);
+  assert.match(dashboard, /game\.externalId===match\.externalId/);
+  assert.match(syncApi, /core-prod-origin\.cricclubs\.com/);
+  assert.match(syncApi, /x-content-token/);
+  assert.match(syncApi, /completed\.map/);
+  assert.match(syncApi, /teamInnings\?\.batting/);
+  assert.match(syncApi, /cricclubs:\$\{user\.email\.toLowerCase\(\)\}/);
+  assert.match(stateApi, /fixture\.source === "cricclubs"/);
+  assert.match(stateApi, /https:\/\/www\.cricclubs\.com\//);
+});
