@@ -46,6 +46,10 @@ calculates settlements but does not move money.
 - Multiple teams, rosters, leagues, and treasurers
 - Server-enforced treasurer and team-member roles
 - Account dropdown showing team-specific name, role, email, and roster phone
+- Personal Home dashboard showing the signed-in player’s balance, payment
+  direction, fair share, team payments, umpiring waivers, and selected games
+- One-time protected account-to-roster linking for treasurers or members whose
+  signed-in identity is not already associated with a roster player
 - Editable players, games, expenses, credits, and leagues
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites

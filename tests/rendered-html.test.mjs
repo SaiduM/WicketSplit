@@ -54,6 +54,9 @@ test("public legal and self-service deletion surfaces are present", async () => 
   assert.match(terms, /Terms of Use/);
   assert.match(deletion, /Permanently delete my data/);
   assert.match(accountApi, /DELETE FROM app_states/);
+  assert.match(accountApi, /export async function PATCH/);
+  assert.match(accountApi, /account-player-link:/);
+  assert.match(accountApi, /That roster player is already linked to another account/);
   assert.match(home, /Data deletion/);
 });
 
@@ -75,8 +78,15 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Player share = expense × player appearances ÷ total appearances/);
   assert.match(dashboard, /Fruits \/ water/);
   assert.doesNotMatch(dashboard, />A game lineup</);
-  assert.match(dashboard, /playersWhoPlayed=new Set\(games\.filter\(game=>game\.status==="Completed"\)/);
-  assert.match(dashboard, /Played in completed games/);
+  assert.match(dashboard, /Which roster player are you/);
+  assert.match(dashboard, /You need to pay/);
+  assert.match(dashboard, /You will receive/);
+  assert.match(dashboard, /My settlement/);
+  assert.match(dashboard, /My games/);
+  assert.match(dashboard, /My fair share/);
+  assert.doesNotMatch(dashboard, /Total league cost/);
+  assert.doesNotMatch(dashboard, /Recent entries/);
+  assert.doesNotMatch(dashboard, /Player balances/);
   assert.doesNotMatch(dashboard, /Available for selection/);
   assert.match(dashboard, /Record umpiring for the team/);
   assert.match(dashboard, /Only players with more than 0 games will be saved/);

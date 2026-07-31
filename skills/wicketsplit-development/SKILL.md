@@ -68,6 +68,8 @@ Vinext, React, Firebase, and D1 architecture.
 - Maintain the mobile hamburger drawer and desktop collapsible sidebar.
 - Sort player selections alphabetically and provide accessible touch targets.
 - Explain role, split, and invitation consequences before confirmation.
+- Keep Home personal to the roster player linked to the signed-in account;
+  team-wide finance summaries belong in Settlement, Expenses, and Calculator.
 
 ## Validate and release
 
