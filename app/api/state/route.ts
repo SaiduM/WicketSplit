@@ -105,7 +105,7 @@ function isValidState(value: unknown): boolean {
       if (!record.games.every(game => {
         if (!game || typeof game !== "object") return false;
         const fixture = game as { id?: unknown; date?: unknown; opponent?: unknown; venue?: unknown; players?: unknown[]; status?: unknown; source?: unknown; externalId?: unknown; sourceUrl?: unknown };
-        if (!id(fixture.id) || gameIds.has(fixture.id as number) || !text(fixture.date, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(fixture.date)) ||
+        if (!id(fixture.id) || gameIds.has(fixture.id as number) || !text(fixture.date, 10, false) || (fixture.date !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(String(fixture.date))) ||
             !text(fixture.opponent, 160) || !text(fixture.venue, 240, false) || !Array.isArray(fixture.players) ||
             fixture.players.length > 12 || !["Upcoming","Completed"].includes(String(fixture.status))) return false;
         if (fixture.source !== undefined && fixture.source !== "cricclubs") return false;

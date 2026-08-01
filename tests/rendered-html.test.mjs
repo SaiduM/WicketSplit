@@ -134,6 +134,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Delete game/);
   assert.match(dashboard, /Expense deleted and balances recalculated/);
   assert.match(dashboard, /Delete linked expenses or credits before deleting this game/);
+  assert.match(dashboard, /Date \(optional\)/);
+  assert.match(dashboard, /DATE NOT ADDED/);
   assert.match(dashboard, /delete-team-link/);
   assert.match(dashboard, /Record payment/);
   assert.match(dashboard, /Confirm payment received/);
