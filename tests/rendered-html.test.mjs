@@ -223,6 +223,14 @@ test("team deletion is owner-only, throttled, and removes shared access atomical
   assert.match(teamApi, /DELETE FROM shared_teams/);
 });
 
+test("treasurers can permanently delete a league and its contained records", async () => {
+  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  assert.match(dashboard, /Delete league/);
+  assert.match(dashboard, /This removes all of its games, expenses, credits, and settlement payments/);
+  assert.match(dashboard, /current\.leagues\.filter\(candidate=>candidate\.id!==target\.id\)/);
+  assert.match(dashboard, /setLeagueId\(remaining\[0\]\?\.id\?\?null\)/);
+});
+
 test("CricClubs sync previews completed games and preserves duplicate identifiers", async () => {
   const [dashboard, syncApi, stateApi] = await Promise.all([
     readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),

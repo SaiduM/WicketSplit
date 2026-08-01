@@ -65,7 +65,7 @@ calculates settlements but does not move money.
   screenshots are not uploaded or stored
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
-- Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
+- Treasurer controls to delete leagues, unlinked games, and expenses with clear confirmation and automatic balance recalculation
 - Custom-player and games-played splits
 - Four expense categories: Fruits / Water, League Fee, Restaurant, and Other
 - Appearance-weighted league fees and refreshment costs
