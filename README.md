@@ -23,7 +23,8 @@ calculates settlements but does not move money.
 
 1. Sign in with Google or a verified Firebase email/password account.
 2. Register one or more teams, add a reusable roster, and create leagues.
-3. Record games with the date, opponent, and Playing XI or XII.
+3. Record games with an optional date, opponent, and Playing XI or XII. A
+   treasurer can also import up to 10 squad screenshots in one reviewed batch.
 4. Add expenses using one of four categories: Fruits / Water, League Fee,
    Restaurant, or Other. League Fee and Fruits / Water are allocated by
    completed-game appearances:
@@ -58,6 +59,10 @@ calculates settlements but does not move money.
 - New-team CricClubs onboarding is available before any league exists: the
   Leagues page can discover a series, create the league, import completed
   games, and add previously missing lineup players to the shared team roster
+- Private squad-screenshot import: select up to 10 images, detect the current
+  team column, review the opponent and Playing XI/XII, match existing roster
+  players, and add confirmed missing players. OCR runs in the browser; source
+  screenshots are not uploaded or stored
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
@@ -170,6 +175,20 @@ does not send WicketSplit roster or financial data to CricClubs. CricClubs is an
 external service; its public feed availability and format are outside
 WicketSplit's control. Manual game entry remains available if the feed changes
 or is temporarily unavailable.
+
+### Squad screenshot import
+
+From **Games**, a treasurer can select **Import screenshots** and choose up to
+10 squad images at once. WicketSplit performs OCR in the browser, separates the
+left and right team columns, and prefers the column matching the current team
+name. Every game remains a draft until the treasurer confirms the team side,
+opponent, optional date, and 11 or 12 unique roster matches.
+
+Names are matched against the existing roster with typo tolerance. The
+treasurer can correct recognized text, map it to another roster player, remove
+an incorrect row, or confirm a new roster player. Only confirmed game and
+roster records are saved. The source image is never posted to a WicketSplit
+endpoint or retained in the workspace.
 
 ## Local development
 

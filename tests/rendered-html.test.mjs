@@ -53,6 +53,8 @@ test("public legal and self-service deletion surfaces are present", async () => 
   assert.match(privacy, /Privacy Policy/);
   assert.match(terms, /Terms of Use/);
   assert.match(deletion, /Permanently delete my data/);
+  assert.match(privacy, /Squad screenshots/);
+  assert.match(privacy, /does not upload or store the image/);
   assert.match(accountApi, /DELETE FROM app_states/);
   assert.match(accountApi, /export async function PATCH/);
   assert.match(accountApi, /account-player-link:/);
@@ -155,6 +157,22 @@ test("mobile game cards display two per row", async () => {
   assert.match(css, /\.delete-player\{border:1px solid #e6b9b5;background:#fff7f6/);
   assert.match(dashboard, /mobile-secondary-nav/);
   assert.match(css, /\.sidebar nav button\.mobile-secondary-nav\{display:none\}/);
+});
+
+test("squad screenshots are processed locally and reviewed before batch import", async () => {
+  const [dashboard, packageJson] = await Promise.all([
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ]);
+  assert.match(packageJson, /"tesseract\.js"/);
+  assert.match(dashboard, /Import screenshots/);
+  assert.match(dashboard, /PRIVATE SCREENSHOT IMPORT/);
+  assert.match(dashboard, /never uploads or saves the screenshot/);
+  assert.match(dashboard, /multiple onChange=\{event=>processFiles/);
+  assert.match(dashboard, /Our team column/);
+  assert.match(dashboard, /Add as new roster player/);
+  assert.match(dashboard, /Date \(optional\)/);
+  assert.match(dashboard, /worker\?\.terminate\(\)/);
 });
 
 test("shared teams use authenticated invitations and server-side roles", async () => {
