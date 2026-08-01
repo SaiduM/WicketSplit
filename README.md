@@ -145,9 +145,10 @@ should avoid editing the same team at exactly the same time.
 
 ### CricClubs game import
 
-From **Games**, a treasurer can select **Sync CricClubs** and paste one current
-public team results URL. WicketSplit saves the team identity and checks the most
-recent CricClubs series for that team name. For a newly discovered series,
+From **Games**, a treasurer can select **Sync CricClubs**, enter the CricClubs
+club code (the short value after `cricclubs.com/`, such as `CL`) and confirm the
+prefilled team name. WicketSplit saves both values and checks the most recent
+CricClubs series for that team name. No team URL is required. For a newly discovered series,
 WicketSplit creates a league using CricClubs' series name and season when the
 treasurer confirms the reviewed games. This lookup is necessary because
 CricClubs can assign the same team a different ID in each series.

@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     const parsed = parseTeamUrl(body.teamUrl);
     if (action === "discover") {
       const saved = parseConnection(body.connection);
-      if (!parsed && !saved) return Response.json({ error: "Enter a valid CricClubs team results URL." }, { status: 400 });
+      if (!parsed && !saved) return Response.json({ error: "Enter a valid CricClubs club code and team name." }, { status: 400 });
       let connection = saved;
       if (parsed) {
         let teamName = parsed.teamName;
