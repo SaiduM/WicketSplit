@@ -144,10 +144,15 @@ test("finance workflow includes editable dated expenses and settlement transfers
 });
 
 test("mobile game cards display two per row", async () => {
-  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const [css, dashboard] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(css, /\.game-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}/);
   assert.match(css, /\.roster-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}/);
   assert.match(css, /\.delete-player\{border:1px solid #e6b9b5;background:#fff7f6/);
+  assert.match(dashboard, /mobile-secondary-nav/);
+  assert.match(css, /\.sidebar nav button\.mobile-secondary-nav\{display:none\}/);
 });
 
 test("shared teams use authenticated invitations and server-side roles", async () => {

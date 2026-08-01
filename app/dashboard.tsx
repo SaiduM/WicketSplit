@@ -297,7 +297,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </div>
       <nav aria-label="Main navigation">
         {([["overview","▦","Home"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
-          <button key={id} className={view===id?"active":""} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
+          <button key={id} className={`${view===id?"active":""} ${id==="calculator"||id==="settlement"?"mobile-secondary-nav":""}`.trim()} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
         <div className="profile-wrap" ref={profileMenuRef}>
