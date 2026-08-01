@@ -209,6 +209,10 @@ test("CricClubs sync previews completed games and preserves duplicate identifier
   assert.match(dashboard, /Check for new leagues/);
   assert.match(dashboard, /CricClubs club code/);
   assert.match(dashboard, /Find my leagues/);
+  assert.match(dashboard, /Import leagues, games & roster from CricClubs/);
+  assert.match(dashboard, /missing roster players will be added automatically/);
+  assert.match(dashboard, /players:\[\.\.\.current\.players,\.\.\.newPlayers\]/);
+  assert.match(dashboard, /modal==="cricclubs" && team && <CricClubsImportModal/);
   assert.match(dashboard, /shortCode:clubCode\.trim\(\),teamName:searchTeamName\.trim\(\)/);
   assert.match(dashboard, /Create league & check games/);
   assert.match(dashboard, /Create league & import games/);

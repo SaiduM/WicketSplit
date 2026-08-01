@@ -55,6 +55,9 @@ calculates settlements but does not move money.
   discover recent leagues containing that team, link each CricClubs series to
   the matching WicketSplit league, reconcile each Playing XI/XII name to the
   roster, and import selected games with duplicate protection
+- New-team CricClubs onboarding is available before any league exists: the
+  Leagues page can discover a series, create the league, import completed
+  games, and add previously missing lineup players to the shared team roster
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
 - Treasurer controls to delete unlinked games and expenses with confirmation and automatic balance recalculation
