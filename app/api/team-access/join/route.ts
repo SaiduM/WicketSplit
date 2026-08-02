@@ -8,7 +8,7 @@ type StoredTeam={name?:string;players?:Array<{id:number;name:string}>};
 
 async function ensureTables(){
   await env.DB.batch([
-    env.DB.prepare(`CREATE TABLE IF NOT EXISTS team_member_access (team_id INTEGER PRIMARY KEY,token_hash TEXT NOT NULL UNIQUE,pin_hash TEXT NOT NULL,created_by TEXT NOT NULL,created_at TEXT NOT NULL)`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS team_member_access (team_id INTEGER PRIMARY KEY,token_hash TEXT NOT NULL UNIQUE,pin_hash TEXT NOT NULL,created_by TEXT NOT NULL,created_at TEXT NOT NULL,access_secret TEXT)`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS team_memberships (team_id INTEGER NOT NULL,email TEXT NOT NULL,role TEXT NOT NULL,player_id INTEGER,joined_at TEXT NOT NULL,PRIMARY KEY(team_id,email))`),
   ]);
 }

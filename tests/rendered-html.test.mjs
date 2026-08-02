@@ -195,25 +195,31 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(acceptApi, /invite-accept-ip:/);
 });
 
-test("shared team member mode uses a revocable hashed link and PIN", async () => {
-  const [dashboard, joinPage, accessApi, joinApi, auth, migration, privacy] = await Promise.all([
+test("shared team member mode reuses encrypted access until explicit replacement", async () => {
+  const [dashboard, joinPage, accessApi, joinApi, auth, migration, reuseMigration, privacy] = await Promise.all([
     readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/join-team/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/team-access/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/team-access/join/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/google-auth.ts", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0003_loving_colossus.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0004_worried_omega_red.sql", import.meta.url), "utf8"),
     readFile(new URL("../app/privacy/page.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(dashboard, /Team member access/);
   assert.match(dashboard, /Create link & PIN/);
   assert.match(dashboard, /Replace link & PIN/);
+  assert.match(dashboard, /Copy same message/);
+  assert.match(dashboard, /Keep reusing this message/);
   assert.match(dashboard, /Revoke access/);
   assert.match(dashboard, /Choose your own name from the roster/);
   assert.match(joinPage, /You do not need to create an account/);
   assert.match(joinPage, /Choose your player/);
   assert.match(accessApi, /token_hash TEXT NOT NULL UNIQUE/);
   assert.match(accessApi, /pin_hash TEXT NOT NULL/);
+  assert.match(accessApi, /AES-GCM/);
+  assert.match(accessApi, /current\?\.access_secret&&!replace/);
+  assert.match(accessApi, /export async function GET/);
   assert.match(accessApi, /Only a treasurer can manage team member access/);
   assert.match(accessApi, /team-access-create-ip:/);
   assert.match(joinApi, /team-access-join-ip:/);
@@ -223,7 +229,8 @@ test("shared team member mode uses a revocable hashed link and PIN", async () =>
   assert.match(auth, /teamAccessTokenHash/);
   assert.match(auth, /access\?\.token_hash===user\.teamAccessTokenHash/);
   assert.match(migration, /CREATE TABLE `team_member_access`/);
-  assert.match(privacy, /one-way hashes/);
+  assert.match(reuseMigration, /ADD `access_secret` text/);
+  assert.match(privacy, /encrypted at rest/);
 });
 
 test("player deletion is treasurer-only and protects historical records", async () => {

@@ -65,4 +65,5 @@ export const teamMemberAccess = sqliteTable("team_member_access", {
   pinHash: text("pin_hash").notNull(),
   createdBy: text("created_by").notNull(),
   createdAt: text("created_at").notNull(),
+  accessSecret: text("access_secret"),
 });

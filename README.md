@@ -93,8 +93,10 @@ creates one link and PIN, and shares the prepared WhatsApp message privately.
 Each player opens the link, enters the PIN, selects their own roster name, and
 lands on their personal Home page. The selected player can view team records
 and add expenses only when they are the payer. Replacing or revoking the link
-invalidates existing shared-member sessions. Link tokens and PINs are stored
-only as one-way hashes.
+invalidates existing shared-member sessions. Link tokens and PINs are verified
+with one-way hashes, while the reusable invitation is encrypted at rest.
+Reopening Team member access shows the same message; only **Replace link & PIN**
+rotates it and signs shared members out.
 
 Shared access is intentionally lightweight rather than identity-proof: anyone
 who has both secrets can select any roster player. The audit records the

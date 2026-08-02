@@ -141,7 +141,8 @@ flowchart TD
   are validated.
 - Destructive and authentication operations are throttled.
 - Invitation tokens are random, hashed, single-use, and expiring.
-- Shared team-link tokens and PINs are stored only as one-way hashes.
+- Shared team-link tokens and PINs are verified with one-way hashes; the
+  reusable invitation is encrypted at rest with an application-derived key.
 - Replacing or revoking shared access invalidates existing player sessions.
 - Shared-entry attempts are throttled by IP and token hash.
 - Production secrets remain in the Sites runtime environment.

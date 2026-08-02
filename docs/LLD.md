@@ -178,6 +178,7 @@ expiry, and acceptance information.
 | `pin_hash` | SHA-256 hash derived from the token and six-digit PIN |
 | `created_by` | Treasurer who created or replaced access |
 | `created_at` | Creation timestamp |
+| `access_secret` | AES-GCM encrypted reusable token and PIN |
 
 ### `api_rate_limits`
 
@@ -240,13 +241,16 @@ Current workspace writes are last-write-wins.
 ## Shared team member flow
 
 1. A treasurer creates one team link and six-digit PIN.
-2. The server stores only their hashes; plaintext secrets are returned once.
+2. The server stores verification hashes plus an AES-GCM encrypted copy used
+   to show treasurers the same reusable invitation on later visits.
 3. A player opens `/join-team?token=...`, enters the PIN, and receives the
    alphabetized roster.
 4. The player selects their roster identity. The server creates a synthetic
    member membership tied to that player and a signed `HttpOnly` session.
-5. Every shared-session request rechecks the team's current token hash, so
-   replacing or revoking access immediately signs out prior shared sessions.
+5. Creating access again reuses the existing invitation. Only an explicit
+   replacement rotates it. Every shared-session request rechecks the team's
+   current token hash, so replacing or revoking access immediately signs out
+   prior shared sessions.
 6. State writes apply the existing member policy: read team records and add
    only new expenses whose payer is the selected player.
 
