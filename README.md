@@ -114,8 +114,9 @@ treasurer can create a co-treasurer invitation:
 Roles are enforced by the server:
 
 - **Team member:** can view shared records and submit a new expense only when
-  that roster player is the payer. Members cannot change the roster, leagues,
-  games, credits, existing expenses, or invitations.
+  that roster player is the payer. Members may edit or delete only expenses
+  they submitted themselves, and cannot change the roster, leagues, games,
+  credits, settlements, or invitations.
 - **Co-treasurer:** has full team-management access. These invitations require
   a roster email and can only be accepted by that verified email identity.
 

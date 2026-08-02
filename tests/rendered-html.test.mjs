@@ -184,6 +184,14 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(stateApi, /team_memberships/);
   assert.match(stateApi, /is_owner/);
   assert.match(stateApi, /Members can only submit expenses they paid/);
+  assert.match(stateApi, /Members can only edit expenses they submitted/);
+  assert.match(stateApi, /Members can only delete expenses they submitted/);
+  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  assert.match(dashboard, /item\.entry\.submittedBy===memberEmail\.toLowerCase\(\)/);
+  assert.match(dashboard, /Select category/);
+  assert.match(dashboard, /Select who paid/);
+  assert.match(dashboard, /Select sharing method/);
+  assert.match(dashboard, /appearanceCategories\.has\(next\)\?"appearances":"custom"/);
   assert.match(inviteApi, /Only a treasurer can invite members/);
   assert.match(inviteApi, /invite_role/);
   assert.match(inviteApi, /intended_email/);

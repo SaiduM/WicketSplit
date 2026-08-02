@@ -249,10 +249,18 @@ export async function POST(request: Request) {
       if (!nextLeague||leagueShape(oldLeague)!==leagueShape(nextLeague)) return Response.json({ error: "Members cannot change leagues or games" }, { status: 403 });
       const oldExpenses=(oldLeague.expenses as Array<Record<string,unknown>>)??[];
       const nextExpenses=(nextLeague.expenses as Array<Record<string,unknown>>)??[];
-      if (oldExpenses.some(old=>!nextExpenses.some(next=>next.id===old.id&&JSON.stringify(next)===JSON.stringify(old)))) return Response.json({ error: "Members cannot change existing entries" }, { status: 403 });
-      const additions=nextExpenses.filter(next=>!oldExpenses.some(old=>old.id===next.id));
-      if (additions.some(entry=>entry.paidBy!==membership.player_id)) return Response.json({ error: "Members can only submit expenses they paid" }, { status: 403 });
-      oldLeague.expenses=[...oldExpenses,...additions.map(entry=>({...entry,submittedBy:email}))];
+      const oldById=new Map(oldExpenses.map(entry=>[entry.id,entry]));
+      const removed=oldExpenses.filter(old=>!nextExpenses.some(next=>next.id===old.id));
+      if(removed.some(entry=>entry.submittedBy!==email))return Response.json({ error: "Members can only delete expenses they submitted" }, { status: 403 });
+      for(const entry of nextExpenses){
+        const old=oldById.get(entry.id);
+        if(!old){if(entry.paidBy!==membership.player_id)return Response.json({ error: "Members can only submit expenses they paid" }, { status: 403 });continue}
+        if(JSON.stringify(entry)!==JSON.stringify(old)){
+          if(old.submittedBy!==email)return Response.json({ error: "Members can only edit expenses they submitted" }, { status: 403 });
+          if(entry.paidBy!==membership.player_id)return Response.json({ error: "Members can only edit expenses they paid" }, { status: 403 });
+        }
+      }
+      oldLeague.expenses=nextExpenses.map(entry=>{const old=oldById.get(entry.id);return old&&JSON.stringify(entry)===JSON.stringify(old)?old:{...entry,submittedBy:email}});
     }
     await env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(current), now, teamId).run();
   }

@@ -94,8 +94,8 @@ flowchart LR
 - **Original treasurer:** full management and team deletion.
 - **Co-treasurer:** full operational management.
 - **Player:** no registration; enters through the private team link and PIN,
-  selects a roster identity, and can view records and submit only expenses paid
-  by that selected player.
+  selects a roster identity, and can view records, submit expenses paid by that
+  player, and edit or delete only entries from that shared identity.
 
 All permissions are enforced by the server. UI visibility is not authorization.
 

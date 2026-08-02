@@ -232,8 +232,10 @@ Legacy account-owned teams are migrated into `shared_teams` and
 6. Load membership for each incoming team.
 7. For a treasurer, update the shared team payload.
 8. For a member:
-   - Reject setup, game, credit, payment, and existing-entry changes.
-   - Accept only new expenses whose payer is the member's linked player.
+   - Reject setup, game, credit, and payment changes.
+   - Accept new expenses only when the payer is the member's linked player.
+   - Accept edits or deletions only when the stored `submittedBy` matches the
+     verified session identity; edited entries must retain the linked payer.
    - Stamp the verified submitter email.
 
 Current workspace writes are last-write-wins.
@@ -251,8 +253,9 @@ Current workspace writes are last-write-wins.
    replacement rotates it. Every shared-session request rechecks the team's
    current token hash, so replacing or revoking access immediately signs out
    prior shared sessions.
-6. State writes apply the existing member policy: read team records and add
-   only new expenses whose payer is the selected player.
+6. State writes apply the member policy: read team records, add expenses whose
+   payer is the selected player, and edit or delete only that identity's own
+   submitted expenses.
 
 ## Finance calculations
 
