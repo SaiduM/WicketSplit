@@ -338,7 +338,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
               <div className="league-select-label"><span className="eyebrow">CURRENT LEAGUE</span><span className={`league-status-dot ${league.status.toLowerCase()}`}>{league.status}</span></div>
               <div className="league-select-shell">
                 <span className="league-icon">▤</span>
-                <select aria-label="Current league" value={league.id} onChange={e=>{setLeagueId(Number(e.target.value));chooseView("overview")}}>{team?.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>
+                <select aria-label="Current league" value={league.id} onChange={e=>setLeagueId(Number(e.target.value))}>{team?.leagues.map(l=><option key={l.id} value={l.id}>{l.name} · {l.season}</option>)}</select>
                 <span className="league-chevron">⌄</span>
               </div>
             </> : <span className="season-pill"><i /> NO LEAGUE SELECTED</span>}

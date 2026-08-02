@@ -93,6 +93,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Record umpiring for the team/);
   assert.match(dashboard, /Only players with more than 0 games will be saved/);
   assert.match(dashboard, /Fixed credit per game/);
+  assert.match(dashboard, /aria-label="Current league" value=\{league\.id\} onChange=\{e=>setLeagueId\(Number\(e\.target\.value\)\)\}/);
+  assert.doesNotMatch(dashboard, /setLeagueId\(Number\(e\.target\.value\)\);chooseView\("overview"\)/);
   assert.match(dashboard, /nobody else is charged/);
   assert.match(dashboard, /Save umpiring waivers/);
   assert.match(dashboard, /Games umpired/);
