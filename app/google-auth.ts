@@ -7,8 +7,11 @@ export type GoogleUser = {
   email: string;
   name: string;
   picture?: string;
-  provider?: "google" | "phone" | "password";
+  provider?: "google" | "phone" | "password" | "team";
   phoneNumber?: string;
+  teamId?: number;
+  playerId?: number;
+  teamAccessTokenHash?: string;
   exp: number;
 };
 const COOKIE_NAME = "wicketsplit_session";
@@ -54,7 +57,13 @@ export async function verifySessionToken(token: string): Promise<GoogleUser | nu
 
 export async function getGoogleUser() {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
-  return token ? verifySessionToken(token) : null;
+  const user=token ? await verifySessionToken(token) : null;
+  if(!user||user.provider!=="team")return user;
+  if(!Number.isSafeInteger(user.teamId)||!Number.isSafeInteger(user.playerId)||!user.teamAccessTokenHash)return null;
+  try{
+    const access=await env.DB.prepare("SELECT token_hash FROM team_member_access WHERE team_id = ?").bind(user.teamId).first<{token_hash:string}>();
+    return access?.token_hash===user.teamAccessTokenHash?user:null;
+  }catch{return null}
 }
 
 export async function requireGoogleUser() {

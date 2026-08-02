@@ -45,6 +45,8 @@ calculates settlements but does not move money.
 ## Lightweight feature set
 
 - Multiple teams, rosters, leagues, and treasurers
+- Shared Team Member Mode with one revocable team link and 6-digit PIN; players
+  select their roster identity without creating an account
 - Server-enforced treasurer and team-member roles
 - Account dropdown showing team-specific name, role, email, and roster phone
 - Personal Home dashboard showing the signed-in player’s balance, payment
@@ -86,12 +88,25 @@ chat, bookings, merchandise, and payment processing.
 
 ## Team access and invitations
 
-Only a current treasurer can create an invitation:
+For ordinary players, a treasurer opens **Team roster → Team member access**,
+creates one link and PIN, and shares the prepared WhatsApp message privately.
+Each player opens the link, enters the PIN, selects their own roster name, and
+lands on their personal Home page. The selected player can view team records
+and add expenses only when they are the payer. Replacing or revoking the link
+invalidates existing shared-member sessions. Link tokens and PINs are stored
+only as one-way hashes.
 
-1. Add or edit the person in **Team roster**. Add their email whenever possible.
-2. Select **Invite** on their roster card.
-3. Choose **Team member** or **Co-treasurer**.
-4. Create the invitation, review the exact prepared message, copy it, and send
+Shared access is intentionally lightweight rather than identity-proof: anyone
+who has both secrets can select any roster player. The audit records the
+selected player identity, so teams should keep the link and PIN within their
+trusted group.
+
+Co-treasurers continue to use individual authenticated accounts. Only a current
+treasurer can create a co-treasurer invitation:
+
+1. Add or edit the person in **Team roster** and add their email.
+2. Select **Co-treasurer** on their roster card.
+3. Create the invitation, review the exact prepared message, copy it, and send
    it through your preferred messaging or email app.
 
 Roles are enforced by the server:
@@ -102,12 +117,10 @@ Roles are enforced by the server:
 - **Co-treasurer:** has full team-management access. These invitations require
   a roster email and can only be accepted by that verified email identity.
 
-Invitation links contain a 256-bit random bearer token. Only its SHA-256 hash is
-stored. Links are single-use, expire after seven days, and a new invitation
-replaces the previous unused invitation for that player. Member links without
-an email are bearer links: anyone who receives one can accept it, so share them
-privately. Prepared invite text states the team, role, permissions, expiration,
-and required email when applicable.
+Co-treasurer invitation links contain a 256-bit random bearer token. Only its
+SHA-256 hash is stored. Links are email-restricted, single-use, expire after
+seven days, and a new invitation replaces the previous unused invitation for
+that player.
 
 ## Settlement payments
 

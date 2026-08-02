@@ -20,6 +20,7 @@ export async function DELETE(request: Request) {
   const team=await env.DB.prepare("SELECT team_id FROM shared_teams WHERE team_id = ?").bind(teamId).first();
   if(!team) return Response.json({error:"Team not found"},{status:404});
   await env.DB.batch([
+    env.DB.prepare("DELETE FROM team_member_access WHERE team_id = ?").bind(teamId),
     env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(teamId),
     env.DB.prepare("DELETE FROM team_memberships WHERE team_id = ?").bind(teamId),
     env.DB.prepare("DELETE FROM shared_teams WHERE team_id = ?").bind(teamId),

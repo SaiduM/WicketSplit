@@ -17,7 +17,7 @@ export async function PATCH(request: Request) {
   const team=await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{payload:string}>();
   const playerExists=Boolean(team&&(JSON.parse(team.payload) as {players?:Array<{id:number}>}).players?.some(player=>player.id===playerId));
   if(!playerExists) return Response.json({error:"Player was not found in this roster"},{status:404});
-  const alreadyLinked=await env.DB.prepare("SELECT email FROM team_memberships WHERE team_id = ? AND player_id = ? AND email <> ?").bind(teamId,playerId,email).first<{email:string}>();
+  const alreadyLinked=await env.DB.prepare("SELECT email FROM team_memberships WHERE team_id = ? AND player_id = ? AND email <> ? AND email NOT LIKE ?").bind(teamId,playerId,email,`team-${teamId}-player-%@member.wicketsplit.local`).first<{email:string}>();
   if(alreadyLinked) return Response.json({error:"That roster player is already linked to another account"},{status:409});
   await env.DB.prepare("UPDATE team_memberships SET player_id = ? WHERE team_id = ? AND email = ?").bind(playerId,teamId,email).run();
   return Response.json({ok:true,playerId});
@@ -33,6 +33,7 @@ export async function DELETE(request: Request) {
   for(const {team_id} of owned.results){
     const remaining=await env.DB.prepare("SELECT COUNT(*) AS count FROM team_memberships WHERE team_id = ? AND role = 'treasurer' AND email <> ?").bind(team_id,email).first<{count:number}>();
     if((remaining?.count??0)===0) await env.DB.batch([
+        env.DB.prepare("DELETE FROM team_member_access WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM team_memberships WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM shared_teams WHERE team_id = ?").bind(team_id),

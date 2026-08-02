@@ -16,8 +16,9 @@ The product supports:
 - One league fee allocated by completed-game appearances
 - Player credits and waivers
 - Confirmed settlement-payment history
-- Treasurer, co-treasurer, and player access
-- Google and Firebase email authentication
+- Individually authenticated treasurer and co-treasurer access
+- Registration-free player access through one revocable team link and PIN
+- Google and Firebase email authentication for treasurers
 - Mobile/PWA usage, shareable summaries, and CSV exports
 
 Scoring, statistics, brackets, chat, bookings, merchandise, and payment
@@ -27,8 +28,10 @@ processing are outside the current scope.
 
 ```mermaid
 flowchart TB
-    User["Treasurer / Co-treasurer / Player"] --> Web["Responsive WicketSplit PWA"]
-    Web --> Auth["Authentication"]
+    Treasurer["Treasurer / Co-treasurer"] --> Web["Responsive WicketSplit PWA"]
+    Player["Player with Team Link + PIN"] --> Web
+    Web --> Auth["Individual Authentication"]
+    Web --> Shared["Shared Team Access"]
     Web --> API["Vinext API routes"]
 
     Auth --> Google["Google Identity"]
@@ -49,11 +52,12 @@ flowchart TB
 | Component | Responsibility |
 |---|---|
 | Responsive web application | Team, league, roster, expense, and settlement UI |
-| Authentication | Google OAuth and verified Firebase email identity |
+| Authentication | Google OAuth and verified Firebase email identity for treasurers |
 | Session layer | Signed, secure authentication cookie |
 | Access-control layer | Server-enforced owner, treasurer, and member permissions |
+| Shared member access | Hashed link/PIN verification, roster identity selection, and revocation |
 | Workspace API | Loads, validates, authorizes, and saves team state |
-| Invitation API | Issues expiring, single-use membership invitations |
+| Invitation API | Issues expiring, single-use co-treasurer invitations |
 | Finance engine | Expense shares, credits, balances, and transfer suggestions |
 | Settlement ledger | Confirmed payments and remaining-balance calculation |
 | Export layer | Shareable settlement summary and CSV audit output |
@@ -79,7 +83,7 @@ Vinext application.
 flowchart LR
     Owner["Original Treasurer"] --> Full["Full Team Management"]
     Co["Co-treasurer"] --> Full
-    Member["Player"] --> Limited["View + Add Own Expenses"]
+    Member["Player via Team Link + PIN"] --> Limited["View + Add Selected Player's Expenses"]
 
     Full --> Setup["Roster, Leagues, Games"]
     Full --> Finance["Expenses, Credits, Payments"]
@@ -89,8 +93,9 @@ flowchart LR
 
 - **Original treasurer:** full management and team deletion.
 - **Co-treasurer:** full operational management.
-- **Player:** shared read access and the ability to submit only expenses they
-  personally paid.
+- **Player:** no registration; enters through the private team link and PIN,
+  selects a roster identity, and can view records and submit only expenses paid
+  by that selected player.
 
 All permissions are enforced by the server. UI visibility is not authorization.
 
@@ -136,6 +141,9 @@ flowchart TD
   are validated.
 - Destructive and authentication operations are throttled.
 - Invitation tokens are random, hashed, single-use, and expiring.
+- Shared team-link tokens and PINs are stored only as one-way hashes.
+- Replacing or revoking shared access invalidates existing player sessions.
+- Shared-entry attempts are throttled by IP and token hash.
 - Production secrets remain in the Sites runtime environment.
 
 ## Current scale and limitations
@@ -152,4 +160,3 @@ recreational teams and early production feedback, but it has limitations:
 
 The next scaling step is normalized record-level persistence with transactions,
 optimistic version checks, pagination, indexes, monitoring, and backups.
-

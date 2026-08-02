@@ -107,11 +107,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.doesNotMatch(dashboard, /\["overview","expenses"\]\.includes\(view\)/);
   assert.doesNotMatch(dashboard, /view==="overview" && league && players\.length>0/);
   assert.match(dashboard, /PLAYER CALCULATION/);
-  assert.match(dashboard, />↗ Invite<\/button>/);
+  assert.match(dashboard, />↗ Co-treasurer<\/button>/);
   assert.match(dashboard, /Message being sent/);
   assert.match(dashboard, /Copy invitation/);
   assert.match(dashboard, /Phone number \(optional\)/);
-  assert.match(dashboard, /Create invitation/);
+  assert.match(dashboard, /Invite co-treasurer/);
   assert.doesNotMatch(dashboard, /mailto:/);
   assert.match(dashboard, /aria-label="Log out"/);
   assert.doesNotMatch(dashboard, /logout-header/);
@@ -193,6 +193,37 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(acceptApi, /invite\.invite_role/);
   assert.match(acceptApi, /invite\.intended_email/);
   assert.match(acceptApi, /invite-accept-ip:/);
+});
+
+test("shared team member mode uses a revocable hashed link and PIN", async () => {
+  const [dashboard, joinPage, accessApi, joinApi, auth, migration, privacy] = await Promise.all([
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/join-team/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/team-access/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/team-access/join/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/google-auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0003_loving_colossus.sql", import.meta.url), "utf8"),
+    readFile(new URL("../app/privacy/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(dashboard, /Team member access/);
+  assert.match(dashboard, /Create link & PIN/);
+  assert.match(dashboard, /Replace link & PIN/);
+  assert.match(dashboard, /Revoke access/);
+  assert.match(dashboard, /Choose your own name from the roster/);
+  assert.match(joinPage, /You do not need to create an account/);
+  assert.match(joinPage, /Choose your player/);
+  assert.match(accessApi, /token_hash TEXT NOT NULL UNIQUE/);
+  assert.match(accessApi, /pin_hash TEXT NOT NULL/);
+  assert.match(accessApi, /Only a treasurer can manage team member access/);
+  assert.match(accessApi, /team-access-create-ip:/);
+  assert.match(joinApi, /team-access-join-ip:/);
+  assert.match(joinApi, /team-access-join-token:/);
+  assert.match(joinApi, /provider:"team"/);
+  assert.match(joinApi, /role='member'/);
+  assert.match(auth, /teamAccessTokenHash/);
+  assert.match(auth, /access\?\.token_hash===user\.teamAccessTokenHash/);
+  assert.match(migration, /CREATE TABLE `team_member_access`/);
+  assert.match(privacy, /one-way hashes/);
 });
 
 test("player deletion is treasurer-only and protects historical records", async () => {

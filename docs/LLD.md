@@ -19,6 +19,9 @@
 | `app/api/state/route.ts` | Workspace reads, validation, authorization, writes |
 | `app/api/invites/route.ts` | Invitation creation |
 | `app/api/invites/accept/route.ts` | Invitation acceptance |
+| `app/api/team-access/route.ts` | Create, replace, or revoke shared player access |
+| `app/api/team-access/join/route.ts` | Verify PIN, select roster identity, create member session |
+| `app/join-team/page.tsx` | Registration-free team member entry UI |
 | `app/api/players/route.ts` | Protected roster deletion |
 | `app/api/teams/route.ts` | Owner-only team deletion |
 | `app/api/auth/*` | Google, Firebase, session, and logout routes |
@@ -119,6 +122,7 @@ erDiagram
     TEAM ||--o{ PLAYER : contains
     TEAM ||--o{ LEAGUE : contains
     TEAM ||--o{ TEAM_INVITE : creates
+    TEAM ||--o| TEAM_MEMBER_ACCESS : shares
     LEAGUE ||--o{ GAME : contains
     LEAGUE ||--o{ EXPENSE : contains
     LEAGUE ||--o{ CREDIT : contains
@@ -165,6 +169,16 @@ Primary key: `(team_id, email)`.
 Stores the token hash, team, player, invitation role, creator, intended email,
 expiry, and acceptance information.
 
+### `team_member_access`
+
+| Column | Purpose |
+|---|---|
+| `team_id` | One shared-access record per team |
+| `token_hash` | SHA-256 hash of the private link token |
+| `pin_hash` | SHA-256 hash derived from the token and six-digit PIN |
+| `created_by` | Treasurer who created or replaced access |
+| `created_at` | Creation timestamp |
+
 ### `api_rate_limits`
 
 Stores rolling request counters by rate key and time window.
@@ -177,6 +191,9 @@ Stores rolling request counters by rate key and time window.
 | `POST` | `/api/state` | Member or treasurer, field-specific | Validate and save state |
 | `POST` | `/api/invites` | Treasurer | Create invitation |
 | `POST` | `/api/invites/accept` | Signed-in invitee | Accept invitation |
+| `POST` | `/api/team-access` | Treasurer | Create or replace team link and PIN |
+| `DELETE` | `/api/team-access` | Treasurer | Revoke shared player access |
+| `POST` | `/api/team-access/join` | Public, throttled | Verify PIN or select roster identity |
 | `DELETE` | `/api/players` | Treasurer | Delete unused player |
 | `DELETE` | `/api/teams` | Original treasurer | Delete shared team |
 | `DELETE` | `/api/account` | Signed-in user | Delete account data |
@@ -219,6 +236,19 @@ Legacy account-owned teams are migrated into `shared_teams` and
    - Stamp the verified submitter email.
 
 Current workspace writes are last-write-wins.
+
+## Shared team member flow
+
+1. A treasurer creates one team link and six-digit PIN.
+2. The server stores only their hashes; plaintext secrets are returned once.
+3. A player opens `/join-team?token=...`, enters the PIN, and receives the
+   alphabetized roster.
+4. The player selects their roster identity. The server creates a synthetic
+   member membership tied to that player and a signed `HttpOnly` session.
+5. Every shared-session request rechecks the team's current token hash, so
+   replacing or revoking access immediately signs out prior shared sessions.
+6. State writes apply the existing member policy: read team records and add
+   only new expenses whose payer is the selected player.
 
 ## Finance calculations
 
@@ -397,4 +427,3 @@ Recommended next design:
 - Add D1 transactions and optimistic version checks.
 - Add record-level APIs, pagination, and indexes.
 - Add immutable audit events, backups, metrics, and alerts.
-

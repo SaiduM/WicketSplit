@@ -58,3 +58,11 @@ export const apiRateLimits = sqliteTable("api_rate_limits", {
   windowStart: integer("window_start").notNull(),
   requestCount: integer("request_count").notNull(),
 });
+
+export const teamMemberAccess = sqliteTable("team_member_access", {
+  teamId: integer("team_id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  pinHash: text("pin_hash").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+});
