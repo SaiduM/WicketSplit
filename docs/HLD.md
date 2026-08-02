@@ -99,6 +99,9 @@ flowchart LR
   sessions are restricted to the linked team and cannot create another team.
 
 All permissions are enforced by the server. UI visibility is not authorization.
+Treasurers may revoke another co-treasurer's membership while preserving the
+roster player and all historical records. The original owner and the requester's
+own active membership are protected from this operation.
 
 ## Primary workflow
 

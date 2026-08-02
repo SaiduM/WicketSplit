@@ -176,10 +176,11 @@ test("squad screenshots are processed locally and reviewed before batch import",
 });
 
 test("shared teams use authenticated invitations and server-side roles", async () => {
-  const [stateApi, inviteApi, acceptApi] = await Promise.all([
+  const [stateApi, inviteApi, acceptApi, treasurerApi] = await Promise.all([
     readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/invites/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/invites/accept/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/team-treasurers/route.ts", import.meta.url), "utf8"),
   ]);
   assert.match(stateApi, /team_memberships/);
   assert.match(stateApi, /is_owner/);
@@ -205,6 +206,13 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(acceptApi, /invite\.invite_role/);
   assert.match(acceptApi, /invite\.intended_email/);
   assert.match(acceptApi, /invite-accept-ip:/);
+  assert.match(treasurerApi, /Only a treasurer can remove co-treasurer access/);
+  assert.match(treasurerApi, /The original team owner cannot be removed/);
+  assert.match(treasurerApi, /You cannot remove your own current access/);
+  assert.match(treasurerApi, /DELETE FROM team_memberships/);
+  assert.match(treasurerApi, /DELETE FROM team_invites/);
+  assert.match(dashboard, /Remove access/);
+  assert.match(dashboard, /Owner protected/);
 });
 
 test("shared team member mode reuses encrypted access until explicit replacement", async () => {

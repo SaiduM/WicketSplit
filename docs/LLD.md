@@ -21,6 +21,7 @@
 | `app/api/invites/accept/route.ts` | Invitation acceptance |
 | `app/api/team-access/route.ts` | Create, replace, or revoke shared player access |
 | `app/api/team-access/join/route.ts` | Verify PIN, select roster identity, create member session |
+| `app/api/team-treasurers/route.ts` | List roles and revoke co-treasurer membership |
 | `app/join-team/page.tsx` | Registration-free team member entry UI |
 | `app/api/players/route.ts` | Protected roster deletion |
 | `app/api/teams/route.ts` | Owner-only team deletion |
@@ -195,6 +196,8 @@ Stores rolling request counters by rate key and time window.
 | `POST` | `/api/team-access` | Treasurer | Create or replace team link and PIN |
 | `DELETE` | `/api/team-access` | Treasurer | Revoke shared player access |
 | `POST` | `/api/team-access/join` | Public, throttled | Verify PIN or select roster identity |
+| `GET` | `/api/team-treasurers` | Treasurer | List owner and co-treasurer access |
+| `DELETE` | `/api/team-treasurers` | Treasurer | Remove another co-treasurer's access |
 | `DELETE` | `/api/players` | Treasurer | Delete unused player |
 | `DELETE` | `/api/teams` | Original treasurer | Delete shared team |
 | `DELETE` | `/api/account` | Signed-in user | Delete account data |

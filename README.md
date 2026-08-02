@@ -110,6 +110,12 @@ treasurer can create a co-treasurer invitation:
 2. Select **Co-treasurer** on their roster card.
 3. Create the invitation, review the exact prepared message, copy it, and send
    it through your preferred messaging or email app.
+4. After acceptance, the roster card shows **Co-treasurer**. Another treasurer
+   can select **Remove access** without deleting the player or financial history.
+
+The original team owner and the currently signed-in treasurer cannot be removed
+from their own roster card. Removing a co-treasurer also invalidates any older
+unused invitation for that email.
 
 Roles are enforced by the server:
 

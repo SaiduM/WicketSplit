@@ -22,6 +22,7 @@ type SaveState = "loading" | "saved" | "saving" | "error";
 type ScreenshotPlayer = { name:string; playerId:number };
 type ScreenshotSide = { heading:string; names:string[] };
 type ScreenshotDraft = { id:number; fileName:string; date:string; side:"left"|"right"; left:ScreenshotSide; right:ScreenshotSide; opponent:string; players:ScreenshotPlayer[]; selected:boolean };
+type TreasurerAccess = { email:string; playerId:number|null; isOwner:boolean; isCurrent:boolean; canRemove:boolean };
 
 const colors = ["#d9f99d","#bfdbfe","#fed7aa","#ddd6fe","#fecdd3","#bae6fd","#fde68a","#bbf7d0","#e9d5ff","#c7d2fe","#fbcfe8","#a7f3d0"];
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -76,6 +77,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileMenu, setProfileMenu] = useState(false);
+  const [treasurerAccesses, setTreasurerAccesses] = useState<TreasurerAccess[]>([]);
   const loaded = useRef(false);
   const saveSequence = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
@@ -156,6 +158,8 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const accountDisplayName = accountPlayer?.name||account.name;
   const accountEmail = user.provider==="team"?"Shared team member access":user.email.startsWith("phone:")?"Not added":user.email;
   const accountPhone = accountPlayer?.phone||"Not added";
+  const activeTeamId=team?.id;
+  useEffect(()=>{if(!activeTeamId||!isTreasurer||isSharedMember)return;let active=true;fetch(`/api/team-treasurers?teamId=${activeTeamId}`).then(async response=>response.ok?response.json():null).then(result=>{if(active&&Array.isArray(result?.treasurers))setTreasurerAccesses(result.treasurers as TreasurerAccess[])}).catch(()=>undefined);return()=>{active=false}},[activeTeamId,isTreasurer,isSharedMember]);
   const games = useMemo(()=>league?.games ?? [],[league]);
   const expenses = useMemo(()=>league?.expenses ?? [],[league]);
   const credits = useMemo(()=>league?.credits ?? [],[league]);
@@ -195,6 +199,13 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     if(!response.ok){notify(result.error??"Player could not be deleted");return}
     updateTeam(current=>({...current,players:current.players.filter(candidate=>candidate.id!==player.id)}));
     notify(`${player.name} deleted from the roster`);
+  };
+  const removeTreasurerAccess=async(access:TreasurerAccess,playerName:string)=>{
+    if(!team||!access.canRemove||!confirm(`Remove co-treasurer access for ${playerName}? Their roster record and all financial history will remain.`))return;
+    const response=await fetch("/api/team-treasurers",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,email:access.email})});
+    const result=await response.json().catch(()=>({})) as {error?:string};
+    if(!response.ok){notify(result.error??"Co-treasurer access could not be removed");return}
+    setTreasurerAccesses(current=>current.filter(candidate=>candidate.email!==access.email));notify(`${playerName}'s co-treasurer access removed`);
   };
   const deleteTeam = async () => {
     if(!team||!confirm(`Permanently delete ${team.name}? This removes its roster, leagues, games, expenses, credits, settlement payments, memberships, and invitations for everyone.`))return;
@@ -345,7 +356,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       {!team ? <EmptyState icon="♙" title={isSharedMember?"Team unavailable":"Register your first team"} text={isSharedMember?"Ask your treasurer for the current team link and PIN.":"Create a team workspace, add its roster, then organize expenses by league."} action={isSharedMember?undefined:"Register team"} onAction={isSharedMember?undefined:()=>setModal("team")}/> :
        !league && view!=="roster" && view!=="leagues" ? <EmptyState icon="▤" title={isSharedMember?"No league available":"Create your first league"} text={isSharedMember?"Your treasurer has not created a league yet.":"A team can have as many leagues and seasons as you need."} action={isSharedMember?undefined:"Create league"} onAction={isSharedMember?undefined:()=>setModal("league")}/> : <>
         {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={chooseView} onPlayer={()=>setModal("player")} onAddExpense={isSharedMember?()=>setModal("expense"):undefined}/>}
-        {view==="roster" && <RosterView team={team} canManage={isTreasurer} onInvite={player=>{setInviteTarget(player);setInvitePreview("")}} onAdd={()=>setModal("player")} onEdit={setEditingPlayer} onDelete={deletePlayer}/>}
+        {view==="roster" && <RosterView team={team} canManage={isTreasurer} treasurerAccesses={treasurerAccesses} onInvite={player=>{setInviteTarget(player);setInvitePreview("")}} onRemoveAccess={removeTreasurerAccess} onAdd={()=>setModal("player")} onEdit={setEditingPlayer} onDelete={deletePlayer}/>}
         {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);chooseView("overview")}} onAdd={()=>setModal("league")} onSync={()=>setModal("cricclubs")} onEdit={setEditingLeague}/>}
         {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onScreenshots={()=>setModal("screenshots")} onSync={()=>setModal("cricclubs")} onRoster={()=>chooseView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
         {view==="expenses" && league && <ExpensesView expenses={expenses} credits={credits} players={players} games={games} canManage={isTreasurer} memberEmail={user.email} onAdd={()=>setModal("expense")} onCredit={()=>setModal("credit")} onRoster={()=>chooseView("roster")} onEdit={setEditingExpense} onDelete={expense=>{if(confirm(`Delete “${expense.label}”? This will recalculate every balance.`)){updateLeague(current=>({...current,expenses:current.expenses.filter(entry=>entry.id!==expense.id)}));notify("Expense deleted and balances recalculated")}}} onEditCredit={setEditingCredit}/>}
@@ -400,8 +411,8 @@ function PersonalHome({player,players,games,credits,balances,onLink,setView,onPl
   </div>;
 }
 
-function RosterView({team,canManage,onInvite,onAdd,onEdit,onDelete}:{team:Team;canManage:boolean;onInvite:(player:Player)=>void;onAdd:()=>void;onEdit:(player:Player)=>void;onDelete:(player:Player)=>void}) {
-  return <>{team.players.length?<><div className="roster-summary"><div><span className="eyebrow">FULL SQUAD</span><strong>{team.players.length}</strong><small>roster players</small></div><p>{canManage?"Players use the shared team link. Give trusted teammates individual co-treasurer access when needed.":`You joined ${team.name} as a team member. Shared records are visible to everyone on the team.`}</p></div><div className="roster-grid">{team.players.map((p,i)=><article className="player-card" key={p.id}><span className="squad-no">{String(i+1).padStart(2,"0")}</span><div className="avatar large" style={{background:p.color}}>{p.initials}</div><h3>{p.name}</h3><p>{[p.email,p.phone].filter(Boolean).join(" · ")||"No contact details added"}</p>{canManage&&<div className="player-actions"><button className="edit-player" onClick={()=>onEdit(p)}>✎ Edit</button><button className="invite-player" onClick={()=>onInvite(p)}>↗ Co-treasurer</button><button className="delete-player" onClick={()=>onDelete(p)}>Delete</button></div>}</article>)}</div></>:<EmptyState icon="♙" title="Your roster is empty" text={`Add all ${team.name} players here. The roster will be available across every league.`} action={canManage?"Add first player":undefined} onAction={canManage?onAdd:undefined}/>}</>;
+function RosterView({team,canManage,treasurerAccesses,onInvite,onRemoveAccess,onAdd,onEdit,onDelete}:{team:Team;canManage:boolean;treasurerAccesses:TreasurerAccess[];onInvite:(player:Player)=>void;onRemoveAccess:(access:TreasurerAccess,playerName:string)=>void;onAdd:()=>void;onEdit:(player:Player)=>void;onDelete:(player:Player)=>void}) {
+  return <>{team.players.length?<><div className="roster-summary"><div><span className="eyebrow">FULL SQUAD</span><strong>{team.players.length}</strong><small>roster players</small></div><p>{canManage?"Players use the shared team link. Active owner and co-treasurer roles are shown on their roster cards.":`You joined ${team.name} as a team member. Shared records are visible to everyone on the team.`}</p></div><div className="roster-grid">{team.players.map((p,i)=>{const access=treasurerAccesses.find(candidate=>candidate.playerId===p.id);return <article className="player-card" key={p.id}><span className="squad-no">{String(i+1).padStart(2,"0")}</span><div className="avatar large" style={{background:p.color}}>{p.initials}</div><h3>{p.name}</h3>{access&&<span className={`roster-role ${access.isOwner?"owner":""}`}>{access.isOwner?"Team owner":"Co-treasurer"}</span>}<p>{[p.email,p.phone].filter(Boolean).join(" · ")||"No contact details added"}</p>{canManage&&<div className="player-actions"><button className="edit-player" onClick={()=>onEdit(p)}>✎ Edit</button>{access?<button className={`invite-player ${access.canRemove?"remove-access":""}`} disabled={!access.canRemove} onClick={()=>onRemoveAccess(access,p.name)}>{access.canRemove?"Remove access":access.isOwner?"Owner protected":"Current access"}</button>:<button className="invite-player" onClick={()=>onInvite(p)}>↗ Co-treasurer</button>}<button className="delete-player" onClick={()=>onDelete(p)}>Delete</button></div>}</article>})}</div></>:<EmptyState icon="♙" title="Your roster is empty" text={`Add all ${team.name} players here. The roster will be available across every league.`} action={canManage?"Add first player":undefined} onAction={canManage?onAdd:undefined}/>}</>;
 }
 
 function LeaguesView({team,canManage,activeId,onSelect,onAdd,onSync,onEdit}:{team:Team;canManage:boolean;activeId?:number;onSelect:(id:number)=>void;onAdd:()=>void;onSync:()=>void;onEdit:(league:League)=>void}) {
