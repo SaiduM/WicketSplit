@@ -39,19 +39,24 @@ export default async function Home() {
       </div>
     </section>
 
-    <section className="trust-strip"><span>ONE ACCOUNT</span><strong>Multiple teams</strong><span>ONE ROSTER</span><strong>Multiple leagues</strong><span>ONE CLICK</span><strong>Final CSV</strong></section>
+    <section className="trust-strip"><span>TREASURERS</span><strong>Individual sign-in</strong><span>TEAM PLAYERS</span><strong>Private link + PIN</strong><span>ONE LEDGER</span><strong>Clear settlement</strong></section>
+
+    <section className="public-access">
+      <div className="section-title"><span className="hero-kicker">SIMPLE, ROLE-BASED ACCESS</span><h2>The right experience for every teammate.</h2><p>Treasurers manage the books. Players get a focused personal view without creating an account.</p></div>
+      <div className="access-card-grid"><article><span>FULL CONTROL</span><h3>Treasurer and co-treasurer</h3><p>Sign in individually to manage teams, rosters, leagues, games, expenses, umpiring waivers, and settlements.</p><strong>Google or verified email sign-in</strong></article><article><span>NO REGISTRATION</span><h3>Team player</h3><p>Open the team’s private link, enter the six-digit PIN, choose your roster name, and see only the essentials.</p><strong>Home · Games · Expenses</strong></article></div>
+    </section>
 
     <section className="public-features" id="how-it-works">
       <div className="section-title"><span className="hero-kicker">BUILT FOR THE TREASURER</span><h2>From first fixture to final settlement.</h2><p>Everything your team needs, without spreadsheet gymnastics.</p></div>
       <div className="feature-grid">
         <article><span>01</span><div className="feature-icon">♙</div><h3>Build the team roster</h3><p>Add your full squad once. Keep names and contact details current across every league.</p></article>
         <article><span>02</span><div className="feature-icon">XI</div><h3>Pick who played</h3><p>Select exactly 11 or 12 players for each game so match-day costs reach the right people.</p></article>
-        <article><span>03</span><div className="feature-icon">↗</div><h3>Record every payment</h3><p>League fees, fruits, water, equipment, and team funds—plus who paid for each.</p></article>
+        <article><span>03</span><div className="feature-icon">↗</div><h3>Record every payment</h3><p>Track Fruits / Water, League Fee, Restaurant, or Other—plus who paid and exactly how it is shared.</p></article>
         <article><span>04</span><div className="feature-icon">⇄</div><h3>Settle with confidence</h3><p>See who owes and who gets money back, then download the complete league CSV.</p></article>
       </div>
     </section>
 
-    <section className="public-cta"><span className="hero-kicker">YOUR NEXT LEAGUE</span><h2>Leave the calculator at home.</h2><p>Create an account, register your teams, and let WicketSplit handle the math.</p><a className="primary hero-primary" href={workspaceLink}>{user ? "Open WicketSplit" : "Create your free account"} →</a></section>
+    <section className="public-cta"><span className="hero-kicker">YOUR NEXT LEAGUE</span><h2>Leave the calculator at home.</h2><p>Treasurers sign in to manage the team. Players join through the private message shared by their treasurer.</p><a className="primary hero-primary" href={workspaceLink}>{user ? "Open WicketSplit" : "Create your treasurer account"} →</a></section>
     <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Fair expense splitting for cricket teams.</p><div className="footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
   </main>;
 }

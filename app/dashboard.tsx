@@ -347,7 +347,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <p>{team?.name}{league ? ` · ${league.name}` : " · Create a league to begin"}</p>
         </div>
         <div className="header-actions">
-          <span className={`save-state ${saveState}`}>{saveState==="saving"?"Saving…":saveState==="error"?"Not saved":"✓ Saved"}</span>
+          {saveState==="error"
+            ? <button className="save-retry" onClick={()=>setAccount(current=>({...current}))}>Not saved · Retry</button>
+            : <span className={`save-state ${saveState}`}>{saveState==="saving"?"Saving…":"✓ Saved"}</span>}
           {view==="roster" && isTreasurer && <><button className="ghost" onClick={()=>setModal("member-access")}>🔗 Team member access</button><button className="primary" onClick={()=>setModal("player")}>＋ Add player</button></>}
           {view==="leagues" && isTreasurer && <button className="primary" onClick={()=>setModal("league")}>＋ Create league</button>}
         </div>

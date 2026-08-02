@@ -99,7 +99,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Save umpiring waivers/);
   assert.match(dashboard, /Games umpired/);
   assert.match(dashboard, /umpiringDetails\.join/);
-  assert.match(dashboard, /Not saved/);
+  assert.match(dashboard, /Not saved · Retry/);
   assert.match(dashboard, /Copy previous lineup/);
   assert.match(dashboard, /View \{lineupTitle\}/);
   assert.match(dashboard, /filter\(\(player\):player is Player=>Boolean\(player\)\)\.sort\(\(a,b\)=>a\.name\.localeCompare/);
@@ -159,6 +159,20 @@ test("mobile game cards display two per row", async () => {
   assert.match(css, /\.delete-player\{border:1px solid #e6b9b5;background:#fff7f6/);
   assert.match(dashboard, /mobile-secondary-nav/);
   assert.match(css, /\.sidebar nav button\.mobile-secondary-nav\{display:none\}/);
+});
+
+test("public access messaging and financial ledgers are mobile friendly", async () => {
+  const [home, css] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(home, /SIMPLE, ROLE-BASED ACCESS/);
+  assert.match(home, /Private link \+ PIN/);
+  assert.match(home, /Create your treasurer account/);
+  assert.match(css, /\.ledger-filters\+\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
+  assert.match(css, /\.settlement-filter\+\.table-panel td:nth-child\(1\)::before\{content:"Player"\}/);
+  assert.match(css, /\.payment-history>\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
+  assert.match(css, /min-width:0!important/);
 });
 
 test("squad screenshots are processed locally and reviewed before batch import", async () => {
