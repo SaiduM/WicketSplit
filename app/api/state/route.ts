@@ -217,6 +217,7 @@ export async function POST(request: Request) {
   const account = state as { registered: boolean; name: string; teams: Array<Record<string, unknown>> };
   const email = user.email.toLowerCase();
   const now = new Date().toISOString();
+  if(user.provider==="team"&&(account.teams.length!==1||Number(account.teams[0]?.id)!==user.teamId))return Response.json({ error: "Shared team members cannot create or switch teams" }, { status: 403 });
   await env.DB.prepare(`INSERT INTO app_states (team_key, payload, updated_at) VALUES (?, ?, ?)
     ON CONFLICT(team_key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`)
     .bind(email, JSON.stringify({ registered: account.registered, name: account.name, teams: [] }), now).run();
@@ -227,6 +228,7 @@ export async function POST(request: Request) {
     const membership = await env.DB.prepare("SELECT role, player_id FROM team_memberships WHERE team_id = ? AND email = ?")
       .bind(teamId, email).first<{ role: "treasurer"|"member"; player_id: number|null }>();
     if (!existingTeam) {
+      if(user.provider==="team")return Response.json({ error: "Shared team members cannot create teams" }, { status: 403 });
       await env.DB.batch([
         env.DB.prepare("INSERT INTO shared_teams (team_id, payload, updated_at) VALUES (?, ?, ?)").bind(teamId, JSON.stringify(clean), now),
         env.DB.prepare("INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now),

@@ -232,6 +232,7 @@ Legacy account-owned teams are migrated into `shared_teams` and
 6. Load membership for each incoming team.
 7. For a treasurer, update the shared team payload.
 8. For a member:
+   - Require the submitted workspace to contain exactly the session's team.
    - Reject setup, game, credit, and payment changes.
    - Accept new expenses only when the payer is the member's linked player.
    - Accept edits or deletions only when the stored `submittedBy` matches the

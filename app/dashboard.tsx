@@ -147,6 +147,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const team = account.teams.find(t => t.id === teamId) ?? account.teams[0];
   const league = team?.leagues.find(l => l.id === leagueId) ?? team?.leagues[0];
   const isTreasurer = !team?.access || team.access.role === "treasurer";
+  const isSharedMember = user.provider==="team";
   const memberPlayerId = team?.access?.role==="member" ? team.access.playerId??undefined : undefined;
   const players = useMemo(()=>team?.players ?? [],[team]);
   const signedInPhone=user.email.startsWith("phone:")?user.email.slice(6).replace(/\D/g,""):"";
@@ -237,6 +238,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   }), [players, games, expenses, credits, payments]);
 
   if (!account.registered) {
+    if(isSharedMember)return <main className="workspace-loading load-error"><span>!</span><strong>This team access is no longer available.</strong><p>Ask your treasurer for the current team link and PIN.</p><a className="primary" href="/api/auth/logout">Return to sign in</a></main>;
     return <Registration user={user} onRegister={(name, teamName, leagueName) => {
       const id = Date.now(); const firstLeagueId = id + 1;
       const next: Account = { registered: true, name, teams: [{
@@ -296,17 +298,17 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       <button className="sidebar-close" type="button" aria-label="Close navigation" onClick={()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(false):setSidebarCollapsed(true)}>×</button>
       <a className="brand" href="/" aria-label="WicketSplit homepage"><span className="brand-mark">W</span><span>WicketSplit</span></a>
       <div className="team-switch-wrap">
-        <button className="team-card team-switch" onClick={()=>setTeamMenu(!teamMenu)}>
-          <div><span className="eyebrow">CURRENT TEAM</span><strong>{team?.name ?? "Choose team"}</strong></div><span>⌄</span>
+        <button className="team-card team-switch" disabled={isSharedMember} onClick={()=>!isSharedMember&&setTeamMenu(!teamMenu)}>
+          <div><span className="eyebrow">CURRENT TEAM</span><strong>{team?.name ?? "Choose team"}</strong></div>{!isSharedMember&&<span>⌄</span>}
         </button>
         {teamMenu && <div className="team-menu">
           {account.teams.map(t=><button className={t.id===team?.id?"selected":""} key={t.id} onClick={()=>selectTeam(t.id)}><span>{initials(t.name)}</span><div><strong>{t.name}</strong><small>{t.players.length} players · {t.leagues.length} leagues</small></div>{t.id===team?.id&&<i>✓</i>}</button>)}
-          <button className="add-team-link" onClick={()=>{setModal("team");setTeamMenu(false)}}>＋ Register another team</button>
+          {!isSharedMember&&<button className="add-team-link" onClick={()=>{setModal("team");setTeamMenu(false)}}>＋ Register another team</button>}
           {team&&isTreasurer&&team.access?.isOwner!==false&&<button className="delete-team-link" onClick={deleteTeam}>Delete {team.name}</button>}
         </div>}
       </div>
       <nav aria-label="Main navigation">
-        {([["overview","▦","Home"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
+        {(isSharedMember?[["overview","▦","Home"],["games","◉","Games"],["expenses","↗","Expenses"]] as const:[["overview","▦","Home"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
           <button key={id} className={`${view===id?"active":""} ${id==="calculator"||id==="settlement"?"mobile-secondary-nav":""}`.trim()} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
@@ -340,9 +342,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         </div>
       </header>
 
-      {!team ? <EmptyState icon="♙" title="Register your first team" text="Create a team workspace, add its roster, then organize expenses by league." action="Register team" onAction={()=>setModal("team")}/> :
-       !league && view!=="roster" && view!=="leagues" ? <EmptyState icon="▤" title="Create your first league" text="A team can have as many leagues and seasons as you need." action="Create league" onAction={()=>setModal("league")}/> : <>
-        {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={chooseView} onPlayer={()=>setModal("player")}/>}
+      {!team ? <EmptyState icon="♙" title={isSharedMember?"Team unavailable":"Register your first team"} text={isSharedMember?"Ask your treasurer for the current team link and PIN.":"Create a team workspace, add its roster, then organize expenses by league."} action={isSharedMember?undefined:"Register team"} onAction={isSharedMember?undefined:()=>setModal("team")}/> :
+       !league && view!=="roster" && view!=="leagues" ? <EmptyState icon="▤" title={isSharedMember?"No league available":"Create your first league"} text={isSharedMember?"Your treasurer has not created a league yet.":"A team can have as many leagues and seasons as you need."} action={isSharedMember?undefined:"Create league"} onAction={isSharedMember?undefined:()=>setModal("league")}/> : <>
+        {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={chooseView} onPlayer={()=>setModal("player")} onAddExpense={isSharedMember?()=>setModal("expense"):undefined}/>}
         {view==="roster" && <RosterView team={team} canManage={isTreasurer} onInvite={player=>{setInviteTarget(player);setInvitePreview("")}} onAdd={()=>setModal("player")} onEdit={setEditingPlayer} onDelete={deletePlayer}/>}
         {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);chooseView("overview")}} onAdd={()=>setModal("league")} onSync={()=>setModal("cricclubs")} onEdit={setEditingLeague}/>}
         {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onScreenshots={()=>setModal("screenshots")} onSync={()=>setModal("cricclubs")} onRoster={()=>chooseView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
@@ -352,8 +354,8 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </>}
     </section>
 
-    {modal==="team" && <NameModal eyebrow="NEW TEAM" title="Register a team" description="Each team gets its own roster, leagues, games, and finances." label="Team name" placeholder="e.g. Wolfpacks" onClose={()=>setModal(null)} onSave={name=>{const id=Date.now();setAccount(a=>({...a,teams:[...a.teams,{id,name,sport:"Cricket",players:[],leagues:[]}]}));setTeamId(id);setLeagueId(null);setModal(null);setView("leagues");notify(`${name} registered — import from CricClubs or create a league`)}}/>}
-    {modal==="league" && team && <LeagueModal onClose={()=>setModal(null)} onSave={(name,season)=>{const id=Date.now();updateTeam(t=>({...t,leagues:[...t.leagues,{id,name,season,status:"Active",games:[],expenses:[],credits:[],payments:[]}]}));setLeagueId(id);setModal(null);setView("overview");notify(`${name} created`)}}/>}
+    {modal==="team" && !isSharedMember && <NameModal eyebrow="NEW TEAM" title="Register a team" description="Each team gets its own roster, leagues, games, and finances." label="Team name" placeholder="e.g. Wolfpacks" onClose={()=>setModal(null)} onSave={name=>{const id=Date.now();setAccount(a=>({...a,teams:[...a.teams,{id,name,sport:"Cricket",players:[],leagues:[]}]}));setTeamId(id);setLeagueId(null);setModal(null);setView("leagues");notify(`${name} registered — import from CricClubs or create a league`)}}/>}
+    {modal==="league" && team && isTreasurer && <LeagueModal onClose={()=>setModal(null)} onSave={(name,season)=>{const id=Date.now();updateTeam(t=>({...t,leagues:[...t.leagues,{id,name,season,status:"Active",games:[],expenses:[],credits:[],payments:[]}]}));setLeagueId(id);setModal(null);setView("overview");notify(`${name} created`)}}/>}
     {editingLeague && team && <LeagueModal league={editingLeague} onClose={()=>setEditingLeague(null)} onDelete={()=>deleteLeague(editingLeague)} onSave={(name,season,status)=>{updateTeam(t=>({...t,leagues:t.leagues.map(l=>l.id===editingLeague.id?{...l,name,season,status}:l)}));setEditingLeague(null);notify("League details updated")}}/>}
     {modal==="player" && team && <PlayerModal teamName={team.name} onClose={()=>setModal(null)} onSave={(name,email,phone)=>{const id=Date.now();updateTeam(t=>({...t,players:[...t.players,{id,name,email,phone,initials:initials(name),color:colors[t.players.length%colors.length]}]}));setModal(null);notify(`${name} added to ${team.name}`)}}/>}
     {editingPlayer && team && <PlayerModal teamName={team.name} player={editingPlayer} onClose={()=>setEditingPlayer(null)} onSave={(name,email,phone)=>{updateTeam(t=>({...t,players:t.players.map(p=>p.id===editingPlayer.id?{...p,name,email,phone,initials:initials(name)}:p)}));setEditingPlayer(null);notify("Player details updated")}}/>}
@@ -379,7 +381,7 @@ function Registration({user,onRegister}:{user:{name:string;email:string};onRegis
   <section className="registration-form-wrap"><form className="registration-form" onSubmit={e=>{e.preventDefault();onRegister(name,team,league)}}><span className="step-badge">1 minute setup</span><h2>Create your workspace</h2><p>You’re signed in as <strong>{user.email.startsWith("phone:")?user.email.slice(6):user.email}</strong>. Start with your first cricket team and league.</p><label>Your name<input required value={name} onChange={e=>setName(e.target.value)} /></label><label>First team name<input autoFocus required value={team} onChange={e=>setTeam(e.target.value)} placeholder="e.g. Wolfpacks"/></label><label>First league name<input required value={league} onChange={e=>setLeague(e.target.value)} placeholder="e.g. Summer League 2026"/></label><button className="primary">Create team workspace →</button><small>You can register more teams and create multiple leagues after setup.</small></form></section></main>;
 }
 
-function PersonalHome({player,players,games,credits,balances,onLink,setView,onPlayer}:{player?:Player;players:Player[];games:Game[];credits:Credit[];balances:PlayerBalance[];onLink:(playerId:number)=>Promise<void>;setView:(view:View)=>void;onPlayer:()=>void}) {
+function PersonalHome({player,players,games,credits,balances,onLink,setView,onPlayer,onAddExpense}:{player?:Player;players:Player[];games:Game[];credits:Credit[];balances:PlayerBalance[];onLink:(playerId:number)=>Promise<void>;setView:(view:View)=>void;onPlayer:()=>void;onAddExpense?:()=>void}) {
   const [selectedPlayerId,setSelectedPlayerId]=useState(players[0]?.id??0);
   const [linking,setLinking]=useState(false);
   if(!players.length)return <EmptyState icon="♙" title="Build your team roster" text="Add yourself and your teammates so WicketSplit can create a personal dashboard for every player." action="Add first player" onAction={onPlayer}/>;
@@ -391,7 +393,7 @@ function PersonalHome({player,players,games,credits,balances,onLink,setView,onPl
   const umpiringWaiver=credits.filter(credit=>credit.playerId===player.id&&isUmpiringWaiver(credit)).reduce((sum,credit)=>sum+credit.amount,0);
   const myTransfers=settlementTransfers(balances).filter(transfer=>transfer.fromPlayerId===player.id||transfer.toPlayerId===player.id);
   const balanceState=balance.balance<-.005?{label:"You need to pay",tone:"owes",amount:-balance.balance}:balance.balance>.005?{label:"You will receive",tone:"due",amount:balance.balance}:{label:"You’re fully settled",tone:"settled",amount:0};
-  return <div className="personal-home"><section className={`my-balance-hero ${balanceState.tone}`}><div><span className="eyebrow">MY BALANCE</span><h2>{balanceState.label}</h2><strong>{money.format(balanceState.amount)}</strong><p>After all recorded expenses, umpiring waivers, and confirmed payments.</p></div><button className="ghost" onClick={()=>setView("settlement")}>View settlement details →</button></section>
+  return <div className="personal-home"><section className={`my-balance-hero ${balanceState.tone}`}><div><span className="eyebrow">MY BALANCE</span><h2>{balanceState.label}</h2><strong>{money.format(balanceState.amount)}</strong><p>After all recorded expenses, umpiring waivers, and confirmed payments.</p></div><div className="personal-home-actions">{onAddExpense&&<button className="primary" onClick={onAddExpense}>＋ Add expense</button>}<button className="ghost" onClick={()=>setView("settlement")}>View settlement details →</button></div></section>
     <section className="my-stats"><div><span>My fair share</span><strong>{money.format(balance.share)}</strong><small>Costs assigned to you</small></div><div><span>I paid for the team</span><strong>{money.format(balance.paid)}</strong><small>Recorded expenses you covered</small></div><div><span>Umpiring waiver</span><strong>{money.format(umpiringWaiver)}</strong><small>Debt waived for umpiring</small></div><div><span>My completed games</span><strong>{completedGames}</strong><small>{myGames.length} selected in total</small></div></section>
     <section className="personal-grid"><div className="panel my-settlement"><div className="panel-head"><div><h2>My settlement</h2><p>Who you should pay or receive money from</p></div></div>{myTransfers.length?<div className="my-transfer-list">{myTransfers.map((transfer,index)=><div key={`${transfer.fromPlayerId}-${transfer.toPlayerId}-${index}`}><span>{transfer.fromPlayerId===player.id?"Pay":"Receive from"}</span><strong>{transfer.fromPlayerId===player.id?transfer.to:transfer.from}</strong><b>{money.format(transfer.amount)}</b></div>)}</div>:<MiniEmpty text="You have nothing left to settle."/>}</div>
     <div className="panel my-games-panel"><div className="panel-head"><div><h2>My games</h2><p>Games where you are in the selected lineup</p></div><button onClick={()=>setView("games")}>View team games →</button></div>{myGames.length?<div className="my-game-list">{myGames.map(game=><div key={game.id}><div className="my-game-date"><strong>{game.date?new Date(game.date+"T12:00").toLocaleDateString("en-US",{day:"2-digit"}):"—"}</strong><span>{game.date?new Date(game.date+"T12:00").toLocaleDateString("en-US",{month:"short"}).toUpperCase():"NO DATE"}</span></div><div><strong>vs {game.opponent}</strong><small>{game.venue||"Venue not specified"} · {game.players.length===12?"Playing XII":"Playing XI"}</small></div><span className={game.status==="Completed"?"status complete":"status"}>{game.status}</span></div>)}</div>:<MiniEmpty text="You have not been selected for a game in this league yet."/>}</div></section>

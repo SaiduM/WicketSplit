@@ -95,7 +95,8 @@ flowchart LR
 - **Co-treasurer:** full operational management.
 - **Player:** no registration; enters through the private team link and PIN,
   selects a roster identity, and can view records, submit expenses paid by that
-  player, and edit or delete only entries from that shared identity.
+  player, and edit or delete only entries from that shared identity. Shared
+  sessions are restricted to the linked team and cannot create another team.
 
 All permissions are enforced by the server. UI visibility is not authorization.
 
