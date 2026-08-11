@@ -44,6 +44,7 @@ Vinext, React, Firebase, and D1 architecture.
 - Confirm expense deletion and immediately recalculate all affected balances.
 - Keep confirmed settlement payments separate from expenses and credits.
 - Show the full settlement equation and itemized positive contributions in the player Details view; never hide expenses paid or umpiring credits inside the remaining balance.
+- Keep the player calculator summary compact: combine expense categories into one share and show umpiring credit and net share without weight or umpiring-count columns.
 - A confirmed payment increases the sender's balance and decreases the
   receiver's balance; recalculate remaining transfers after every change.
 - Never allow a payment to exceed both the sender's remaining debt and the

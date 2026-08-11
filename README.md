@@ -95,7 +95,7 @@ controls.
 - Equal-per-game league fees and refreshment costs, divided by each game’s eligible players
 - Per-game split eligibility: record the full Playing XI/XII while excluding
   selected players from League Fee and Fruits / Water allocation
-- League calculator showing games played, percentage weight, and cost components
+- Simplified league calculator showing games played, eligible games, combined expense share, umpiring credit, and net share
 - Per-game calculation breakdown in Calculator and CSV showing each game’s
   equal allocation and its lineup-dependent cost per payer
 - Batch umpiring entry with one fixed rate and per-player game counts; full

@@ -87,7 +87,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /League share calculator/);
   assert.match(dashboard, /The full team cost pool is split equally across/);
   assert.match(dashboard, /Each game’s cost is then divided equally among that game’s eligible players/);
-  assert.match(dashboard, /Fruits \/ water/);
+  assert.doesNotMatch(dashboard, /<th>Fruits \/ water<\/th>/);
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /Which roster player are you/);
   assert.match(dashboard, /You need to pay/);
@@ -110,7 +110,10 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Split equally by game · \$\{count\} completed \$\{count===1\?"game":"games"\}/);
   assert.match(dashboard, /if\(entry\.kind==="umpiring-waiver"\) return gameSplitLabel\(games\)/);
   assert.match(dashboard, /gameWeightedShare\(e\.amount,player\.id,games\)/);
-  assert.match(dashboard, /Umpiring cost share/);
+  assert.match(dashboard, /Combined expense share/);
+  assert.match(dashboard, /All league, refreshments, umpiring, and other shared costs/);
+  assert.match(dashboard, /Credits reduce each player’s net share/);
+  assert.doesNotMatch(dashboard, /<th>Weight<\/th>/);
   assert.match(dashboard, /Per-game breakdown/);
   assert.match(dashboard, /Each completed game receives an equal part of the team cost pool/);
   assert.match(dashboard, /1\/fundedGameCount/);
@@ -118,8 +121,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Allocated Cost/);
   assert.match(dashboard, /perGame\/eligible\.length/);
   assert.doesNotMatch(dashboard, /Maximum waiver/);
-  assert.match(dashboard, /Games umpired/);
-  assert.match(dashboard, /umpiringDetails\.join/);
+  assert.doesNotMatch(dashboard, /<th>Games umpired<\/th>/);
   assert.match(dashboard, /Not saved · Retry/);
   assert.match(dashboard, /Use previous lineup/);
   assert.match(dashboard, /View \{lineupTitle\}/);
