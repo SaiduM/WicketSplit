@@ -16,11 +16,10 @@ forcing every player to register.
 
 - Multiple teams, treasurers, rosters, and leagues
 - Manual games, CricClubs synchronization, and reviewed squad-screenshot import
-- Appearance-weighted League Fee and Fruits / Water expenses
+- Equal-per-game League Fee and Fruits / Water expenses, divided among each game’s eligible players
 - Per-game eligibility overrides that preserve the recorded lineup while
   removing selected appearances from weighted costs
-- Per-game Calculator and CSV breakdowns that explain the existing
-  appearance-weighted allocation without changing balances
+- Per-game Calculator and CSV breakdowns showing the allocation that drives balances
 - Custom or games-played sharing for Restaurant and Other expenses
 - Player-submitted expenses with submitter-only editing and deletion
 - Batch team-funded umpiring credits, player calculation breakdowns, and CSV export

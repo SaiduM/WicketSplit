@@ -33,7 +33,9 @@ calculates settlements but does not move money.
    Restaurant, or Other. League Fee and Fruits / Water are allocated by
    completed-game appearances:
 
-   `player share = expense × player appearances ÷ total appearances`
+   `cost per game = team-funded expense ÷ completed games`
+
+   `player share = sum(cost per game ÷ eligible players in that game)`
 
 5. Choose custom players or a games-played split for Restaurant and Other.
 6. Use the Calculator to review appearances, weights, each cost component, and
@@ -43,9 +45,9 @@ calculates settlements but does not move money.
 7. Record umpiring for the team by entering the fixed credit per game once and
    the number of games umpired beside any players. Only non-zero rows are saved.
    Each player receives the full credit. That full credited amount is also added
-   to the team cost pool and allocated across split-eligible completed-game
-   appearances. A player may therefore owe less, owe nothing, or finish with
-   money to receive.
+   to the team cost pool, divided equally across completed games, and then split
+   among each game’s eligible players. A player may therefore owe less, owe
+   nothing, or finish with money to receive.
 8. Share the suggested transfers showing who should pay whom.
 9. After the receiver confirms money arrived, record the settlement payment.
    Remaining balances and transfer suggestions recalculate automatically.
@@ -79,14 +81,14 @@ calculates settlements but does not move money.
 - Treasurer controls to delete leagues, unlinked games, and expenses with clear confirmation and automatic balance recalculation
 - Custom-player and games-played splits
 - Four expense categories: Fruits / Water, League Fee, Restaurant, and Other
-- Appearance-weighted league fees and refreshment costs
+- Equal-per-game league fees and refreshment costs, divided by each game’s eligible players
 - Per-game split eligibility: record the full Playing XI/XII while excluding
   selected players from League Fee and Fruits / Water allocation
 - League calculator showing games played, percentage weight, and cost components
-- Per-game explanatory breakdown in Calculator and CSV without changing the
-  appearance-weighted allocation formula
+- Per-game calculation breakdown in Calculator and CSV showing each game’s
+  equal allocation and its lineup-dependent cost per payer
 - Batch umpiring entry with one fixed rate and per-player game counts; full
-  credits are funded as appearance-weighted team costs and itemized in the Calculator
+  credits are added to the equal-per-game team cost pool and itemized in the Calculator
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Confirmed repayment ledger with received date, sender, receiver, amount,
   optional reference, remaining balances, and overpayment protection

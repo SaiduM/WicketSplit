@@ -282,23 +282,28 @@ total eligible appearances =
 player eligible appearances =
   completed games containing that player where the player is not excluded
 
-player league-fee share =
-  league fee * player eligible appearances / total eligible appearances
+cost per completed game =
+  total game-funded team costs / completed games with eligible players
+
+player game share =
+  cost per completed game / eligible players in that game
+
+player total game-funded share =
+  sum of player game shares for every eligible game they played
 ```
 
-The Calculator and CSV derive an informational per-game view without changing
-that formula:
+The Calculator and CSV expose this same calculation as a per-game view:
 
 ```text
-cost per eligible appearance =
-  total appearance-weighted team costs / total eligible appearances
-
 game allocated cost =
-  game eligible payer count * cost per eligible appearance
+  total game-funded team costs / completed games with eligible players
+
+game cost per payer =
+  game allocated cost / game eligible payer count
 ```
 
-Consequently, cost per payer remains constant across games and a game with an
-excluded player represents a smaller portion of the league-wide pool.
+Consequently, every completed game receives the same cost, while its cost per
+payer changes with that game’s eligible lineup size.
 
 `excludedFromSplit` is optional for backward compatibility, contains only
 unique IDs from the same game lineup, and cannot exclude the entire lineup.
@@ -314,13 +319,13 @@ compatibility, but its accounting behavior is a funded credit:
 player umpiring credit = games umpired * fixed rate
 
 player umpiring cost share =
-  total umpiring credits * player eligible appearances
-  / total eligible appearances
+  sum((total umpiring credits / completed games)
+      / eligible players in each game the player played)
 ```
 
 The full credit is added to its recipient. That full credited amount is also
-added to the team cost pool and included in every eligible player’s fair share
-according to eligible appearances. This keeps total balances at zero and
+added to the team cost pool, divided equally across completed games, and then
+included in each game’s eligible players’ fair shares. This keeps total balances at zero and
 allows an umpire to finish with money to receive.
 
 ```text
