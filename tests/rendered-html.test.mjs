@@ -276,6 +276,10 @@ test("new team creation is protected by an administrator-approved early-access g
   assert.match(accessApi, /early-access-request:/);
   assert.match(policy, /EARLY_ACCESS_ADMIN_EMAILS/);
   assert.match(dashboard, /INVITE-ONLY EARLY ACCESS/);
+  const admin = await readFile(new URL("../app/early-access/early-access-admin.tsx", import.meta.url), "utf8");
+  assert.match(admin, /Copy approval message/);
+  assert.match(admin, /navigator\.clipboard\.writeText/);
+  assert.match(admin, /login\?return_to=\/app/);
   assert.match(migration, /early_access_requests/);
   assert.match(migration, /idx_early_access_status_requested/);
 });
