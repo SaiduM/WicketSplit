@@ -24,8 +24,11 @@ calculates settlements but does not move money.
 
 1. Sign in with Google or a verified Firebase email/password account.
 2. Register one or more teams, add a reusable roster, and create leagues.
-3. Record games with an optional date, opponent, and Playing XI or XII. A
-   treasurer can also import up to 10 squad screenshots in one reviewed batch.
+3. Record games with an optional date, opponent, and Playing XI or XII. Every
+   selected player is included in the fair split by default; a treasurer can
+   exclude a player from appearance-based costs without removing that player
+   from the lineup or playing history. A treasurer can also import up to 10
+   squad screenshots in one reviewed batch.
 4. Add expenses using one of four categories: Fruits / Water, League Fee,
    Restaurant, or Other. League Fee and Fruits / Water are allocated by
    completed-game appearances:
@@ -72,6 +75,8 @@ calculates settlements but does not move money.
 - Custom-player and games-played splits
 - Four expense categories: Fruits / Water, League Fee, Restaurant, and Other
 - Appearance-weighted league fees and refreshment costs
+- Per-game split eligibility: record the full Playing XI/XII while excluding
+  selected players from League Fee and Fruits / Water allocation
 - League calculator showing games played, percentage weight, and cost components
 - Batch umpiring entry with one fixed rate and per-player game counts; unfunded
   waivers are capped at each player’s debt and itemized in the Calculator

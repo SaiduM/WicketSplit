@@ -49,6 +49,7 @@ type Game = {
   opponent: string;
   venue: string;
   players: number[];
+  excludedFromSplit?: number[];
   status: "Upcoming" | "Completed";
 };
 
@@ -275,15 +276,20 @@ game lineup.
 ### League fee
 
 ```text
-total appearances =
-  sum of lineup sizes for completed games
+total eligible appearances =
+  sum of split-eligible lineup sizes for completed games
 
-player appearances =
-  completed games containing that player
+player eligible appearances =
+  completed games containing that player where the player is not excluded
 
 player league-fee share =
-  league fee * player appearances / total appearances
+  league fee * player eligible appearances / total eligible appearances
 ```
+
+`excludedFromSplit` is optional for backward compatibility, contains only
+unique IDs from the same game lineup, and cannot exclude the entire lineup.
+Exclusion affects League Fee and Fruits / Water calculations only. It does not
+remove the player from game history or alter custom participant expenses.
 
 ### Original balance
 

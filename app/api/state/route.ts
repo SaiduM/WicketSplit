@@ -104,7 +104,7 @@ function isValidState(value: unknown): boolean {
       const gameIds = new Set<number>();
       if (!record.games.every(game => {
         if (!game || typeof game !== "object") return false;
-        const fixture = game as { id?: unknown; date?: unknown; opponent?: unknown; venue?: unknown; players?: unknown[]; status?: unknown; source?: unknown; externalId?: unknown; sourceUrl?: unknown };
+        const fixture = game as { id?: unknown; date?: unknown; opponent?: unknown; venue?: unknown; players?: unknown[]; excludedFromSplit?: unknown[]; status?: unknown; source?: unknown; externalId?: unknown; sourceUrl?: unknown };
         if (!id(fixture.id) || gameIds.has(fixture.id as number) || !text(fixture.date, 10, false) || (fixture.date !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(String(fixture.date))) ||
             !text(fixture.opponent, 160) || !text(fixture.venue, 240, false) || !Array.isArray(fixture.players) ||
             fixture.players.length > 12 || !["Upcoming","Completed"].includes(String(fixture.status))) return false;
@@ -113,6 +113,10 @@ function isValidState(value: unknown): boolean {
             !String(fixture.sourceUrl).startsWith("https://www.cricclubs.com/"))) return false;
         if (fixture.source === undefined && (fixture.externalId !== undefined || fixture.sourceUrl !== undefined)) return false;
         if (new Set(fixture.players).size !== fixture.players.length || !fixture.players.every(playerId => id(playerId) && playerIds.has(playerId as number))) return false;
+        if (fixture.excludedFromSplit !== undefined && (!Array.isArray(fixture.excludedFromSplit) ||
+            new Set(fixture.excludedFromSplit).size !== fixture.excludedFromSplit.length ||
+            !fixture.excludedFromSplit.every(playerId => id(playerId) && fixture.players?.includes(playerId)) ||
+            fixture.excludedFromSplit.length >= fixture.players.length)) return false;
         gameIds.add(fixture.id as number); return true;
       })) return false;
       const expenseIds = new Set<number>();

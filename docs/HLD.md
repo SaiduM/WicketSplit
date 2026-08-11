@@ -12,6 +12,7 @@ The product supports:
 
 - Multiple teams, shared rosters, leagues, and treasurers
 - Games with Playing XI or XII selection
+- Per-game fair-split eligibility independent of recorded lineup membership
 - Game-lineup and custom-player expense splits
 - One league fee allocated by completed-game appearances
 - Player credits and waivers
@@ -125,7 +126,9 @@ flowchart TD
 
 ## Finance invariants
 
-- A league fee is split by completed-game appearances.
+- A league fee is split by eligible completed-game appearances. All selected
+  players are eligible by default; exclusions retain game history but carry no
+  weight in appearance-based costs.
 - Other expenses are split only among a selected game lineup or custom players.
 - Credits remain explainable and identify who receives and funds them.
 - Confirmed repayments are separate from expenses and credits.

@@ -63,7 +63,10 @@ test("public legal and self-service deletion surfaces are present", async () => 
 });
 
 test("finance workflow includes editable dated expenses and settlement transfers", async () => {
-  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  const [dashboard,stateApi] = await Promise.all([
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(dashboard, /Expense date/);
   assert.match(dashboard, /<option>Fruits \/ Water<\/option>/);
   assert.match(dashboard, /<option>Restaurant<\/option><option>Other<\/option>/);
@@ -77,7 +80,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","League Fee","Fruits & Water","Fruits \/ Water","Fruits","Water"\]\)/);
   assert.match(dashboard, /League share calculator/);
-  assert.match(dashboard, /Player share = expense × player appearances ÷ total appearances/);
+  assert.match(dashboard, /Player share = expense × eligible appearances ÷ total eligible appearances/);
   assert.match(dashboard, /Fruits \/ water/);
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /Which roster player are you/);
@@ -104,6 +107,13 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /View \{lineupTitle\}/);
   assert.match(dashboard, /filter\(\(player\):player is Player=>Boolean\(player\)\)\.sort\(\(a,b\)=>a\.name\.localeCompare/);
   assert.match(dashboard, /Playing XII/);
+  assert.match(dashboard, /Included in fair split/);
+  assert.match(dashboard, /Everyone is included by default/);
+  assert.match(dashboard, /Not included in split/);
+  assert.match(dashboard, /splitEligiblePlayers/);
+  assert.match(dashboard, /Split-eligible Appearances/);
+  assert.match(stateApi, /excludedFromSplit/);
+  assert.match(stateApi, /fixture\.excludedFromSplit\.length >= fixture\.players\.length/);
   assert.match(dashboard, /Share remaining/);
   assert.match(dashboard, /Possible duplicate expense/);
   assert.doesNotMatch(dashboard, /\["overview","expenses"\]\.includes\(view\)/);
