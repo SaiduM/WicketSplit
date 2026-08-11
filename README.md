@@ -27,9 +27,10 @@ calculates settlements but does not move money.
 2. Register one or more teams, add a reusable roster, and create leagues.
 3. Record games with an optional date, opponent, and Playing XI or XII. Every
    selected player is included in the fair split by default; a treasurer can
-   exclude a player from that game's shared costs without removing that player
-   from the lineup or playing history. A treasurer can also import up to 10
-   squad screenshots in one reviewed batch.
+   open the optional split adjustment only when a player should be excluded
+   from that game's shared costs without being removed from the lineup or
+   playing history. A treasurer can also import up to 10 squad screenshots in
+   one reviewed batch.
 4. Add expenses using one of four categories: Fruits / Water, League Fee,
    Restaurant, or Other. League Fee and Fruits / Water are allocated equally by
    completed game and then by each game's eligible players:
@@ -37,6 +38,10 @@ calculates settlements but does not move money.
    `cost per game = team-funded expense ÷ completed games`
 
    `player share = sum(cost per game ÷ eligible players in that game)`
+
+   No player selection is required when recording these game-funded expenses;
+   saved Playing XI/XII lineups drive the split and future lineup edits
+   recalculate the shares automatically.
 
 5. Choose custom players or a games-played split for Restaurant and Other.
 6. Use the Calculator to review appearances, weights, each cost component, and

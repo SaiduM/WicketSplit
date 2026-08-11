@@ -81,6 +81,9 @@ Vinext, React, Firebase, and D1 architecture.
 - Preserve browser history for section navigation, the mobile Back control, and
   the guarded left-edge swipe gesture without intercepting normal scrolling.
 - Sort player selections alphabetically and provide accessible touch targets.
+- Keep lineup entry simple: selected XI/XII players share by default, keep
+  exclusions behind an optional adjustment, and do not ask users to reselect
+  players when adding a game-funded expense.
 - Explain role, split, and invitation consequences before confirmation.
 - Render the workspace loading/error guards before new-account registration so
   existing users never see an empty setup or team-selection flash during sync.

@@ -299,6 +299,11 @@ game cost per payer =
 Consequently, every completed game receives the same cost, while its cost per
 payer changes with that game’s eligible lineup size.
 
+The game form selects the Playing XI/XII once. Every selected player is
+eligible by default, with exclusions hidden behind an optional adjustment.
+Game-funded expense forms do not repeat lineup or participant selection;
+creating or editing a completed lineup recalculates these shares.
+
 `excludedFromSplit` is optional for backward compatibility, contains only
 unique IDs from the same game lineup, and cannot exclude the entire lineup.
 Exclusion affects League Fee and Fruits / Water calculations only. It does not

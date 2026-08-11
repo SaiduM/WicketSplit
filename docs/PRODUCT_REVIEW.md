@@ -19,6 +19,9 @@ forcing every player to register.
 - Equal-per-game League Fee and Fruits / Water expenses, divided among each game’s eligible players
 - Per-game eligibility overrides that preserve the recorded lineup while
   removing selected appearances from weighted costs
+- A simplified lineup form includes everyone by default and hides exclusions
+  behind an optional adjustment; game-funded expense forms require no second
+  player-selection step
 - Per-game Calculator and CSV breakdowns showing the allocation that drives balances
 - Custom or games-played sharing for Restaurant and Other expenses
 - Player-submitted expenses with submitter-only editing and deletion

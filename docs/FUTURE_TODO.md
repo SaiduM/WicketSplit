@@ -15,6 +15,9 @@ scope.
 - Custom expenses, settlement suggestions, confirmed repayments, player
   breakdowns, per-game calculations, and CSV exports are implemented.
 - The responsive PWA has role-based mobile navigation and guarded startup sync.
+- Lineup entry selects the Playing XI/XII once, defaults every selected player
+  into the split, and keeps rare exclusions behind an optional adjustment;
+  game-funded expense entry needs no duplicate player selection.
 
 ## P0 — feedback release reliability
 
