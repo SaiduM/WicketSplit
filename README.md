@@ -9,6 +9,7 @@ should pay whom.
 - [High-level design](docs/HLD.md)
 - [Low-level design](docs/LLD.md)
 - [Product and experience review](docs/PRODUCT_REVIEW.md)
+- [Future work and production roadmap](docs/FUTURE_TODO.md)
 
 ## Production
 
@@ -26,12 +27,12 @@ calculates settlements but does not move money.
 2. Register one or more teams, add a reusable roster, and create leagues.
 3. Record games with an optional date, opponent, and Playing XI or XII. Every
    selected player is included in the fair split by default; a treasurer can
-   exclude a player from appearance-based costs without removing that player
+   exclude a player from that game's shared costs without removing that player
    from the lineup or playing history. A treasurer can also import up to 10
    squad screenshots in one reviewed batch.
 4. Add expenses using one of four categories: Fruits / Water, League Fee,
-   Restaurant, or Other. League Fee and Fruits / Water are allocated by
-   completed-game appearances:
+   Restaurant, or Other. League Fee and Fruits / Water are allocated equally by
+   completed game and then by each game's eligible players:
 
    `cost per game = team-funded expense ÷ completed games`
 

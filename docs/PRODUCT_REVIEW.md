@@ -74,12 +74,16 @@ transfers funds.
   recreational use, not large organizations or regulated financial records.
 - Production monitoring, alerting, tested backups, and an independent security
   review remain appropriate before materially increasing scale or data value.
+- First-load workspace state is guarded so existing users see synchronization,
+  never a temporary empty registration or team-selection screen.
 
 ## Recommended next priorities
 
 1. Collect feedback from a small number of real teams before adding scope.
 2. Add error monitoring and a tested backup/restore procedure.
-3. Add workspace version checks if simultaneous co-treasurer editing becomes
-   common.
-4. Keep scoring, chat, and payment processing outside the core unless repeated
-   user evidence shows they are necessary.
+3. Add optimistic workspace versions before encouraging simultaneous
+   co-treasurer entry.
+4. Normalize financial records and add pagination before broad public growth.
+5. Keep scoring, chat, and payment processing outside the core unless repeated
+   user evidence shows they are necessary. See `FUTURE_TODO.md` for the full
+   ordered backlog.

@@ -13,10 +13,10 @@ The product supports:
 - Multiple teams, shared rosters, leagues, and treasurers
 - Games with Playing XI or XII selection
 - Per-game fair-split eligibility independent of recorded lineup membership
-- Informational per-game allocation breakdown derived from the league-wide
-  eligible-appearance rate
-- Game-lineup and custom-player expense splits
-- One league fee allocated by completed-game appearances
+- Equal-per-game team-cost allocation followed by an eligible-player split
+- Per-game calculation breakdown and custom-player expense splits
+- One league fee plus Fruits / Water, IV, and umpiring-credit funding in the
+  game-funded cost pool
 - Team-funded player credits
 - Confirmed settlement-payment history
 - Individually authenticated treasurer and co-treasurer access
@@ -114,7 +114,7 @@ flowchart TD
     Roster --> League["Create League"]
     League --> Games["Record Games and Playing XI/XII"]
     League --> Expenses["Record Expenses and Credits"]
-    Games --> Fee["Allocate League Fee by Appearances"]
+    Games --> Fee["Allocate Team Cost Equally by Game"]
     Expenses --> Balance["Calculate Original Balances"]
     Fee --> Balance
     Balance --> Suggest["Suggest Who Pays Whom"]
@@ -128,11 +128,16 @@ flowchart TD
 
 ## Finance invariants
 
-- A league fee is split by eligible completed-game appearances. All selected
-  players are eligible by default; exclusions retain game history but carry no
-  weight in appearance-based costs.
-- Other expenses are split only among a selected game lineup or custom players.
-- Credits remain explainable and identify who receives and funds them.
+- League Fee, Fruits / Water, IV, and full umpiring credits form the game-funded
+  cost pool. Each cost is divided equally across completed games with eligible
+  players, then each game's portion is divided among that game's eligible
+  players. A player's share is the sum of their per-game shares.
+- All selected lineup players are eligible by default. Exclusions retain game
+  history but remove that player only from the affected game's cost division.
+- Restaurant and Other expenses use either the by-game calculation or explicit
+  custom players.
+- Every umpire receives the full games-times-rate credit even when it exceeds
+  what they otherwise owe; the full credit is also funded through the team pool.
 - Confirmed repayments are separate from expenses and credits.
 - A confirmed payment increases the sender's balance and decreases the
   receiver's balance.
@@ -163,10 +168,16 @@ the complete accessible account state on update. This is appropriate for
 recreational teams and early production feedback, but it has limitations:
 
 - Workspace requests are limited to 256 KB.
+- Enforced maxima are 50 teams/account, 500 players/team, 100 leagues/team,
+  1,000 games/league, and 10,000 entries of each financial type/league, but the
+  payload limit is expected to be reached first.
 - Concurrent workspace changes use last-write-wins.
 - Long histories are not paginated.
 - Games, expenses, credits, and repayments are not separate relational rows.
 - There is no payment-provider integration or automatic reconciliation.
 
-The next scaling step is normalized record-level persistence with transactions,
-optimistic version checks, pagination, indexes, monitoring, and backups.
+The present model is appropriate for a controlled recreational-team beta. A
+reasonable untested operating target is tens of teams and hundreds to low
+thousands of players; it is not a load-tested service-level guarantee. See
+`FUTURE_TODO.md` for the ordered path to normalized record-level persistence,
+optimistic concurrency, pagination, monitoring, and backups.

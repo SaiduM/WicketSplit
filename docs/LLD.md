@@ -273,15 +273,9 @@ player share = expense amount / participant count
 The share applies only when the player is in the custom selection or referenced
 game lineup.
 
-### League fee
+### Game-funded team costs
 
 ```text
-total eligible appearances =
-  sum of split-eligible lineup sizes for completed games
-
-player eligible appearances =
-  completed games containing that player where the player is not excluded
-
 cost per completed game =
   total game-funded team costs / completed games with eligible players
 
@@ -325,8 +319,8 @@ player umpiring cost share =
 
 The full credit is added to its recipient. That full credited amount is also
 added to the team cost pool, divided equally across completed games, and then
-included in each game’s eligible players’ fair shares. This keeps total balances at zero and
-allows an umpire to finish with money to receive.
+included in each game’s eligible players’ fair shares. This keeps total balances
+at zero and allows an umpire to finish with money to receive.
 
 ```text
 original balance =
@@ -471,6 +465,9 @@ Current constraints:
 - No record pagination
 - No immutable database-level financial audit log
 - No automated bank reconciliation
+- A successful login still depends on Firebase/Google authentication throttles;
+  repeated password attempts can temporarily block a device independently of
+  WicketSplit's own 60-second API windows.
 
 Recommended next design:
 
@@ -479,3 +476,4 @@ Recommended next design:
 - Add D1 transactions and optimistic version checks.
 - Add record-level APIs, pagination, and indexes.
 - Add immutable audit events, backups, metrics, and alerts.
+- See `FUTURE_TODO.md` for priority, acceptance criteria, and deferred scope.
