@@ -9,6 +9,7 @@
 - Google Identity
 - Firebase email authentication
 - OpenAI Sites hosting
+- Custom production domain: `www.wicketsplit.com`
 - Responsive PWA assets and service worker
 
 ## Source layout
@@ -281,9 +282,10 @@ concurrent writer from deleting or inserting records.
    replacement rotates it. Every shared-session request rechecks the team's
    current token hash, so replacing or revoking access immediately signs out
    prior shared sessions.
-6. State writes apply the member policy: read team records, add expenses whose
-   payer is the selected player, and edit or delete only that identity's own
-   submitted expenses.
+6. State writes apply the member policy: reject new expenses and all setup,
+   game, credit, and payment changes. For backward compatibility, edit or
+   delete only an older expense whose `submittedBy` matches that selected
+   identity, while retaining its linked payer.
 
 ## Finance calculations
 
@@ -483,6 +485,29 @@ The CSV contains:
 
 Cells beginning with spreadsheet formula characters are prefixed to prevent CSV
 formula injection.
+
+## Production domain configuration
+
+The canonical browser origin is `https://www.wicketsplit.com`. Sites owns the
+custom-hostname routing and managed TLS lifecycle; IONOS remains the DNS
+provider. The `www` host uses the Sites CNAME target, while the zone apex uses
+the Sites-provided A targets. Sites verification TXT records must remain
+published.
+
+Authentication requires synchronized allowlists:
+
+- Firebase Authentication authorized domains: `wicketsplit.com` and
+  `www.wicketsplit.com`.
+- Google OAuth Authorized JavaScript Origins: the two matching HTTPS origins,
+  without paths or trailing slashes.
+- Google OAuth Authorized redirect URIs: retain the Firebase authentication
+  handler URI configured for the Firebase project.
+
+The metadata base URL and invitation URLs derive from the incoming request
+origin. This avoids a hard-coded hosting hostname, but means treasurers should
+use the canonical origin when generating messages. A Google `origin_mismatch`
+response indicates an OAuth allowlist mismatch and does not require a WicketSplit
+code deployment.
 
 ## Known constraints and next design
 

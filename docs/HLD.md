@@ -24,6 +24,8 @@ The product supports:
 - Registration-free player access through one revocable team link and PIN
 - Google and Firebase email authentication for treasurers
 - Mobile/PWA usage, shareable summaries, and CSV exports
+- Public production access through `https://www.wicketsplit.com`, with Sites
+  custom-domain TLS and DNS validation
 
 Scoring, statistics, brackets, chat, bookings, merchandise, and payment
 processing are outside the current scope.
@@ -73,7 +75,8 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    Browser["iPhone / Desktop Browser"] --> Edge["Sites / Cloudflare Edge"]
+    Browser["iPhone / Desktop Browser"] --> Domain["www.wicketsplit.com"]
+    Domain --> Edge["Sites / Cloudflare Edge"]
     Edge --> Worker["Vinext Cloudflare Worker"]
     Worker --> D1["Cloudflare D1"]
     Worker --> Google["Google Identity"]
@@ -81,7 +84,9 @@ flowchart LR
 ```
 
 The frontend and server routes are deployed as one Cloudflare-compatible
-Vinext application.
+Vinext application. `www.wicketsplit.com` is the canonical production origin;
+the zone apex is attached separately and becomes usable when its managed TLS
+certificate is active. Firebase and Google OAuth must authorize both origins.
 
 ## Access model
 
@@ -89,7 +94,7 @@ Vinext application.
 flowchart LR
     Owner["Original Treasurer"] --> Full["Full Team Management"]
     Co["Co-treasurer"] --> Full
-    Member["Player via Team Link + PIN"] --> Limited["View + Add Selected Player's Expenses"]
+    Member["Player via Team Link + PIN"] --> Limited["Read-only Personal Team View"]
 
     Full --> Setup["Roster, Leagues, Games"]
     Full --> Finance["Expenses, Credits, Payments"]
@@ -100,9 +105,11 @@ flowchart LR
 - **Original treasurer:** full management and team deletion.
 - **Co-treasurer:** full operational management.
 - **Player:** no registration; enters through the private team link and PIN,
-  selects a roster identity, and can view records, submit expenses paid by that
-  player, and edit or delete only entries from that shared identity. Shared
-  sessions are restricted to the linked team and cannot create another team.
+  selects a roster identity, and can view limited team records and a private
+  player breakdown. Shared sessions are restricted to the linked team, cannot
+  add new expenses, and cannot create another team. Compatibility rules may
+  still permit correction or deletion of an older expense previously submitted
+  by that same shared identity.
 
 All permissions are enforced by the server. UI visibility is not authorization.
 Treasurers may revoke another co-treasurer's membership while preserving the
@@ -163,6 +170,9 @@ flowchart TD
 - Replacing or revoking shared access invalidates existing player sessions.
 - Shared-entry attempts are throttled by IP and token hash.
 - Production secrets remain in the Sites runtime environment.
+- Google OAuth Authorized JavaScript Origins and Firebase authorized domains
+  include both official hostnames; OAuth failures are treated as configuration
+  errors rather than retried as application failures.
 
 ## Current scale and limitations
 

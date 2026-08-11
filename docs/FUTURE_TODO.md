@@ -15,6 +15,8 @@ scope.
 - Custom expenses, settlement suggestions, confirmed repayments, player
   breakdowns, per-game calculations, and CSV exports are implemented.
 - The responsive PWA has role-based mobile navigation and guarded startup sync.
+- The product is published at `https://www.wicketsplit.com`; Sites custom-domain
+  DNS is active for `www`, and Google/Firebase authorize both official origins.
 - Lineup entry selects the Playing XI/XII once, defaults every selected player
   into the split, and keeps rare exclusions behind an optional adjustment;
   game-funded expense entry needs no duplicate player selection.
@@ -70,9 +72,16 @@ scope.
 
 - [ ] Remember the last selected team and league per authenticated account.
 - [ ] Add in-app release notes and a lightweight feedback/report-problem action.
-- [ ] Add optional team branding and a generic custom domain.
-  - Update Sites DNS, Google Authorized JavaScript Origins, Firebase authorized
-    domains, invitation URLs, and legal links together.
+- [x] Add a generic production domain and synchronize Sites DNS, Google
+  Authorized JavaScript Origins, and Firebase authorized domains.
+- [ ] Finish branded authentication delivery.
+  - Acceptance: Firebase verification and password-reset emails use the
+    WicketSplit sender name, subjects, and approved custom action-link domain;
+    inbox and spam-folder behavior is tested with multiple providers.
+- [ ] Enforce a canonical-host redirect after the zone-apex TLS certificate is
+  active.
+  - Acceptance: `https://wicketsplit.com/*` redirects to the equivalent
+    `https://www.wicketsplit.com/*` path without losing invitation tokens.
 - [ ] Add treasurer-access recovery guidance when an accepted invitation belongs
   to a deleted WicketSplit account.
 - [ ] Add accessible empty, loading, offline, and retry states to every external

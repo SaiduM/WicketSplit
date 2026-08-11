@@ -1,6 +1,6 @@
 ---
 name: wicketsplit-development
-description: Safely extend, review, test, document, and deploy the WicketSplit cricket expense app. Use for WicketSplit finance calculations, rosters, games, invitations and roles, authentication, D1 persistence, API security, mobile UI, CSV settlement exports, or production releases.
+description: Safely extend, review, test, document, and deploy the WicketSplit cricket expense app. Use for WicketSplit finance calculations, rosters, games, invitations and roles, authentication and custom-domain configuration, D1 persistence, API security, mobile UI, CSV settlement exports, or production releases.
 ---
 
 # WicketSplit development
@@ -75,6 +75,14 @@ Vinext, React, Firebase, and D1 architecture.
   destructive endpoints.
 - Use parameterized D1 statements and batches for related writes.
 - Keep secrets in Sites environment variables; never commit credentials.
+- Treat `https://www.wicketsplit.com` as the canonical production origin. Keep
+  both official hostnames synchronized across Sites custom domains, Firebase
+  authorized domains, and Google OAuth Authorized JavaScript Origins.
+- Preserve Sites domain-verification records and the Firebase OAuth handler
+  redirect URI. Diagnose Google `origin_mismatch` as an allowlist mismatch;
+  never work around it by weakening OAuth restrictions.
+- Generate invitation and team-access URLs from the production request origin;
+  do not hard-code the legacy Sites hostname.
 - Preserve optimistic team versions: reject stale writes with HTTP 409 and keep
   the reload-latest recovery action visible to the user.
 - Treat indexed `workspace_*` records as authoritative and keep `shared_teams`
@@ -107,7 +115,10 @@ Vinext, React, Firebase, and D1 architecture.
 1. Add focused regression assertions.
 2. Run `npm test`, `npm run lint`, and `git diff --check`.
 3. Update `README.md` when behavior, security, access, setup, or hosting changes.
-4. Use Sites building and hosting because `.openai/hosting.json` exists.
-5. Push the validated commit and package/save the exact commit as one Sites
+4. For a domain or authentication change, smoke-test Google sign-in, verified
+   email sign-in, password reset, co-treasurer acceptance, and team link/PIN
+   entry from the canonical origin.
+5. Use Sites building and hosting because `.openai/hosting.json` exists.
+6. Push the validated commit and package/save the exact commit as one Sites
    version. Deploy only with explicit approval for the public site, then wait
    for production success.

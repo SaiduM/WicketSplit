@@ -15,7 +15,11 @@ should pay whom.
 
 The public production site is:
 
-<https://wicketsplit-wolfpacks.saidubabumallela.chatgpt.site>
+<https://www.wicketsplit.com>
+
+The `www` hostname is the canonical product URL. The zone-apex hostname
+`https://wicketsplit.com` is attached to the same Sites project and should be
+used only after its managed TLS certificate reports active.
 
 It can be shared for real-team feedback. Feedback users should use test-sized
 amounts until the team agrees on its roster and access roles. WicketSplit
@@ -300,6 +304,22 @@ the hosting environment so automated secret scanners do not flag literal keys
 in source control. Never commit service-account credentials or configuration
 values. Restrict the Firebase browser key to the Firebase APIs and approved
 website origins in Google Cloud Console.
+
+### Production domain and OAuth
+
+The Sites custom-domain configuration maps `www.wicketsplit.com` to
+`custom-domains.chatgpt.site` and the zone apex to the Sites-provided A-record
+targets. Domain-verification TXT records must remain in DNS. Keep both
+`wicketsplit.com` and `www.wicketsplit.com` in Firebase Authentication's
+authorized-domain list and in the Google OAuth client's Authorized JavaScript
+Origins. Do not add a path or trailing slash to an OAuth origin. Retain the
+Firebase handler URI under Authorized redirect URIs.
+
+Invitation and team-access URLs are constructed from the incoming production
+request origin. Treasurers should open the canonical `www` site before copying
+or replacing an invitation so the prepared message uses the official domain.
+Existing bearer links remain valid until accepted, expired, replaced, or
+revoked.
 
 ## Data model
 

@@ -36,7 +36,7 @@ forcing every player to register.
 | --- | --- | --- |
 | Owner/treasurer | Individual Google or verified email sign-in | Full team and financial administration |
 | Co-treasurer | Email-restricted invitation, then individual sign-in | Full team administration; removable by another treasurer |
-| Team player | Private team link + six-digit PIN; no account | Personal Home, Games, Expenses, and own expense maintenance |
+| Team player | Private team link + six-digit PIN; no account | Read-only Personal Home, Games, Expenses, and private balance breakdown |
 
 Shared player access is convenient, but it is not strong identity proof. Anyone
 with both team secrets can select a roster identity, so teams should share the
@@ -70,8 +70,8 @@ transfers funds.
 
 ## Known limits
 
-- Concurrent workspace edits use last-write-wins; two treasurers should avoid
-  changing the same team at the same instant.
+- Concurrent workspace edits use optimistic versions. A stale save is rejected
+  and the user is asked to reload the latest team instead of overwriting it.
 - CricClubs import depends on an external public feed and may need manual entry
   if that service changes or becomes unavailable.
 - The current storage and operating model suits club-team feedback and normal
@@ -85,9 +85,10 @@ transfers funds.
 
 1. Collect feedback from a small number of real teams before adding scope.
 2. Add error monitoring and a tested backup/restore procedure.
-3. Add optimistic workspace versions before encouraging simultaneous
-   co-treasurer entry.
-4. Normalize financial records and add pagination before broad public growth.
-5. Keep scoring, chat, and payment processing outside the core unless repeated
+3. Replace full-workspace writes with idempotent record-specific mutations.
+4. Move pagination into indexed server queries and run staged load tests before
+   broad public growth.
+5. Finish branded Firebase email delivery and canonical-domain redirection.
+6. Keep scoring, chat, and payment processing outside the core unless repeated
    user evidence shows they are necessary. See `FUTURE_TODO.md` for the full
    ordered backlog.
