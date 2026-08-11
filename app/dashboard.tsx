@@ -255,6 +255,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     return { ...player, paid, credit, share, sent, received, originalBalance, balance: originalBalance + sent - received };
   }), [players, games, expenses, credits, payments]);
 
+  if (saveState === "loading") return <main className="workspace-loading"><span className="brand-mark">W</span><strong>Loading your workspace…</strong><p>Syncing your teams and leagues.</p></main>;
+  if (loadFailed) return <main className="workspace-loading load-error"><span>!</span><strong>We couldn’t load your workspace.</strong><p>Your saved data has not been changed.</p><button className="primary" onClick={()=>location.reload()}>Try again</button></main>;
+
   if (!account.registered) {
     if(isSharedMember)return <main className="workspace-loading load-error"><span>!</span><strong>This team access is no longer available.</strong><p>Ask your treasurer for the current team link and PIN.</p><a className="primary" href="/api/auth/logout">Return to sign in</a></main>;
     return <Registration user={user} onRegister={(name, teamName, leagueName) => {
@@ -301,9 +304,6 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     link.download = `${team.name}-${league.name}-settlement.csv`.replaceAll(" ","-").toLowerCase(); link.click();
     URL.revokeObjectURL(link.href); notify("Settlement CSV downloaded");
   }
-
-  if (saveState === "loading") return <main className="workspace-loading"><span className="brand-mark">W</span><strong>Loading your workspace…</strong></main>;
-  if (loadFailed) return <main className="workspace-loading load-error"><span>!</span><strong>We couldn’t load your workspace.</strong><p>Your saved data has not been changed.</p><button className="primary" onClick={()=>location.reload()}>Try again</button></main>;
 
   const toggleNavigation=()=>window.matchMedia("(max-width: 760px)").matches?setMobileNavOpen(open=>!open):setSidebarCollapsed(collapsed=>!collapsed);
   const chooseView=(next:View)=>{

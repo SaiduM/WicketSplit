@@ -172,6 +172,16 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /originalBalance \+ sent - received/);
 });
 
+test("workspace loading completes before registration UI can render", async () => {
+  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  const loadingGuard = dashboard.indexOf('if (saveState === "loading")');
+  const registrationGuard = dashboard.indexOf("if (!account.registered)");
+  assert.ok(loadingGuard >= 0);
+  assert.ok(registrationGuard >= 0);
+  assert.ok(loadingGuard < registrationGuard);
+  assert.match(dashboard, /Syncing your teams and leagues/);
+});
+
 test("mobile game cards display two per row", async () => {
   const [css, dashboard] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
