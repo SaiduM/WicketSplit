@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
 import { loadNormalizedTeam, loadOrMigrateTeam, saveNormalizedTeam } from "../../../db/workspace";
 import { isSameOrigin } from "../security";
+import { earlyAccessStatus, isEarlyAccessAdmin } from "../../early-access-policy";
 
 const MAX_PAYLOAD_BYTES = 256_000;
 const READS_PER_MINUTE = 120;
@@ -207,7 +208,9 @@ export async function GET() {
     return team ? { ...team, access: { role: entry.role, playerId: entry.player_id, isOwner: entry.is_owner===1 } } : null;
   }));
   const availableTeams=teams.filter((team):team is NonNullable<typeof team>=>Boolean(team));
-  return Response.json({ registered: Boolean(legacy.registered)||availableTeams.length>0, name: legacy.name||user.name, teams:availableTeams }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
+  const registered=Boolean(legacy.registered)||availableTeams.length>0;
+  const accessStatus=registered?"approved":await earlyAccessStatus(email);
+  return Response.json({ registered, name: legacy.name||user.name, teams:availableTeams, earlyAccess:{status:accessStatus,isAdmin:isEarlyAccessAdmin(email)} }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }
 
 export async function POST(request: Request) {
@@ -228,6 +231,10 @@ export async function POST(request: Request) {
   const email = user.email.toLowerCase();
   const now = new Date().toISOString();
   const versions:Record<number,number>={};
+  const priorState=await env.DB.prepare("SELECT payload FROM app_states WHERE team_key = ?").bind(email).first<{payload:string}>();
+  const wasRegistered=priorState?Boolean((JSON.parse(priorState.payload) as {registered?:boolean}).registered):false;
+  const priorMembership=await env.DB.prepare("SELECT 1 AS found FROM team_memberships WHERE email = ? LIMIT 1").bind(email).first();
+  const canCreateTeam=wasRegistered||Boolean(priorMembership)||await earlyAccessStatus(email)==="approved";
   if(user.provider==="team"&&(account.teams.length!==1||Number(account.teams[0]?.id)!==user.teamId))return Response.json({ error: "Shared team members cannot create or switch teams" }, { status: 403 });
   await env.DB.prepare(`INSERT INTO app_states (team_key, payload, updated_at) VALUES (?, ?, ?)
     ON CONFLICT(team_key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`)
@@ -241,6 +248,7 @@ export async function POST(request: Request) {
       .bind(teamId, email).first<{ role: "treasurer"|"member"; player_id: number|null }>();
     if (!existingTeam) {
       if(user.provider==="team")return Response.json({ error: "Shared team members cannot create teams" }, { status: 403 });
+      if(!canCreateTeam)return Response.json({error:"Early-access approval is required before creating a team"},{status:403});
       const saved=await saveNormalizedTeam(clean as Parameters<typeof saveNormalizedTeam>[0]);
       clean.version=saved.version;versions[teamId]=saved.version;
       await env.DB.prepare("INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now).run();

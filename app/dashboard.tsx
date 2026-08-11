@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Player = { id: number; name: string; initials: string; email?: string; phone?: string; color: string };
 type Game = { id: number; date: string; opponent: string; venue: string; players: number[]; excludedFromSplit?: number[]; status: "Upcoming" | "Completed"; source?: "cricclubs"; externalId?: string; sourceUrl?: string };
@@ -16,7 +16,7 @@ type Credit = { id: number; date: string; label: string; amount: number; playerI
 type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPlayerId: number; amount: number; note?: string; recordedBy?: string };
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[]; cricclubs?: CricClubsLeagueConnection };
 type Team = { id: number; name: string; sport: string; version?: number; players: Player[]; leagues: League[]; cricclubs?: CricClubsTeamConnection; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
-type Account = { registered: boolean; name: string; teams: Team[] };
+type Account = { registered: boolean; name: string; teams: Team[]; earlyAccess?:{status:"none"|"pending"|"approved"|"rejected";isAdmin?:boolean} };
 type View = "overview" | "roster" | "users" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
 type SaveState = "loading" | "saved" | "saving" | "error" | "conflict";
 type ScreenshotPlayer = { name:string; playerId:number };
@@ -101,7 +101,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       if (!r.ok) throw new Error("Workspace could not be loaded");
       return r.json();
     }).then(data => {
-      const next = data?.registered ? data as Account : emptyAccount(user.name);
+      const next = data?.registered ? data as Account : {...emptyAccount(user.name),earlyAccess:data?.earlyAccess};
       teamVersions.current=Object.fromEntries(next.teams.filter(team=>team.version).map(team=>[team.id,team.version as number]));
       setAccount(next);
       setTeamId(next.teams[0]?.id ?? null);
@@ -269,6 +269,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
 
   if (!account.registered) {
     if(isSharedMember)return <main className="workspace-loading load-error"><span>!</span><strong>This team access is no longer available.</strong><p>Ask your treasurer for the current team link and PIN.</p><a className="primary" href="/api/auth/logout">Return to sign in</a></main>;
+    if(account.earlyAccess?.status!=="approved")return <EarlyAccessGate user={user} initialStatus={account.earlyAccess?.status??"none"}/>;
     return <Registration user={user} onRegister={(name, teamName, leagueName) => {
       const id = Date.now(); const firstLeagueId = id + 1;
       const next: Account = { registered: true, name, teams: [{
@@ -353,7 +354,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </nav>
       <div className="side-bottom">
         <div className="profile-wrap" ref={profileMenuRef}>
-          {profileMenu&&<div className="profile-menu"><div className="profile-menu-title"><strong>Account</strong><span>{team?.name}</span></div><dl><div><dt>Name</dt><dd>{accountDisplayName}</dd></div><div><dt>Role</dt><dd><span className="account-role">{accountRole}</span></dd></div><div><dt>Email</dt><dd>{accountEmail}</dd></div><div><dt>Phone</dt><dd>{accountPhone}</dd></div></dl><a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
+          {profileMenu&&<div className="profile-menu"><div className="profile-menu-title"><strong>Account</strong><span>{team?.name}</span></div><dl><div><dt>Name</dt><dd>{accountDisplayName}</dd></div><div><dt>Role</dt><dd><span className="account-role">{accountRole}</span></dd></div><div><dt>Email</dt><dd>{accountEmail}</dd></div><div><dt>Phone</dt><dd>{accountPhone}</dd></div></dl>{account.earlyAccess?.isAdmin&&<a className="admin-access-link" href="/early-access"><span>◇</span>Early-access requests</a>}<a href="/api/auth/logout" aria-label="Log out"><span>↪</span>Log out</a></div>}
           <div className="profile"><div className="avatar dark">{initials(account.name)}</div><div><strong>{account.name}</strong><small>{user.provider==="team"?"Team member access":user.email.startsWith("phone:")?user.email.slice(6):user.email}</small></div><button type="button" aria-label="Open account menu" aria-expanded={profileMenu} onClick={()=>setProfileMenu(open=>!open)}>•••</button></div>
         </div>
       </div>
@@ -416,6 +417,12 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     {inviteTarget&&team&&<InviteAccessModal player={inviteTarget} teamName={team.name} preview={invitePreview} onClose={()=>{setInviteTarget(null);setInvitePreview("")}} onInvite={role=>invitePlayer(inviteTarget,role)} onCopy={async()=>{try{await navigator.clipboard.writeText(invitePreview);notify("Invitation copied — paste it into your team chat")}catch{notify("Could not copy automatically — select the message and copy it")}}}/>}
     {toast && <div className="toast">✓ {toast}</div>}
   </main>;
+}
+
+function EarlyAccessGate({user,initialStatus}:{user:{name:string;email:string};initialStatus:"none"|"pending"|"rejected"}){
+  const [teamName,setTeamName]=useState("");const [note,setNote]=useState("");const [status,setStatus]=useState(initialStatus);const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  const submit=async(event:FormEvent)=>{event.preventDefault();setBusy(true);setError("");const response=await fetch("/api/early-access",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({teamName,note})});const result=await response.json().catch(()=>({})) as {status?:typeof status;error?:string};setBusy(false);if(!response.ok){setError(result.error??"Request could not be submitted");return}setStatus(result.status??"pending")};
+  return <main className="early-access-page"><section className="early-access-card"><a className="public-brand" href="/"><span>W</span>WicketSplit</a><span className="hero-kicker">INVITE-ONLY EARLY ACCESS</span><h1>{status==="pending"?"You’re on the early-access list.":status==="rejected"?"Access is currently limited.":"Request early access"}</h1>{status==="pending"?<><p>Thanks, {user.name}. Your request for <strong>{user.email}</strong> is waiting for review. You can return to this page anytime.</p><div className="early-access-note">Existing team invitations still work. If a treasurer invited you as a co-treasurer, open that invitation link to join their team.</div></>:<form onSubmit={submit}><p>WicketSplit is onboarding a small number of cricket teams while we collect feedback. Tell us which team you manage.</p><label>Team name<input autoFocus required maxLength={160} value={teamName} onChange={event=>setTeamName(event.target.value)} placeholder="e.g. Wolfpacks"/></label><label>How would you use WicketSplit? <span>Optional</span><textarea maxLength={800} value={note} onChange={event=>setNote(event.target.value)} placeholder="League size, number of players, or what you want to track"/></label><button className="primary" disabled={busy}>{busy?"Sending…":"Request early access →"}</button>{error&&<div className="early-access-error">{error}</div>}</form>}<div className="early-access-footer"><a href="/api/auth/logout">Sign out</a><a href="/">Back to homepage</a></div></section></main>;
 }
 
 function title(view: View) { return ({roster:"Team roster",users:"Team users",leagues:"Leagues",games:"Games",expenses:"Expenses",calculator:"Calculator",settlement:"Settlement",overview:"Home"})[view]; }

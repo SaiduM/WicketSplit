@@ -59,6 +59,19 @@ export const apiRateLimits = sqliteTable("api_rate_limits", {
   requestCount: integer("request_count").notNull(),
 });
 
+export const earlyAccessRequests = sqliteTable("early_access_requests", {
+  email: text("email").primaryKey(),
+  name: text("name").notNull(),
+  teamName: text("team_name").notNull(),
+  note: text("note").notNull().default(""),
+  status: text("status").notNull().default("pending"),
+  requestedAt: text("requested_at").notNull(),
+  reviewedAt: text("reviewed_at"),
+  reviewedBy: text("reviewed_by"),
+}, table => [
+  index("idx_early_access_status_requested").on(table.status, table.requestedAt),
+]);
+
 export const teamMemberAccess = sqliteTable("team_member_access", {
   teamId: integer("team_id").primaryKey(),
   tokenHash: text("token_hash").notNull().unique(),

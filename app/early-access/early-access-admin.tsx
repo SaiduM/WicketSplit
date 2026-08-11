@@ -1,0 +1,13 @@
+"use client";
+/* eslint-disable @next/next/no-html-link-for-pages */
+
+import { useEffect,useState } from "react";
+
+type AccessRequest={email:string;name:string;team_name:string;note:string;status:"pending"|"approved"|"rejected";requested_at:string};
+
+export default function EarlyAccessAdmin(){
+  const [requests,setRequests]=useState<AccessRequest[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [admin,setAdmin]=useState(false);
+  useEffect(()=>{let active=true;fetch("/api/early-access").then(async response=>{const result=await response.json();if(!response.ok)throw new Error(result.error??"Could not load requests");if(active){setAdmin(Boolean(result.isAdmin));setRequests(result.requests??[])}}).catch(reason=>{if(active)setError((reason as Error).message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[]);
+  const update=async(email:string,status:AccessRequest["status"])=>{const response=await fetch("/api/early-access",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({email,status})});const result=await response.json().catch(()=>({}));if(!response.ok){setError(result.error??"Access could not be updated");return}setRequests(current=>current.map(item=>item.email===email?{...item,status}:item))};
+  return <main className="early-admin-page"><nav className="legal-nav"><a className="public-brand" href="/"><span>W</span>WicketSplit</a><a href="/app">Open workspace →</a></nav><section className="early-admin-shell"><span className="hero-kicker">CONTROLLED ROLLOUT</span><h1>Early-access requests</h1><p>Approve only the teams you want to onboard. Approved users can create teams; existing users and co-treasurer invitations are unaffected.</p>{loading?<div className="early-admin-empty">Loading requests…</div>:!admin?<div className="early-admin-empty">This page is available only to the WicketSplit early-access administrator.</div>:requests.length?<div className="early-request-list">{requests.map(item=><article key={item.email}><div><strong>{item.name}</strong><span>{item.email}</span><b>{item.team_name}</b>{item.note&&<p>{item.note}</p>}<small>Requested {new Date(item.requested_at).toLocaleDateString()}</small></div><div><span className={`access-status ${item.status}`}>{item.status}</span><button className="primary" disabled={item.status==="approved"} onClick={()=>update(item.email,"approved")}>Approve</button><button className="ghost" disabled={item.status==="rejected"} onClick={()=>update(item.email,"rejected")}>Reject</button></div></article>)}</div>:<div className="early-admin-empty">No early-access requests yet.</div>}{error&&<div className="early-access-error">{error}</div>}</section></main>;
+}

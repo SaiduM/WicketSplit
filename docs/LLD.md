@@ -23,6 +23,7 @@
 | `app/api/team-access/join/route.ts` | Verify PIN, select roster identity, create member session |
 | `app/api/team-treasurers/route.ts` | List roles and revoke co-treasurer membership |
 | `app/api/team-users/route.ts` | Treasurer-only access inventory and shared player-session removal |
+| `app/api/early-access/route.ts` | Submit, review, approve, or reject early-access requests |
 | `app/join-team/page.tsx` | Registration-free team member entry UI |
 | `app/api/players/route.ts` | Protected roster deletion |
 | `app/api/teams/route.ts` | Owner-only team deletion |

@@ -14,7 +14,7 @@ export default async function Home() {
         <a className="nav-link" href="#how-it-works">How it works</a>
         <a className="nav-link" href="/forgot-password">Forgot password?</a>
         <a className="ghost" href={workspaceLink}>{user ? "Open workspace" : "Sign in"}</a>
-        <a className="primary" href={workspaceLink}>{user ? "Go to dashboard" : "Register free"} →</a>
+        <a className="primary" href={workspaceLink}>{user ? "Go to dashboard" : "Request early access"} →</a>
       </div>
     </nav>
 
@@ -24,8 +24,8 @@ export default async function Home() {
         <h1>Every game.<br/>Every expense.<br/><em>Fairly split.</em></h1>
         <p>Select the Playing XI or XII, track who paid, and give every player a transparent settlement when the league ends.</p>
         <div className="hero-actions">
-          <a className="primary hero-primary" href={workspaceLink}>{user ? "Open your workspace" : "Register your account"} →</a>
-          <span>Free to start · No card required</span>
+          <a className="primary hero-primary" href={workspaceLink}>{user ? "Open your workspace" : "Request early access"} →</a>
+          <span>Invite-only preview · No card required</span>
         </div>
       </div>
       <div className="hero-ledger">
@@ -56,7 +56,7 @@ export default async function Home() {
       </div>
     </section>
 
-    <section className="public-cta"><span className="hero-kicker">YOUR NEXT LEAGUE</span><h2>Leave the calculator at home.</h2><p>Treasurers sign in to manage the team. Players join through the private message shared by their treasurer.</p><a className="primary hero-primary" href={workspaceLink}>{user ? "Open WicketSplit" : "Create your treasurer account"} →</a></section>
+    <section className="public-cta"><span className="hero-kicker">LIMITED EARLY ACCESS</span><h2>Bring your team into the preview.</h2><p>We are onboarding a small number of cricket teams for feedback. Players still join through the private message shared by their treasurer.</p><a className="primary hero-primary" href={workspaceLink}>{user ? "Open WicketSplit" : "Request early access"} →</a></section>
     <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Fair expense splitting for cricket teams.</p><div className="footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
   </main>;
 }

@@ -117,6 +117,20 @@ chat, bookings, merchandise, and payment processing.
 
 ## Team access and invitations
 
+### Invite-only early access
+
+The public product page remains visible, but a newly authenticated user cannot
+create a first team until an early-access administrator approves the request.
+Existing team owners, existing co-treasurers, accepted co-treasurer invitations,
+and player link/PIN sessions continue to work normally.
+
+New users request access after sign-in. The administrator reviews requests at
+`/early-access`; approved users can then create their first team. The default
+administrator is the product owner account. A deployment can override or add
+administrators with the comma-separated `EARLY_ACCESS_ADMIN_EMAILS` runtime
+setting. Approval is enforced by the server when a new team is created, not
+only by the interface.
+
 For ordinary players, a treasurer opens **Team roster → Team member access**,
 creates one link and PIN, and shares the prepared WhatsApp message privately.
 Each player opens the link, enters the PIN, selects their own roster name, and

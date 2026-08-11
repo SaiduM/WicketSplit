@@ -20,6 +20,7 @@ The product supports:
 - Team-funded player credits
 - Confirmed settlement-payment history
 - Individually authenticated treasurer and co-treasurer access
+- Invite-only onboarding for brand-new team owners, with administrator approval
 - Registration-free player access through one revocable team link and PIN
 - Google and Firebase email authentication for treasurers
 - Mobile/PWA usage, shareable summaries, and CSV exports

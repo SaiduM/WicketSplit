@@ -10,7 +10,7 @@ test("public product surface has replaced the starter preview", async () => {
   ]);
   assert.match(page, /WicketSplit/);
   assert.match(page, /Every game/);
-  assert.match(page, /Register free/);
+  assert.match(page, /Request early access/);
   assert.match(layout, /WicketSplit — Cricket Team Expenses/);
   assert.doesNotMatch(`${page}${layout}${packageJson}`, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
@@ -256,11 +256,28 @@ test("public access messaging and financial ledgers are mobile friendly", async 
   ]);
   assert.match(home, /SIMPLE, ROLE-BASED ACCESS/);
   assert.match(home, /Private link \+ PIN/);
-  assert.match(home, /Create your treasurer account/);
+  assert.match(home, /LIMITED EARLY ACCESS/);
   assert.match(css, /\.ledger-filters\+\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
   assert.match(css, /\.settlement-filter\+\.table-panel td:nth-child\(1\)::before\{content:"Player"\}/);
   assert.match(css, /\.payment-history>\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
   assert.match(css, /min-width:0!important/);
+});
+
+test("new team creation is protected by an administrator-approved early-access gate", async () => {
+  const [stateApi, accessApi, policy, dashboard, migration] = await Promise.all([
+    readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/early-access/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/early-access-policy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0007_overrated_spyke.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(stateApi, /Early-access approval is required before creating a team/);
+  assert.match(accessApi, /Administrator access required/);
+  assert.match(accessApi, /early-access-request:/);
+  assert.match(policy, /EARLY_ACCESS_ADMIN_EMAILS/);
+  assert.match(dashboard, /INVITE-ONLY EARLY ACCESS/);
+  assert.match(migration, /early_access_requests/);
+  assert.match(migration, /idx_early_access_status_requested/);
 });
 
 test("squad screenshots are processed locally and reviewed before batch import", async () => {
