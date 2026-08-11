@@ -42,9 +42,10 @@ calculates settlements but does not move money.
    included in the settlement CSV.
 7. Record umpiring for the team by entering the fixed credit per game once and
    the number of games umpired beside any players. Only non-zero rows are saved.
-   Each player receives the full credit, while an equal team cost is allocated
-   across split-eligible completed-game appearances. A player may therefore owe
-   less, owe nothing, or finish with money to receive.
+   Each player receives the full credit. That full credited amount is also added
+   to the team cost pool and allocated across split-eligible completed-game
+   appearances. A player may therefore owe less, owe nothing, or finish with
+   money to receive.
 8. Share the suggested transfers showing who should pay whom.
 9. After the receiver confirms money arrived, record the settlement payment.
    Remaining balances and transfer suggestions recalculate automatically.

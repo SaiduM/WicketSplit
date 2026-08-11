@@ -318,8 +318,9 @@ player umpiring cost share =
   / total eligible appearances
 ```
 
-The full credit is added to its recipient and the equal team cost is included
-in every eligible player’s fair share. This keeps total balances at zero and
+The full credit is added to its recipient. That full credited amount is also
+added to the team cost pool and included in every eligible player’s fair share
+according to eligible appearances. This keeps total balances at zero and
 allows an umpire to finish with money to receive.
 
 ```text

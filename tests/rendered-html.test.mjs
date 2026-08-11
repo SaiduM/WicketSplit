@@ -80,7 +80,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","League Fee","Fruits & Water","Fruits \/ Water","Fruits","Water"\]\)/);
   assert.match(dashboard, /League share calculator/);
-  assert.match(dashboard, /Team-funded share = cost × eligible appearances ÷ total eligible appearances/);
+  assert.match(dashboard, /The full umpiring credit is added to the team cost pool/);
+  assert.match(dashboard, /team cost pool × their eligible appearances ÷ total eligible appearances/);
   assert.match(dashboard, /Fruits \/ water/);
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /Which roster player are you/);
@@ -99,6 +100,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /aria-label="Current league" value=\{league\.id\} onChange=\{e=>setLeagueId\(Number\(e\.target\.value\)\)\}/);
   assert.doesNotMatch(dashboard, /setLeagueId\(Number\(e\.target\.value\)\);chooseView\("overview"\)/);
   assert.match(dashboard, /The player receives the full credit/);
+  assert.match(dashboard, /That full amount is added to the team cost pool/);
   assert.match(dashboard, /Save umpiring credits/);
   assert.match(dashboard, /Team funded · \$\{splitAppearanceCount\(games\)\} eligible appearances/);
   assert.match(dashboard, /appearanceShare\(e\.amount,player\.id,games\)/);
