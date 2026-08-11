@@ -43,6 +43,7 @@ const creditDisplayLabel = (credit:Credit) => isUmpiringWaiver(credit)?credit.la
 const splitEligiblePlayers = (game:Game) => game.players.filter(playerId=>!game.excludedFromSplit?.includes(playerId));
 const splitAppearanceCount = (games:Game[]) => games.filter(game=>game.status==="Completed").reduce((total,game)=>total+splitEligiblePlayers(game).length,0);
 const fundedGames = (games:Game[]) => games.filter(game=>game.status==="Completed"&&splitEligiblePlayers(game).length>0);
+const gameSplitLabel = (games:Game[]) => { const count=fundedGames(games).length; return `Split equally by game · ${count} completed ${count===1?"game":"games"}`; };
 const gameWeightedShare = (amount:number,playerId:number,games:Game[]) => {
   const completed=fundedGames(games);
   const costPerGame=completed.length?amount/completed.length:0;
@@ -55,14 +56,14 @@ const expenseParticipants = (expense:Expense,players:Player[],games:Game[]) =>
   expense.participants?.length ? expense.participants :
   expense.split==="players" ? games.find(g=>g.id===expense.gameId)?.players??[] : players.map(p=>p.id);
 const splitDescription = (entry:{split:ExpenseSplitMode;category?:string;participants?:number[];gameId?:number;kind?:string},players:Player[],games:Game[]) => {
-  if(entry.kind==="umpiring-waiver") return `Team funded · ${fundedGames(games).length} completed games`;
-  if(entry.split==="appearances"||(entry.category&&appearanceCategories.has(entry.category))) return `By game, then eligible players (${fundedGames(games).length} games)`;
+  if(entry.kind==="umpiring-waiver") return gameSplitLabel(games);
+  if(entry.split==="appearances"||(entry.category&&appearanceCategories.has(entry.category))) return gameSplitLabel(games);
   const count=entry.participants?.length??(entry.split==="players"?games.find(g=>g.id===entry.gameId)?.players.length:players.length)??0;
   if(entry.split==="players") return `Game vs ${games.find(g=>g.id===entry.gameId)?.opponent??"Unknown"} (${count})`;
   return entry.split==="custom"?`Custom group (${count})`:`Full roster (${count})`;
 };
 const creditSplitDescription = (credit:Credit,players:Player[],games:Game[]) =>
-  isUmpiringWaiver(credit) ? `Team funded · ${fundedGames(games).length} completed games` : splitDescription(credit,players,games);
+  isUmpiringWaiver(credit) ? gameSplitLabel(games) : splitDescription(credit,players,games);
 
 export default function Dashboard({ user }: { user: { name: string; email: string; provider?:"google"|"phone"|"password"|"team" } }) {
   const [account, setAccount] = useState<Account>(() => emptyAccount(user.name));

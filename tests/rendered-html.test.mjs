@@ -102,7 +102,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /The player receives the full credit/);
   assert.match(dashboard, /That full amount is added to the team cost pool/);
   assert.match(dashboard, /Save umpiring credits/);
-  assert.match(dashboard, /Team funded · \$\{fundedGames\(games\)\.length\} completed games/);
+  assert.match(dashboard, /Split equally by game · \$\{count\} completed \$\{count===1\?"game":"games"\}/);
+  assert.match(dashboard, /if\(entry\.kind==="umpiring-waiver"\) return gameSplitLabel\(games\)/);
   assert.match(dashboard, /gameWeightedShare\(e\.amount,player\.id,games\)/);
   assert.match(dashboard, /Umpiring cost share/);
   assert.match(dashboard, /Per-game breakdown/);
