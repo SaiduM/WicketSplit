@@ -156,6 +156,9 @@ Roles are enforced by the server:
   leagues, games, credits, settlements, or invitations.
 - **Co-treasurer:** has full team-management access. These invitations require
   a roster email and can only be accepted by that verified email identity.
+  Owners and co-treasurers see the complete Settlement table for every player,
+  including Details, transfers, payment history, sharing, and CSV export on
+  desktop and mobile.
 
 Co-treasurer invitation links contain a 256-bit random bearer token. Only its
 SHA-256 hash is stored. Links are email-restricted, single-use, expire after

@@ -46,6 +46,7 @@ Vinext, React, Firebase, and D1 architecture.
 - Show the full settlement equation and itemized positive contributions in the player Details view; never hide expenses paid or umpiring credits inside the remaining balance.
 - Keep the player calculator summary compact: combine expense categories into one share and show umpiring credit and net share without weight or umpiring-count columns.
 - Give shared-link players a mobile-visible My breakdown route limited to their linked roster identity; never expose other players' settlement rows, exports, or management actions there.
+- Never scope an authenticated treasurer or co-treasurer to a player settlement view. Default their Settlement page to all players and keep it reachable on mobile.
 - A confirmed payment increases the sender's balance and decreases the
   receiver's balance; recalculate remaining transfers after every change.
 - Never allow a payment to exceed both the sender's remaining debt and the

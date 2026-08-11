@@ -301,6 +301,9 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isSharedMember/);
   assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\],\["settlement","⇄","My breakdown"\]/);
   assert.match(dashboard, /viewerPlayerId=\{isSharedMember\?memberPlayerId:undefined\}/);
+  assert.match(dashboard, /const playerView=!canManage&&viewerPlayerId!==undefined/);
+  assert.match(dashboard, /useState<"all"\|"pending">\("all"\)/);
+  assert.match(dashboard, /!isSharedMember&&id==="calculator"\?"mobile-secondary-nav"/);
   assert.match(dashboard, /What I should do now/);
   assert.match(dashboard, /My confirmed payments/);
   assert.match(dashboard, /modal==="expense" && league && isTreasurer/);
