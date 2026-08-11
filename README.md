@@ -150,8 +150,9 @@ Roles are enforced by the server:
 
 - **Team member:** can view shared records but cannot add new expenses.
   Members may edit or delete only older expenses they previously submitted.
-  Their streamlined navigation contains Home,
-  Games, and Expenses; they cannot create or switch teams or change the roster,
+  Their streamlined navigation contains Home, Games, Expenses, and a private
+  **My breakdown** view limited to their own balance, payment direction, and
+  confirmed payment history. They cannot create or switch teams or change the roster,
   leagues, games, credits, settlements, or invitations.
 - **Co-treasurer:** has full team-management access. These invitations require
   a roster email and can only be accepted by that verified email identity.

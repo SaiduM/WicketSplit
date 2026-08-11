@@ -299,7 +299,10 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /Select sharing method/);
   assert.match(dashboard, /appearanceCategories\.has\(next\)\?"appearances":"custom"/);
   assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isSharedMember/);
-  assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\]/);
+  assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\],\["settlement","⇄","My breakdown"\]/);
+  assert.match(dashboard, /viewerPlayerId=\{isSharedMember\?memberPlayerId:undefined\}/);
+  assert.match(dashboard, /What I should do now/);
+  assert.match(dashboard, /My confirmed payments/);
   assert.match(dashboard, /modal==="expense" && league && isTreasurer/);
   assert.match(dashboard, /action=\{canManage\?"Add expense":undefined\}/);
   assert.match(dashboard, /!isSharedMember&&<button className="add-team-link"/);
