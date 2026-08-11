@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: base,
     title: "WicketSplit — Cricket Team Expenses",
-    description: "Pick your Playing XI or XII, split every team expense fairly, and settle the league in one CSV.",
+    description: "The cricket-team ledger for Playing XI/XII, game-based expense splits, umpiring credits, and transparent league settlements.",
     manifest: "/manifest.webmanifest",
     applicationName: "WicketSplit",
     referrer: "no-referrer",
@@ -32,13 +32,13 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: "WicketSplit",
       description: "Every game. Every expense. Fairly split.",
-      images: [{ url: new URL("/og.jpg", base).toString(), width: 1200, height: 630 }],
+      images: [{ url: new URL("/og.png", base).toString(), width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: "WicketSplit",
       description: "Every game. Every expense. Fairly split.",
-      images: [new URL("/og.jpg", base).toString()],
+      images: [new URL("/og.png", base).toString()],
     },
   };
 }
