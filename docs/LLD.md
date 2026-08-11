@@ -286,6 +286,20 @@ player league-fee share =
   league fee * player eligible appearances / total eligible appearances
 ```
 
+The Calculator and CSV derive an informational per-game view without changing
+that formula:
+
+```text
+cost per eligible appearance =
+  total appearance-weighted team costs / total eligible appearances
+
+game allocated cost =
+  game eligible payer count * cost per eligible appearance
+```
+
+Consequently, cost per payer remains constant across games and a game with an
+excluded player represents a smaller portion of the league-wide pool.
+
 `excludedFromSplit` is optional for backward compatibility, contains only
 unique IDs from the same game lineup, and cannot exclude the entire lineup.
 Exclusion affects League Fee and Fruits / Water calculations only. It does not

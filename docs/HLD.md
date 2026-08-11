@@ -13,6 +13,8 @@ The product supports:
 - Multiple teams, shared rosters, leagues, and treasurers
 - Games with Playing XI or XII selection
 - Per-game fair-split eligibility independent of recorded lineup membership
+- Informational per-game allocation breakdown derived from the league-wide
+  eligible-appearance rate
 - Game-lineup and custom-player expense splits
 - One league fee allocated by completed-game appearances
 - Team-funded player credits

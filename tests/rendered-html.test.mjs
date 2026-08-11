@@ -103,6 +103,12 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Team funded · \$\{splitAppearanceCount\(games\)\} eligible appearances/);
   assert.match(dashboard, /appearanceShare\(e\.amount,player\.id,games\)/);
   assert.match(dashboard, /Umpiring cost share/);
+  assert.match(dashboard, /Per-game breakdown/);
+  assert.match(dashboard, /Informational view of the current appearance-weighted calculation/);
+  assert.match(dashboard, /eligibleIds\.length\/totalAppearances/);
+  assert.match(dashboard, /PER-GAME BREAKDOWN/);
+  assert.match(dashboard, /Allocated Cost/);
+  assert.match(dashboard, /eligible\.length\*perAppearance/);
   assert.doesNotMatch(dashboard, /Maximum waiver/);
   assert.match(dashboard, /Games umpired/);
   assert.match(dashboard, /umpiringDetails\.join/);

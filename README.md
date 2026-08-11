@@ -36,7 +36,10 @@ calculates settlements but does not move money.
    `player share = expense × player appearances ÷ total appearances`
 
 5. Choose custom players or a games-played split for Restaurant and Other.
-6. Use the Calculator to review appearances, weights, and each cost component.
+6. Use the Calculator to review appearances, weights, each cost component, and
+   an informational per-game breakdown showing lineup size, eligible payers,
+   exclusions, allocated cost, and cost per payer. The same breakdown is
+   included in the settlement CSV.
 7. Record umpiring for the team by entering the fixed credit per game once and
    the number of games umpired beside any players. Only non-zero rows are saved.
    Each player receives the full credit, while an equal team cost is allocated
@@ -79,6 +82,8 @@ calculates settlements but does not move money.
 - Per-game split eligibility: record the full Playing XI/XII while excluding
   selected players from League Fee and Fruits / Water allocation
 - League calculator showing games played, percentage weight, and cost components
+- Per-game explanatory breakdown in Calculator and CSV without changing the
+  appearance-weighted allocation formula
 - Batch umpiring entry with one fixed rate and per-player game counts; full
   credits are funded as appearance-weighted team costs and itemized in the Calculator
 - Player calculation breakdowns, filters, duplicate protection, and CSV export

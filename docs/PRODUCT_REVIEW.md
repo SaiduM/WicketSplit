@@ -19,6 +19,8 @@ forcing every player to register.
 - Appearance-weighted League Fee and Fruits / Water expenses
 - Per-game eligibility overrides that preserve the recorded lineup while
   removing selected appearances from weighted costs
+- Per-game Calculator and CSV breakdowns that explain the existing
+  appearance-weighted allocation without changing balances
 - Custom or games-played sharing for Restaurant and Other expenses
 - Player-submitted expenses with submitter-only editing and deletion
 - Batch team-funded umpiring credits, player calculation breakdowns, and CSV export
