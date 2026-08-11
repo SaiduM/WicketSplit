@@ -270,7 +270,7 @@ export async function POST(request: Request) {
       if(removed.some(entry=>entry.submittedBy!==email))return Response.json({ error: "Members can only delete expenses they submitted" }, { status: 403 });
       for(const entry of nextExpenses){
         const old=oldById.get(entry.id);
-        if(!old){if(entry.paidBy!==membership.player_id)return Response.json({ error: "Members can only submit expenses they paid" }, { status: 403 });continue}
+        if(!old)return Response.json({ error: "Players cannot add expenses. Ask a treasurer to record it." }, { status: 403 });
         if(JSON.stringify(entry)!==JSON.stringify(old)){
           if(old.submittedBy!==email)return Response.json({ error: "Members can only edit expenses they submitted" }, { status: 403 });
           if(entry.paidBy!==membership.player_id)return Response.json({ error: "Members can only edit expenses they paid" }, { status: 403 });

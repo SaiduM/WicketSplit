@@ -281,7 +281,7 @@ test("shared teams use authenticated invitations and server-side roles", async (
   ]);
   assert.match(stateApi, /team_memberships/);
   assert.match(stateApi, /is_owner/);
-  assert.match(stateApi, /Members can only submit expenses they paid/);
+  assert.match(stateApi, /Players cannot add expenses\. Ask a treasurer to record it\./);
   assert.match(stateApi, /Members can only edit expenses they submitted/);
   assert.match(stateApi, /Members can only delete expenses they submitted/);
   assert.match(stateApi, /Shared team members cannot create or switch teams/);
@@ -293,7 +293,8 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /appearanceCategories\.has\(next\)\?"appearances":"custom"/);
   assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isSharedMember/);
   assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\]/);
-  assert.match(dashboard, /onAddExpense=.*setModal\("expense"\)/);
+  assert.match(dashboard, /modal==="expense" && league && isTreasurer/);
+  assert.match(dashboard, /action=\{canManage\?"Add expense":undefined\}/);
   assert.match(dashboard, /!isSharedMember&&<button className="add-team-link"/);
   assert.match(inviteApi, /Only a treasurer can invite members/);
   assert.match(inviteApi, /invite_role/);

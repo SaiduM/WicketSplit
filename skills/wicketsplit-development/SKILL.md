@@ -53,7 +53,7 @@ Vinext, React, Firebase, and D1 architecture.
 - Require a verified signed-in identity for team data.
 - Enforce memberships and roles on the server, never only in the UI.
 - Keep the combined Team users inventory authenticated-treasurer-only; return sanitized access metadata and never PINs, access tokens, encrypted access secrets, or their hashes.
-- Allow members to view and add only expenses they personally paid.
+- Allow members to view financial records but require a treasurer or co-treasurer to add new expenses.
 - Allow treasurers to manage setup, entries, credits, and invitations.
 - Allow only treasurers to record or delete confirmed settlement payments.
 - Restrict whole-team deletion to the original team treasurer and remove the

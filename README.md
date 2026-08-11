@@ -120,8 +120,8 @@ chat, bookings, merchandise, and payment processing.
 For ordinary players, a treasurer opens **Team roster → Team member access**,
 creates one link and PIN, and shares the prepared WhatsApp message privately.
 Each player opens the link, enters the PIN, selects their own roster name, and
-lands on their personal Home page. The selected player can view team records
-and add expenses only when they are the payer. Replacing or revoking the link
+lands on their personal Home page. The selected player can view team records;
+only a treasurer or co-treasurer can record new expenses. Replacing or revoking the link
 invalidates existing shared-member sessions. Link tokens and PINs are verified
 with one-way hashes, while the reusable invitation is encrypted at rest.
 Reopening Team member access shows the same message; only **Replace link & PIN**
@@ -148,9 +148,9 @@ unused invitation for that email.
 
 Roles are enforced by the server:
 
-- **Team member:** can view shared records and submit a new expense only when
-  that roster player is the payer. Members may edit or delete only expenses
-  they submitted themselves. Their streamlined navigation contains Home,
+- **Team member:** can view shared records but cannot add new expenses.
+  Members may edit or delete only older expenses they previously submitted.
+  Their streamlined navigation contains Home,
   Games, and Expenses; they cannot create or switch teams or change the roster,
   leagues, games, credits, settlements, or invitations.
 - **Co-treasurer:** has full team-management access. These invitations require

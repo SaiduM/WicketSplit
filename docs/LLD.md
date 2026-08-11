@@ -257,7 +257,7 @@ the original IDs, array order, optional fields, and financial payloads.
 8. For a member:
    - Require the submitted workspace to contain exactly the session's team.
    - Reject setup, game, credit, and payment changes.
-   - Accept new expenses only when the payer is the member's linked player.
+   - Reject all new expenses; a treasurer or co-treasurer must record them.
    - Accept edits or deletions only when the stored `submittedBy` matches the
      verified session identity; edited entries must retain the linked payer.
    - Stamp the verified submitter email.
