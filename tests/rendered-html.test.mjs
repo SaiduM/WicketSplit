@@ -291,7 +291,8 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /Select who paid/);
   assert.match(dashboard, /Select sharing method/);
   assert.match(dashboard, /appearanceCategories\.has\(next\)\?"appearances":"custom"/);
-  assert.match(dashboard, /isSharedMember\?\[\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\]\]/);
+  assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isSharedMember/);
+  assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\]/);
   assert.match(dashboard, /onAddExpense=.*setModal\("expense"\)/);
   assert.match(dashboard, /!isSharedMember&&<button className="add-team-link"/);
   assert.match(inviteApi, /Only a treasurer can invite members/);
@@ -376,6 +377,24 @@ test("team deletion is owner-only, throttled, and removes shared access atomical
   assert.match(teamApi, /DELETE FROM team_invites/);
   assert.match(teamApi, /DELETE FROM team_memberships/);
   assert.match(teamApi, /DELETE FROM shared_teams/);
+});
+
+test("team users administration is owner-only and never exposes access secrets", async () => {
+  const [dashboard, teamUsersApi, styles] = await Promise.all([
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/team-users/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(dashboard, /Team users/);
+  assert.match(dashboard, /Only the original owner can view this page/);
+  assert.match(dashboard, /Manage co-treasurers/);
+  assert.match(dashboard, /Manage team link/);
+  assert.match(teamUsersApi, /Only the original team owner can view team users/);
+  assert.match(teamUsersApi, /target\.role!=="member"/);
+  assert.match(teamUsersApi, /team-users-remove-ip:/);
+  assert.doesNotMatch(teamUsersApi, /token_hash|pin_hash|access_secret/);
+  assert.match(styles, /\.team-users-summary/);
+  assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 test("treasurers can permanently delete a league and its contained records", async () => {

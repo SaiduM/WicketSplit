@@ -88,6 +88,7 @@ controls.
   screenshots are not uploaded or stored
 - Safe roster deletion for unused players; historical or access-linked players are protected
 - Owner-only team deletion removes the shared workspace, memberships, and outstanding invites
+- Owner-only **Team users** view shows authenticated treasurers, active team-link player sessions, and pending invitations without exposing PINs, tokens, or hashes
 - Treasurer controls to delete leagues, unlinked games, and expenses with clear confirmation and automatic balance recalculation
 - Custom-player and games-played splits
 - Four expense categories: Fruits / Water, League Fee, Restaurant, and Other

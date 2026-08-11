@@ -58,6 +58,7 @@ flowchart TB
 | Authentication | Google OAuth and verified Firebase email identity for treasurers |
 | Session layer | Signed, secure authentication cookie |
 | Access-control layer | Server-enforced owner, treasurer, and member permissions |
+| Team users administration | Owner-only combined view of authenticated treasurers, shared-link player sessions, and pending invitations |
 | Shared member access | Hashed link/PIN verification, roster identity selection, and revocation |
 | Workspace API | Loads, validates, authorizes, and saves team state |
 | Invitation API | Issues expiring, single-use co-treasurer invitations |

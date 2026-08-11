@@ -17,12 +17,14 @@ type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPla
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[]; cricclubs?: CricClubsLeagueConnection };
 type Team = { id: number; name: string; sport: string; version?: number; players: Player[]; leagues: League[]; cricclubs?: CricClubsTeamConnection; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
 type Account = { registered: boolean; name: string; teams: Team[] };
-type View = "overview" | "roster" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
+type View = "overview" | "roster" | "users" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
 type SaveState = "loading" | "saved" | "saving" | "error" | "conflict";
 type ScreenshotPlayer = { name:string; playerId:number };
 type ScreenshotSide = { heading:string; names:string[] };
 type ScreenshotDraft = { id:number; fileName:string; date:string; side:"left"|"right"; left:ScreenshotSide; right:ScreenshotSide; opponent:string; players:ScreenshotPlayer[]; selected:boolean };
 type TreasurerAccess = { email:string; playerId:number|null; isOwner:boolean; isCurrent:boolean; canRemove:boolean };
+type TeamUser = {email:string|null;membershipEmail:string;role:"Owner"|"Co-treasurer"|"Player";playerId:number|null;playerName:string|null;joinedAt:string;accessType:string;isCurrent:boolean;canRemove:boolean};
+type PendingTeamInvite = {playerId:number;playerName:string|null;role:string;email:string|null;createdBy:string;expiresAt:string};
 
 const colors = ["#d9f99d","#bfdbfe","#fed7aa","#ddd6fe","#fecdd3","#bae6fd","#fde68a","#bbf7d0","#e9d5ff","#c7d2fe","#fbcfe8","#a7f3d0"];
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -320,6 +322,13 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const goBack=()=>view==="overview"?undefined:history.back();
   const beginEdgeSwipe=(event:TouchEvent)=>{const touch=event.touches[0];edgeSwipeStart.current=touch.clientX<=28?{x:touch.clientX,y:touch.clientY}:null};
   const finishEdgeSwipe=(event:TouchEvent)=>{const start=edgeSwipeStart.current;edgeSwipeStart.current=null;if(!start||(navigator as Navigator&{standalone?:boolean}).standalone!==true)return;const touch=event.changedTouches[0];const horizontal=touch.clientX-start.x;const vertical=Math.abs(touch.clientY-start.y);if(horizontal>=75&&horizontal>vertical*1.35)goBack()};
+  const navigationItems:ReadonlyArray<readonly [View,string,string]>=isSharedMember
+    ? [["overview","▦","Home"],["games","◉","Games"],["expenses","↗","Expenses"]]
+    : [
+        ["overview","▦","Home"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],
+        ["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"],
+        ...(team?.access?.isOwner?[["users","◎","Team users"] as const]:[]),
+      ];
 
   return <main className={`app-shell ${sidebarCollapsed?"sidebar-collapsed":""}`}>
     <button className="app-nav-trigger" type="button" aria-label="Toggle navigation" onClick={toggleNavigation}><span></span><span></span><span></span></button>
@@ -339,7 +348,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
         </div>}
       </div>
       <nav aria-label="Main navigation">
-        {(isSharedMember?[["overview","▦","Home"],["games","◉","Games"],["expenses","↗","Expenses"]] as const:[["overview","▦","Home"],["roster","♙","Team roster"],["leagues","▤","Leagues"],["games","◉","Games"],["expenses","↗","Expenses"],["calculator","÷","Calculator"],["settlement","⇄","Settlement"]] as const).map(([id,icon,label])=>
+        {navigationItems.map(([id,icon,label])=>
           <button key={id} className={`${view===id?"active":""} ${id==="calculator"||id==="settlement"?"mobile-secondary-nav":""}`.trim()} onClick={()=>chooseView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
       <div className="side-bottom">
@@ -378,9 +387,10 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       </header>
 
       {!team ? <EmptyState icon="♙" title={isSharedMember?"Team unavailable":"Register your first team"} text={isSharedMember?"Ask your treasurer for the current team link and PIN.":"Create a team workspace, add its roster, then organize expenses by league."} action={isSharedMember?undefined:"Register team"} onAction={isSharedMember?undefined:()=>setModal("team")}/> :
-       !league && view!=="roster" && view!=="leagues" ? <EmptyState icon="▤" title={isSharedMember?"No league available":"Create your first league"} text={isSharedMember?"Your treasurer has not created a league yet.":"A team can have as many leagues and seasons as you need."} action={isSharedMember?undefined:"Create league"} onAction={isSharedMember?undefined:()=>setModal("league")}/> : <>
+       !league && view!=="roster" && view!=="users" && view!=="leagues" ? <EmptyState icon="▤" title={isSharedMember?"No league available":"Create your first league"} text={isSharedMember?"Your treasurer has not created a league yet.":"A team can have as many leagues and seasons as you need."} action={isSharedMember?undefined:"Create league"} onAction={isSharedMember?undefined:()=>setModal("league")}/> : <>
         {view==="overview" && league && <PersonalHome player={accountPlayer} players={players} games={games} credits={credits} balances={balances} onLink={linkAccountPlayer} setView={chooseView} onPlayer={()=>setModal("player")} onAddExpense={isSharedMember?()=>setModal("expense"):undefined}/>}
         {view==="roster" && <RosterView team={team} canManage={isTreasurer} treasurerAccesses={treasurerAccesses} onInvite={player=>{setInviteTarget(player);setInvitePreview("")}} onRemoveAccess={removeTreasurerAccess} onAdd={()=>setModal("player")} onEdit={setEditingPlayer} onDelete={deletePlayer}/>}
+        {view==="users" && team.access?.isOwner && <TeamUsersView team={team} currentEmail={user.email} onManageLink={()=>setModal("member-access")} onRoster={()=>chooseView("roster")} notify={notify}/>}
         {view==="leagues" && <LeaguesView team={team} canManage={isTreasurer} activeId={league?.id} onSelect={id=>{setLeagueId(id);chooseView("overview")}} onAdd={()=>setModal("league")} onSync={()=>setModal("cricclubs")} onEdit={setEditingLeague}/>}
         {view==="games" && league && <GamesView games={games} expenses={expenses} credits={credits} players={players} canManage={isTreasurer} onAdd={()=>setModal("game")} onScreenshots={()=>setModal("screenshots")} onSync={()=>setModal("cricclubs")} onRoster={()=>chooseView("roster")} onChange={next=>updateLeague(l=>({...l,games:next}))} notify={notify}/>}
         {view==="expenses" && league && <ExpensesView expenses={expenses} credits={credits} players={players} games={games} canManage={isTreasurer} memberEmail={user.email} onAdd={()=>setModal("expense")} onCredit={()=>setModal("credit")} onRoster={()=>chooseView("roster")} onEdit={setEditingExpense} onDelete={expense=>{if(confirm(`Delete “${expense.label}”? This will recalculate every balance.`)){updateLeague(current=>({...current,expenses:current.expenses.filter(entry=>entry.id!==expense.id)}));notify("Expense deleted and balances recalculated")}}} onEditCredit={setEditingCredit}/>}
@@ -408,7 +418,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   </main>;
 }
 
-function title(view: View) { return ({roster:"Team roster",leagues:"Leagues",games:"Games",expenses:"Expenses",calculator:"Calculator",settlement:"Settlement",overview:"Home"})[view]; }
+function title(view: View) { return ({roster:"Team roster",users:"Team users",leagues:"Leagues",games:"Games",expenses:"Expenses",calculator:"Calculator",settlement:"Settlement",overview:"Home"})[view]; }
 
 function Registration({user,onRegister}:{user:{name:string;email:string};onRegister:(name:string,team:string,league:string)=>void}) {
   const [name,setName]=useState(user.name); const [team,setTeam]=useState(""); const [league,setLeague]=useState("");
@@ -432,6 +442,20 @@ function PersonalHome({player,players,games,credits,balances,onLink,setView,onPl
     <section className="my-stats"><div><span>My fair share</span><strong>{money.format(balance.share)}</strong><small>Costs assigned to you</small></div><div><span>I paid for the team</span><strong>{money.format(balance.paid)}</strong><small>Recorded expenses you covered</small></div><div><span>Umpiring credit</span><strong>{money.format(umpiringCredit)}</strong><small>Full credit earned; funded equally by game</small></div><div><span>My completed games</span><strong>{completedGames}</strong><small>{myGames.length} selected in total</small></div></section>
     <section className="personal-grid"><div className="panel my-settlement"><div className="panel-head"><div><h2>My settlement</h2><p>Who you should pay or receive money from</p></div></div>{myTransfers.length?<div className="my-transfer-list">{myTransfers.map((transfer,index)=><div key={`${transfer.fromPlayerId}-${transfer.toPlayerId}-${index}`}><span>{transfer.fromPlayerId===player.id?"Pay":"Receive from"}</span><strong>{transfer.fromPlayerId===player.id?transfer.to:transfer.from}</strong><b>{money.format(transfer.amount)}</b></div>)}</div>:<MiniEmpty text="You have nothing left to settle."/>}</div>
     <div className="panel my-games-panel"><div className="panel-head"><div><h2>My games</h2><p>Games where you are in the selected lineup</p></div><button onClick={()=>setView("games")}>View team games →</button></div>{myGames.length?<div className="my-game-list">{myGames.map(game=><div key={game.id}><div className="my-game-date"><strong>{game.date?new Date(game.date+"T12:00").toLocaleDateString("en-US",{day:"2-digit"}):"—"}</strong><span>{game.date?new Date(game.date+"T12:00").toLocaleDateString("en-US",{month:"short"}).toUpperCase():"NO DATE"}</span></div><div><strong>vs {game.opponent}</strong><small>{game.venue||"Venue not specified"} · {game.players.length===12?"Playing XII":"Playing XI"}</small></div><span className={game.status==="Completed"?"status complete":"status"}>{game.status}</span></div>)}</div>:<MiniEmpty text="You have not been selected for a game in this league yet."/>}</div></section>
+  </div>;
+}
+
+function TeamUsersView({team,currentEmail,onManageLink,onRoster,notify}:{team:Team;currentEmail:string;onManageLink:()=>void;onRoster:()=>void;notify:(message:string)=>void}){
+  const [users,setUsers]=useState<TeamUser[]>([]);const [invites,setInvites]=useState<PendingTeamInvite[]>([]);const [lastUpdate,setLastUpdate]=useState<string|null>(null);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [reload,setReload]=useState(0);
+  useEffect(()=>{let active=true;fetch(`/api/team-users?teamId=${team.id}`).then(async response=>{const result=await response.json() as {users?:TeamUser[];pendingInvites?:PendingTeamInvite[];lastTeamUpdate?:string|null;error?:string};if(!response.ok)throw new Error(result.error??"Team users could not be loaded");if(active){setUsers(result.users??[]);setInvites(result.pendingInvites??[]);setLastUpdate(result.lastTeamUpdate??null)}}).catch(problem=>{if(active)setError((problem as Error).message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[team.id,reload]);
+  const removePlayerSession=async(user:TeamUser)=>{if(!confirm(`Sign ${user.playerName??"this player"} out of ${team.name}? They can join again later with the current team link and PIN.`))return;const response=await fetch("/api/team-users",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,membershipEmail:user.membershipEmail})});const result=await response.json().catch(()=>({})) as {error?:string};if(!response.ok){notify(result.error??"Player access could not be removed");return}setUsers(current=>current.filter(candidate=>candidate.membershipEmail!==user.membershipEmail));notify(`${user.playerName??"Player"} signed out of the team`)};
+  const authenticated=users.filter(user=>user.accessType==="Authenticated account");const teamLinkUsers=users.filter(user=>user.accessType==="Team link + PIN");
+  if(loading)return <div className="team-users-loading">Loading team users…</div>;
+  if(error)return <div className="team-users-error"><strong>Team users could not be loaded</strong><span>{error}</span><button onClick={()=>{setError("");setLoading(true);setReload(value=>value+1)}}>Try again</button></div>;
+  return <div className="team-users-view"><section className="team-users-summary"><div><span>Authenticated accounts</span><strong>{authenticated.length}</strong><small>Owner and co-treasurers</small></div><div><span>Team-link players</span><strong>{teamLinkUsers.length}</strong><small>Active shared sessions</small></div><div><span>Pending invitations</span><strong>{invites.length}</strong><small>Not accepted yet</small></div><div><span>Last team update</span><strong>{lastUpdate?new Date(lastUpdate).toLocaleDateString():"—"}</strong><small>Latest saved team change</small></div></section>
+    <div className="view-toolbar"><div><h2>Who can access {team.name}</h2><p>Only the original owner can view this page. Login credentials, PINs, hashes, and tokens are never displayed.</p></div><div className="toolbar-actions"><button className="ghost" onClick={onRoster}>Manage co-treasurers</button><button className="primary" onClick={onManageLink}>Manage team link</button></div></div>
+    <section className="access-list"><div className="panel-head"><div><h2>Current access</h2><p>{users.length} active {users.length===1?"membership":"memberships"}</p></div></div>{users.map(user=><article key={user.membershipEmail}><div className="avatar" style={{background:user.role==="Owner"?"#d9f99d":user.role==="Co-treasurer"?"#bfdbfe":"#eee"}}>{initials(user.playerName??user.email??"Player")}</div><div><strong>{user.playerName??user.email??"Team player"}</strong><span>{user.email??"Joined with the shared team link"}</span><small>Joined {new Date(user.joinedAt).toLocaleDateString()} · {user.accessType}</small></div><span className={`access-role ${user.role.toLowerCase().replaceAll("-","")}`}>{user.role}{user.email?.toLowerCase()===currentEmail.toLowerCase()?" · You":""}</span>{user.canRemove&&<button className="table-delete" onClick={()=>removePlayerSession(user)}>Sign out</button>}</article>)}</section>
+    <section className="access-list pending-access"><div className="panel-head"><div><h2>Pending invitations</h2><p>Invitations disappear after acceptance or expiry</p></div></div>{invites.length?invites.map((invite,index)=><article key={`${invite.playerId}-${invite.expiresAt}-${index}`}><div className="avatar">{initials(invite.playerName??invite.email??"Invite")}</div><div><strong>{invite.playerName??"Roster player"}</strong><span>{invite.email??"No email attached"}</span><small>Expires {new Date(invite.expiresAt).toLocaleDateString()} · Sent by {invite.createdBy}</small></div><span className="access-role pending">{invite.role}</span></article>):<MiniEmpty text="No pending invitations."/>}</section>
   </div>;
 }
 
