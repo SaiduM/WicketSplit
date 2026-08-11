@@ -75,6 +75,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /exportBalances/);
   assert.match(dashboard, /Edit expense/);
   assert.match(dashboard, /Who should pay whom now/);
+  assert.match(dashboard, /Remaining = expenses paid \+ umpiring credits \+ sent − fair share − received/);
+  assert.match(dashboard, /<th>Expenses paid<\/th><th>Umpiring credit<\/th>/);
+  assert.match(dashboard, /Positive contributions/);
+  assert.match(dashboard, /Fair-share costs/);
+  assert.match(dashboard, /Paid: \$\{expense\.label\}/);
   assert.match(dashboard, /participants/);
   assert.match(dashboard, /Custom players/);
   assert.match(dashboard, /By games played/);

@@ -169,7 +169,10 @@ stored separately so expense history is never rewritten:
 `remaining balance = original balance + payments sent − payments received`
 
 The Settlement page continuously suggests who should pay whom based on the
-remaining balances. A treasurer records a payment only after the receiver
+player's fair share, expenses paid, umpiring credits, and confirmed payments.
+Its table and Details view show each positive contribution and shared cost so
+the remaining amount can be audited without reconstructing the formula.
+A treasurer records a payment only after the receiver
 confirms it arrived. The form limits the amount to both the sender's remaining
 debt and the receiver's remaining amount due. Each confirmed payment retains
 its date, sender, receiver, amount, optional reference, and recorder. Deleting

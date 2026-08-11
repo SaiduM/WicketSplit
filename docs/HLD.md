@@ -64,7 +64,7 @@ flowchart TB
 | Invitation API | Issues expiring, single-use co-treasurer invitations |
 | Query/index layer | Indexed membership, role, player-link, invitation, and expiry lookups |
 | Finance engine | Expense shares, credits, balances, and transfer suggestions |
-| Settlement ledger | Confirmed payments and remaining-balance calculation |
+| Settlement ledger | Transparent fair share, expenses paid, umpiring credits, confirmed payments, and remaining-balance calculation |
 | Export layer | Shareable settlement summary and CSV audit output |
 | Cloudflare D1 | Accounts, teams, memberships, invitations, and rate counters |
 
