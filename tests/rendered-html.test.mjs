@@ -379,17 +379,19 @@ test("team deletion is owner-only, throttled, and removes shared access atomical
   assert.match(teamApi, /DELETE FROM shared_teams/);
 });
 
-test("team users administration is owner-only and never exposes access secrets", async () => {
+test("team users administration is treasurer-only and never exposes access secrets", async () => {
   const [dashboard, teamUsersApi, styles] = await Promise.all([
     readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/team-users/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(dashboard, /Team users/);
-  assert.match(dashboard, /Only the original owner can view this page/);
+  assert.match(dashboard, /Team owners and co-treasurers can view this page/);
   assert.match(dashboard, /Manage co-treasurers/);
   assert.match(dashboard, /Manage team link/);
-  assert.match(teamUsersApi, /Only the original team owner can view team users/);
+  assert.match(teamUsersApi, /Only a team treasurer can view team users/);
+  assert.match(teamUsersApi, /requireTreasurer/);
+  assert.match(teamUsersApi, /row\.email===owner\?"Owner":"Co-treasurer"/);
   assert.match(teamUsersApi, /target\.role!=="member"/);
   assert.match(teamUsersApi, /team-users-remove-ip:/);
   assert.doesNotMatch(teamUsersApi, /token_hash|pin_hash|access_secret/);

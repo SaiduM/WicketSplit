@@ -28,7 +28,7 @@ forcing every player to register.
 - Batch team-funded umpiring credits, player calculation breakdowns, and CSV export
 - Suggested transfers plus a confirmed repayment audit trail
 - Reusable team-member access that can be replaced or revoked
-- Owner-only access inventory for authenticated treasurers, active shared-player sessions, and pending invitations
+- Treasurer-only access inventory for authenticated treasurers, active shared-player sessions, and pending invitations
 
 ## Access model
 
