@@ -15,7 +15,7 @@ The product supports:
 - Per-game fair-split eligibility independent of recorded lineup membership
 - Game-lineup and custom-player expense splits
 - One league fee allocated by completed-game appearances
-- Player credits and waivers
+- Team-funded player credits
 - Confirmed settlement-payment history
 - Individually authenticated treasurer and co-treasurer access
 - Registration-free player access through one revocable team link and PIN

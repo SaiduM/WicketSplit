@@ -80,7 +80,7 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","League Fee","Fruits & Water","Fruits \/ Water","Fruits","Water"\]\)/);
   assert.match(dashboard, /League share calculator/);
-  assert.match(dashboard, /Player share = expense × eligible appearances ÷ total eligible appearances/);
+  assert.match(dashboard, /Team-funded share = cost × eligible appearances ÷ total eligible appearances/);
   assert.match(dashboard, /Fruits \/ water/);
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /Which roster player are you/);
@@ -94,12 +94,16 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.doesNotMatch(dashboard, /Player balances/);
   assert.doesNotMatch(dashboard, /Available for selection/);
   assert.match(dashboard, /Record umpiring for the team/);
-  assert.match(dashboard, /Only players with more than 0 games will be saved/);
+  assert.match(dashboard, /Only players with more than 0 games umpired will be saved/);
   assert.match(dashboard, /Fixed credit per game/);
   assert.match(dashboard, /aria-label="Current league" value=\{league\.id\} onChange=\{e=>setLeagueId\(Number\(e\.target\.value\)\)\}/);
   assert.doesNotMatch(dashboard, /setLeagueId\(Number\(e\.target\.value\)\);chooseView\("overview"\)/);
-  assert.match(dashboard, /nobody else is charged/);
-  assert.match(dashboard, /Save umpiring waivers/);
+  assert.match(dashboard, /The player receives the full credit/);
+  assert.match(dashboard, /Save umpiring credits/);
+  assert.match(dashboard, /Team funded · \$\{splitAppearanceCount\(games\)\} eligible appearances/);
+  assert.match(dashboard, /appearanceShare\(e\.amount,player\.id,games\)/);
+  assert.match(dashboard, /Umpiring cost share/);
+  assert.doesNotMatch(dashboard, /Maximum waiver/);
   assert.match(dashboard, /Games umpired/);
   assert.match(dashboard, /umpiringDetails\.join/);
   assert.match(dashboard, /Not saved · Retry/);

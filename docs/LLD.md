@@ -293,6 +293,21 @@ remove the player from game history or alter custom participant expenses.
 
 ### Original balance
 
+Umpiring is stored using the legacy `umpiring-waiver` kind for backward
+compatibility, but its accounting behavior is a funded credit:
+
+```text
+player umpiring credit = games umpired * fixed rate
+
+player umpiring cost share =
+  total umpiring credits * player eligible appearances
+  / total eligible appearances
+```
+
+The full credit is added to its recipient and the equal team cost is included
+in every eligible player’s fair share. This keeps total balances at zero and
+allows an umpire to finish with money to receive.
+
 ```text
 original balance =
   expenses paid
@@ -422,7 +437,7 @@ The CSV contains:
 - Current suggested transfers
 - Confirmed payment history
 - Expense details
-- Credit and waiver details
+- Team-funded credit details
 
 Cells beginning with spreadsheet formula characters are prefixed to prevent CSV
 formula injection.

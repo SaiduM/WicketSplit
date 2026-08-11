@@ -39,8 +39,9 @@ calculates settlements but does not move money.
 6. Use the Calculator to review appearances, weights, and each cost component.
 7. Record umpiring for the team by entering the fixed credit per game once and
    the number of games umpired beside any players. Only non-zero rows are saved.
-   Each waiver reduces that player’s debt, is capped at what they owe, and is
-   not funded by teammates.
+   Each player receives the full credit, while an equal team cost is allocated
+   across split-eligible completed-game appearances. A player may therefore owe
+   less, owe nothing, or finish with money to receive.
 8. Share the suggested transfers showing who should pay whom.
 9. After the receiver confirms money arrived, record the settlement payment.
    Remaining balances and transfer suggestions recalculate automatically.
@@ -54,7 +55,7 @@ calculates settlements but does not move money.
 - Server-enforced treasurer and team-member roles
 - Account dropdown showing team-specific name, role, email, and roster phone
 - Personal Home dashboard showing the signed-in player’s balance, payment
-  direction, fair share, team payments, umpiring waivers, and selected games
+  direction, fair share, team payments, umpiring credits, and selected games
 - One-time protected account-to-roster linking for treasurers or members whose
   signed-in identity is not already associated with a roster player
 - Editable players, games, expenses, credits, and leagues
@@ -78,8 +79,8 @@ calculates settlements but does not move money.
 - Per-game split eligibility: record the full Playing XI/XII while excluding
   selected players from League Fee and Fruits / Water allocation
 - League calculator showing games played, percentage weight, and cost components
-- Batch umpiring entry with one fixed rate and per-player game counts; unfunded
-  waivers are capped at each player’s debt and itemized in the Calculator
+- Batch umpiring entry with one fixed rate and per-player game counts; full
+  credits are funded as appearance-weighted team costs and itemized in the Calculator
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Confirmed repayment ledger with received date, sender, receiver, amount,
   optional reference, remaining balances, and overpayment protection

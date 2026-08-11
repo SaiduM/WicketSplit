@@ -4,7 +4,7 @@
 
 WicketSplit is a focused, feedback-ready team expense product. It covers the
 complete loop from roster and game attendance through expense allocation,
-umpiring waivers, repayment, and CSV reporting. It intentionally does not try
+team-funded umpiring credits, repayment, and CSV reporting. It intentionally does not try
 to be a cricket scoring platform, chat app, or payment processor.
 
 The strongest product decision is role separation: treasurers manage the
@@ -21,7 +21,7 @@ forcing every player to register.
   removing selected appearances from weighted costs
 - Custom or games-played sharing for Restaurant and Other expenses
 - Player-submitted expenses with submitter-only editing and deletion
-- Batch umpiring waivers, player calculation breakdowns, and CSV export
+- Batch team-funded umpiring credits, player calculation breakdowns, and CSV export
 - Suggested transfers plus a confirmed repayment audit trail
 - Reusable team-member access that can be replaced or revoked
 
