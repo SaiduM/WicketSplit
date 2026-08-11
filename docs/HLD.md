@@ -164,23 +164,27 @@ flowchart TD
 
 ## Current scale and limitations
 
-The current application stores each shared team as a JSON workspace and saves
-the complete accessible account state on update. This is appropriate for
-recreational teams and early production feedback, but it has limitations:
+The current application stores team structure and each player, league, game,
+expense, credit, and payment as indexed D1 records. Existing JSON teams migrate
+on first load; a synchronized JSON snapshot remains temporarily for rollback
+and compatibility with invitation/access routes.
 
 - Workspace requests are limited to 256 KB.
 - Enforced maxima are 50 teams/account, 500 players/team, 100 leagues/team,
   1,000 games/league, and 10,000 entries of each financial type/league, but the
   payload limit is expected to be reached first.
-- Concurrent workspace changes use last-write-wins.
+- Optimistic team versions reject stale concurrent writes and direct the user
+  to reload the latest revision.
 - Game history is paginated in groups of 12 and the finance ledger in groups of
   20 after filtering. Pagination is currently client-side because each team is
-  still stored as one validated JSON workspace.
-- Games, expenses, credits, and repayments are not separate relational rows.
+  is still returned through one validated account response.
+- The client still submits a validated full-workspace request, and the server
+  rewrites that team's record set atomically. Record-specific mutation APIs are
+  the next optimization.
 - There is no payment-provider integration or automatic reconciliation.
 
 The present model is appropriate for a controlled recreational-team beta. A
 reasonable untested operating target is tens of teams and hundreds to low
 thousands of players; it is not a load-tested service-level guarantee. See
 `FUTURE_TODO.md` for the ordered path to normalized record-level persistence,
-optimistic concurrency, record-level server pagination, monitoring, and backups.
+record-specific writes, server pagination, monitoring, and backups.

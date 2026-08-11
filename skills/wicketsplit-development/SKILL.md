@@ -70,7 +70,10 @@ Vinext, React, Firebase, and D1 architecture.
   destructive endpoints.
 - Use parameterized D1 statements and batches for related writes.
 - Keep secrets in Sites environment variables; never commit credentials.
-- Treat workspace writes as last-write-wins until versioning is implemented.
+- Preserve optimistic team versions: reject stale writes with HTTP 409 and keep
+  the reload-latest recovery action visible to the user.
+- Treat indexed `workspace_*` records as authoritative and keep `shared_teams`
+  only as the synchronized compatibility/rollback snapshot.
 - Keep the 256 KB full-workspace request limit and current collection limits in
   mind; do not claim large-scale readiness without load testing.
 

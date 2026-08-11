@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
+import { loadOrMigrateTeam, saveNormalizedTeam } from "../../../db/workspace";
 import { enforceApiRateLimit, isSameOrigin } from "../security";
 
 type StoredTeam = {
@@ -28,7 +29,7 @@ export async function DELETE(request: Request) {
   if((access?.count??0)>0) return Response.json({error:"This player has team access. Their access must be removed before deleting them."},{status:409});
   const row=await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{payload:string}>();
   if(!row) return Response.json({error:"Team not found"},{status:404});
-  const team=JSON.parse(row.payload) as StoredTeam;
+  const team=await loadOrMigrateTeam(teamId,row.payload) as StoredTeam&{id:number;name:string;sport:string;version?:number;players:Array<{id:number;name:string}>;leagues:Array<Record<string,unknown>>};
   const player=team.players?.find(candidate=>candidate.id===playerId);
   if(!player) return Response.json({error:"Player not found"},{status:404});
   const referenced=(team.leagues??[]).some(league=>
@@ -39,10 +40,8 @@ export async function DELETE(request: Request) {
   );
   if(referenced) return Response.json({error:"This player is used in a game or financial entry and cannot be deleted."},{status:409});
   team.players=(team.players??[]).filter(candidate=>candidate.id!==playerId);
-  const now=new Date().toISOString();
-  await env.DB.batch([
-    env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(team),now,teamId),
-    env.DB.prepare("DELETE FROM team_invites WHERE team_id = ? AND player_id = ? AND accepted_by IS NULL").bind(teamId,playerId),
-  ]);
-  return Response.json({ok:true});
+  const saved=await saveNormalizedTeam(team as Parameters<typeof saveNormalizedTeam>[0]);
+  team.version=saved.version;
+  await env.DB.prepare("DELETE FROM team_invites WHERE team_id = ? AND player_id = ? AND accepted_by IS NULL").bind(teamId,playerId).run();
+  return Response.json({ok:true,version:saved.version});
 }

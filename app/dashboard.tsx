@@ -15,10 +15,10 @@ type Expense = { id: number; date: string; label: string; category: string; amou
 type Credit = { id: number; date: string; label: string; amount: number; playerId: number; gameId?: number; split: SplitMode; participants?: number[]; kind?: "umpiring-waiver"; units?: number; rate?: number };
 type SettlementPayment = { id: number; date: string; fromPlayerId: number; toPlayerId: number; amount: number; note?: string; recordedBy?: string };
 type League = { id: number; name: string; season: string; status: "Active" | "Completed"; games: Game[]; expenses: Expense[]; credits?: Credit[]; payments?: SettlementPayment[]; cricclubs?: CricClubsLeagueConnection };
-type Team = { id: number; name: string; sport: string; players: Player[]; leagues: League[]; cricclubs?: CricClubsTeamConnection; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
+type Team = { id: number; name: string; sport: string; version?: number; players: Player[]; leagues: League[]; cricclubs?: CricClubsTeamConnection; access?: { role: "treasurer"|"member"; playerId?: number|null; isOwner?: boolean } };
 type Account = { registered: boolean; name: string; teams: Team[] };
 type View = "overview" | "roster" | "games" | "expenses" | "calculator" | "settlement" | "leagues";
-type SaveState = "loading" | "saved" | "saving" | "error";
+type SaveState = "loading" | "saved" | "saving" | "error" | "conflict";
 type ScreenshotPlayer = { name:string; playerId:number };
 type ScreenshotSide = { heading:string; names:string[] };
 type ScreenshotDraft = { id:number; fileName:string; date:string; side:"left"|"right"; left:ScreenshotSide; right:ScreenshotSide; opponent:string; players:ScreenshotPlayer[]; selected:boolean };
@@ -90,6 +90,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const loaded = useRef(false);
   const saveSequence = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const teamVersions = useRef<Record<number,number>>({});
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const edgeSwipeStart = useRef<{x:number;y:number}|null>(null);
 
@@ -99,6 +100,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
       return r.json();
     }).then(data => {
       const next = data?.registered ? data as Account : emptyAccount(user.name);
+      teamVersions.current=Object.fromEntries(next.teams.filter(team=>team.version).map(team=>[team.id,team.version as number]));
       setAccount(next);
       setTeamId(next.teams[0]?.id ?? null);
       setLeagueId(next.teams[0]?.leagues[0]?.id ?? null);
@@ -111,17 +113,19 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
     if (!loaded.current) return;
     const sequence = ++saveSequence.current;
     setSaveState("saving");
-    const payload = JSON.stringify(account);
+    const payload = JSON.stringify({...account,teams:account.teams.map(team=>({...team,version:teamVersions.current[team.id]??team.version}))});
     const timer = setTimeout(() => {
       saveQueue.current = saveQueue.current.catch(()=>undefined).then(async () => {
         try {
           const response = await fetch("/api/state", {
             method: "POST", headers: { "content-type": "application/json" }, body: payload,
           });
-          if (!response.ok) throw new Error("Save failed");
+          if (!response.ok) throw new Error(response.status===409?"Workspace changed elsewhere":"Save failed");
+          const result=await response.json() as {versions?:Record<string,number>};
+          if(result.versions)for(const [teamId,version] of Object.entries(result.versions))teamVersions.current[Number(teamId)]=version;
           if (sequence === saveSequence.current) setSaveState("saved");
-        } catch {
-          if (sequence === saveSequence.current) setSaveState("error");
+        } catch(error) {
+          if (sequence === saveSequence.current) setSaveState((error as Error).message==="Workspace changed elsewhere"?"conflict":"error");
         }
       });
     }, 300);
@@ -204,8 +208,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const deletePlayer = async (player: Player) => {
     if(!team||!confirm(`Delete ${player.name} from ${team.name}? This is only allowed when they have no games, expenses, credits, settlement payments, or team access.`))return;
     const response=await fetch("/api/players",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({teamId:team.id,playerId:player.id})});
-    const result=await response.json().catch(()=>({})) as {error?:string};
+    const result=await response.json().catch(()=>({})) as {error?:string;version?:number};
     if(!response.ok){notify(result.error??"Player could not be deleted");return}
+    if(result.version)teamVersions.current[team.id]=result.version;
     updateTeam(current=>({...current,players:current.players.filter(candidate=>candidate.id!==player.id)}));
     notify(`${player.name} deleted from the roster`);
   };
@@ -362,7 +367,9 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
           <p>{team?.name}{league ? ` · ${league.name}` : " · Create a league to begin"}</p>
         </div>
         <div className="header-actions">
-          {saveState==="error"
+          {saveState==="conflict"
+            ? <button className="save-retry" onClick={()=>location.reload()}>Team updated elsewhere · Reload latest</button>
+            : saveState==="error"
             ? <button className="save-retry" onClick={()=>setAccount(current=>({...current}))}>Not saved · Retry</button>
             : <span className={`save-state ${saveState}`}>{saveState==="saving"?"Saving…":"✓ Saved"}</span>}
           {view==="roster" && isTreasurer && <><button className="ghost" onClick={()=>setModal("member-access")}>🔗 Team member access</button><button className="primary" onClick={()=>setModal("player")}>＋ Add player</button></>}

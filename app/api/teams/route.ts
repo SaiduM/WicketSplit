@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
+import { deleteNormalizedTeam } from "../../../db/workspace";
 import { enforceApiRateLimit, isSameOrigin } from "../security";
 
 export async function DELETE(request: Request) {
@@ -19,6 +20,7 @@ export async function DELETE(request: Request) {
   if(owner?.email!==email) return Response.json({error:"Only the original team treasurer can delete this team"},{status:403});
   const team=await env.DB.prepare("SELECT team_id FROM shared_teams WHERE team_id = ?").bind(teamId).first();
   if(!team) return Response.json({error:"Team not found"},{status:404});
+  await deleteNormalizedTeam(teamId);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM team_member_access WHERE team_id = ?").bind(teamId),
     env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(teamId),

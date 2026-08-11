@@ -102,3 +102,64 @@ export const teamInvites = sqliteTable("team_invites", {
   index("idx_team_invites_team_email_pending").on(table.teamId, table.intendedEmail, table.acceptedBy),
   index("idx_team_invites_expiry").on(table.expiresAt),
 ]);
+
+export const workspaceTeams = sqliteTable("workspace_teams", {
+  teamId: integer("team_id").primaryKey(),
+  name: text("name").notNull(),
+  sport: text("sport").notNull(),
+  cricclubs: text("cricclubs"),
+  version: integer("version").notNull().default(1),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const workspacePlayers = sqliteTable("workspace_players", {
+  teamId: integer("team_id").notNull(),
+  playerId: integer("player_id").notNull(),
+  payload: text("payload").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, table => [
+  primaryKey({ columns: [table.teamId, table.playerId] }),
+  index("idx_workspace_players_team_sort").on(table.teamId, table.sortOrder),
+]);
+
+export const workspaceLeagues = sqliteTable("workspace_leagues", {
+  teamId: integer("team_id").notNull(),
+  leagueId: integer("league_id").notNull(),
+  name: text("name").notNull(),
+  season: text("season").notNull(),
+  status: text("status").notNull(),
+  cricclubs: text("cricclubs"),
+  sortOrder: integer("sort_order").notNull(),
+}, table => [
+  primaryKey({ columns: [table.teamId, table.leagueId] }),
+  index("idx_workspace_leagues_team_sort").on(table.teamId, table.sortOrder),
+]);
+
+const workspaceRecordColumns = {
+  teamId: integer("team_id").notNull(),
+  leagueId: integer("league_id").notNull(),
+  recordId: integer("record_id").notNull(),
+  eventDate: text("event_date").notNull().default(""),
+  payload: text("payload").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+};
+
+export const workspaceGames = sqliteTable("workspace_games", workspaceRecordColumns, table => [
+  primaryKey({ columns: [table.teamId, table.leagueId, table.recordId] }),
+  index("idx_workspace_games_league_date").on(table.teamId, table.leagueId, table.eventDate, table.sortOrder),
+]);
+
+export const workspaceExpenses = sqliteTable("workspace_expenses", workspaceRecordColumns, table => [
+  primaryKey({ columns: [table.teamId, table.leagueId, table.recordId] }),
+  index("idx_workspace_expenses_league_date").on(table.teamId, table.leagueId, table.eventDate, table.sortOrder),
+]);
+
+export const workspaceCredits = sqliteTable("workspace_credits", workspaceRecordColumns, table => [
+  primaryKey({ columns: [table.teamId, table.leagueId, table.recordId] }),
+  index("idx_workspace_credits_league_date").on(table.teamId, table.leagueId, table.eventDate, table.sortOrder),
+]);
+
+export const workspacePayments = sqliteTable("workspace_payments", workspaceRecordColumns, table => [
+  primaryKey({ columns: [table.teamId, table.leagueId, table.recordId] }),
+  index("idx_workspace_payments_league_date").on(table.teamId, table.leagueId, table.eventDate, table.sortOrder),
+]);

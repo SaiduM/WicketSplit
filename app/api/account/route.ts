@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { getGoogleUser, sessionCookie } from "../../google-auth";
+import { deleteNormalizedTeam, loadOrMigrateTeam } from "../../../db/workspace";
 import { enforceApiRateLimit, isSameOrigin } from "../security";
 
 export async function PATCH(request: Request) {
@@ -15,7 +16,8 @@ export async function PATCH(request: Request) {
   const membership=await env.DB.prepare("SELECT role FROM team_memberships WHERE team_id = ? AND email = ?").bind(teamId,email).first<{role:string}>();
   if(!membership) return Response.json({error:"You do not have access to this team"},{status:403});
   const team=await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{payload:string}>();
-  const playerExists=Boolean(team&&(JSON.parse(team.payload) as {players?:Array<{id:number}>}).players?.some(player=>player.id===playerId));
+  const current=team&&await loadOrMigrateTeam(teamId,team.payload);
+  const playerExists=Boolean(current?.players?.some(player=>player.id===playerId));
   if(!playerExists) return Response.json({error:"Player was not found in this roster"},{status:404});
   const alreadyLinked=await env.DB.prepare("SELECT email FROM team_memberships WHERE team_id = ? AND player_id = ? AND email <> ? AND email NOT LIKE ?").bind(teamId,playerId,email,`team-${teamId}-player-%@member.wicketsplit.local`).first<{email:string}>();
   if(alreadyLinked) return Response.json({error:"That roster player is already linked to another account"},{status:409});
@@ -32,12 +34,15 @@ export async function DELETE(request: Request) {
   const owned=await env.DB.prepare("SELECT team_id FROM team_memberships WHERE email = ? AND role = 'treasurer'").bind(email).all<{team_id:number}>();
   for(const {team_id} of owned.results){
     const remaining=await env.DB.prepare("SELECT COUNT(*) AS count FROM team_memberships WHERE team_id = ? AND role = 'treasurer' AND email <> ?").bind(team_id,email).first<{count:number}>();
-    if((remaining?.count??0)===0) await env.DB.batch([
+    if((remaining?.count??0)===0){
+      await deleteNormalizedTeam(team_id);
+      await env.DB.batch([
         env.DB.prepare("DELETE FROM team_member_access WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM team_invites WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM team_memberships WHERE team_id = ?").bind(team_id),
         env.DB.prepare("DELETE FROM shared_teams WHERE team_id = ?").bind(team_id),
       ]);
+    }
   }
   await env.DB.batch([
     env.DB.prepare("DELETE FROM team_memberships WHERE email = ?").bind(email),

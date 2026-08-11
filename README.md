@@ -193,14 +193,19 @@ Confirmed payment history is included in the CSV export.
   30/minute/IP. Account deletion allows 3/hour/account.
 - Sensitive production values remain in the hosting environment. Passwords,
   verification codes, raw invitation tokens, and session secrets are not stored
-  in workspace JSON.
+  in workspace records or rollback snapshots.
 - Referrer data is disabled to avoid forwarding invitation tokens.
 
 These controls are appropriate for a lightweight feedback release. They do not
 replace an independent penetration test, monitoring and alerting, tested
 backups, or a compliance review if regulated or high-value data is introduced.
-Concurrent workspace edits remain last-write-wins, so multiple treasurers
-should avoid editing the same team at exactly the same time.
+Each team carries an optimistic version. A stale treasurer save is rejected and
+the app asks that user to reload the latest team instead of silently replacing
+another treasurer's work.
+
+Team, league, player, game, expense, credit, and payment records are stored in
+indexed D1 tables. Existing team JSON is migrated automatically on first load
+and retained as an atomic rollback snapshot during the compatibility period.
 
 ### CricClubs game import
 

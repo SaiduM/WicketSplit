@@ -40,14 +40,16 @@ scope.
 
 ## P1 — concurrency and data growth
 
-- [ ] Add optimistic workspace versioning before supporting active simultaneous
+- [x] Add optimistic workspace versioning before supporting active simultaneous
   treasurer entry.
   - Acceptance: stale saves return a conflict and the UI offers reload/review;
     no save silently overwrites a newer team revision.
-- [ ] Normalize teams, leagues, games, lineups, exclusions, expenses,
-  participants, credits, and payments into record-level D1 tables.
+- [x] Move teams, players, leagues, games, expenses, credits, and payments into
+  indexed record-level D1 tables with an automatic legacy migration and atomic
+  rollback snapshot.
+- [ ] Replace full-workspace saves with record-specific mutation APIs.
   - Acceptance: routine mutations update only their record and related audit
-    rows inside a transaction instead of sending the full account workspace.
+    rows instead of submitting and rewriting the full team record set.
 - [ ] Add idempotency keys to financial and invitation mutations.
   - Acceptance: retries cannot duplicate expenses, credits, payments, invites,
     screenshot imports, or CricClubs games.
@@ -57,7 +59,7 @@ scope.
   normalization.
   - Acceptance: page size is bounded and team/league/date queries page without
     loading the complete workspace.
-- [ ] Add schema migrations and a verified legacy JSON migration path.
+- [x] Add schema migrations and a verified legacy JSON migration path.
   - Acceptance: existing production teams retain identical balances, roles,
     record IDs, and CSV totals after migration.
 - [ ] Run staged load and conflict tests.

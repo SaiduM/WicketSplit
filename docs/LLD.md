@@ -151,8 +151,22 @@ erDiagram
 | Column | Purpose |
 |---|---|
 | `team_id` | Shared team primary key |
-| `payload` | Team workspace JSON |
+| `payload` | Synchronized compatibility and rollback snapshot |
 | `updated_at` | Last update timestamp |
+
+### `workspace_*` record tables
+
+- `workspace_teams` stores team identity, sport, connection metadata, optimistic
+  version, and the last mutation token.
+- `workspace_players` stores one row per roster player.
+- `workspace_leagues` stores one row per league.
+- `workspace_games`, `workspace_expenses`, `workspace_credits`, and
+  `workspace_payments` store one row per league record with indexed team,
+  league, event date, and stable record ID fields.
+
+The record tables are authoritative. `shared_teams` is updated inside the same
+D1 batch so invitation and access flows retain a rollback-compatible snapshot
+during migration.
 
 ### `team_memberships`
 
@@ -223,8 +237,9 @@ sequenceDiagram
     API-->>UI: Account with per-team access metadata
 ```
 
-Legacy account-owned teams are migrated into `shared_teams` and
-`team_memberships` when state is read.
+Legacy account-owned teams are migrated into memberships and the indexed
+`workspace_*` tables when state is read. Migration is idempotent and preserves
+the original IDs, array order, optional fields, and financial payloads.
 
 ## Workspace write flow
 
@@ -234,7 +249,8 @@ Legacy account-owned teams are migrated into `shared_teams` and
 4. Apply the account write-rate limit.
 5. Parse and structurally validate the complete state.
 6. Load membership for each incoming team.
-7. For a treasurer, update the shared team payload.
+7. For a treasurer, claim the submitted optimistic version and replace the
+   team's authoritative record set in one guarded D1 batch.
 8. For a member:
    - Require the submitted workspace to contain exactly the session's team.
    - Reject setup, game, credit, and payment changes.
@@ -243,7 +259,10 @@ Legacy account-owned teams are migrated into `shared_teams` and
      verified session identity; edited entries must retain the linked payer.
    - Stamp the verified submitter email.
 
-Current workspace writes are last-write-wins.
+Every successful write increments the team version. A stale version returns
+HTTP 409; the client does not retry blindly and instead offers **Reload latest**.
+The mutation token guards every statement in the batch, preventing a losing
+concurrent writer from deleting or inserting records.
 
 ## Shared team member flow
 
@@ -466,8 +485,8 @@ formula injection.
 Current constraints:
 
 - Full-workspace JSON saves
-- Last-write-wins concurrency
-- No record pagination
+- Record-level storage currently receives full-team replacement writes
+- Client-side rather than server-side record pagination
 - No immutable database-level financial audit log
 - No automated bank reconciliation
 - A successful login still depends on Firebase/Google authentication throttles;
@@ -476,9 +495,7 @@ Current constraints:
 
 Recommended next design:
 
-- Normalize teams, leagues, games, expenses, participants, credits, and payments
-  into separate tables.
-- Add D1 transactions and optimistic version checks.
-- Add record-level APIs, pagination, and indexes.
+- Add record-specific mutation APIs and idempotency keys.
+- Move pagination and filtering into indexed D1 queries.
 - Add immutable audit events, backups, metrics, and alerts.
 - See `FUTURE_TODO.md` for priority, acceptance criteria, and deferred scope.

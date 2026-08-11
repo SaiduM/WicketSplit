@@ -182,9 +182,13 @@ test("finance workflow includes editable dated expenses and settlement transfers
 });
 
 test("D1 access queries have migrations for their real lookup patterns", async () => {
-  const [schema,migration] = await Promise.all([
+  const [schema,migration,workspaceMigration,workspace,stateApi,dashboard] = await Promise.all([
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0005_mysterious_caretaker.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0006_ordinary_starfox.sql", import.meta.url), "utf8"),
+    readFile(new URL("../db/workspace.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(schema, /idx_team_memberships_email_joined/);
   assert.match(schema, /idx_team_memberships_team_role_joined/);
@@ -194,6 +198,26 @@ test("D1 access queries have migrations for their real lookup patterns", async (
   assert.match(schema, /idx_team_invites_expiry/);
   assert.match(migration, /CREATE INDEX IF NOT EXISTS/);
   assert.match(migration, /PRAGMA optimize/);
+  assert.match(workspaceMigration, /CREATE TABLE IF NOT EXISTS `workspace_teams`/);
+  assert.match(workspaceMigration, /idx_workspace_games_league_date/);
+  assert.match(workspaceMigration, /idx_workspace_expenses_league_date/);
+  assert.match(workspace, /teamToWorkspaceRows/);
+  assert.match(workspace, /workspaceRowsToTeam/);
+  assert.match(workspace, /WORKSPACE_VERSION_CONFLICT/);
+  assert.match(workspace, /crypto\.randomUUID/);
+  assert.match(workspace, /legacySnapshot/);
+  assert.match(stateApi, /loadOrMigrateTeam/);
+  assert.match(stateApi, /This team changed in another session/);
+  assert.match(dashboard, /teamVersions/);
+});
+
+test("legacy team records round-trip through normalized workspace rows", async () => {
+  const {teamToWorkspaceRows,workspaceRowsToTeam}=await import("../db/workspace-shape.ts");
+  const team={id:7,name:"Wolfpacks",sport:"Cricket",cricclubs:{shortCode:"CL",teamName:"Wolfpacks"},players:[{id:11,name:"A",initials:"A",color:"#fff"}],leagues:[{id:21,name:"Summer",season:"2026",status:"Active",games:[{id:31,date:"2026-08-01",opponent:"Cactus",venue:"",players:[11],status:"Completed"}],expenses:[{id:41,date:"2026-08-01",label:"League",category:"League Fee",amount:120,paidBy:11,split:"appearances"}],credits:[{id:51,date:"2026-08-02",label:"Umpiring credit",amount:20,playerId:11,split:"custom",kind:"umpiring-waiver",units:1,rate:20}],payments:[]}]};
+  const rows=teamToWorkspaceRows(team);
+  const records=items=>items.map(row=>({team_id:row.teamId,league_id:row.leagueId,record_id:row.recordId,event_date:row.eventDate,payload:row.payload,sort_order:row.sortOrder}));
+  const restored=workspaceRowsToTeam({team_id:team.id,name:team.name,sport:team.sport,cricclubs:JSON.stringify(team.cricclubs),version:1,updated_at:"now"},rows.players.map(row=>({team_id:row.teamId,player_id:row.playerId,payload:row.payload,sort_order:row.sortOrder})),rows.leagues.map(row=>({team_id:row.teamId,league_id:row.leagueId,name:row.name,season:row.season,status:row.status,cricclubs:row.cricclubs,sort_order:row.sortOrder})),records(rows.games),records(rows.expenses),records(rows.credits),records(rows.payments));
+  assert.deepEqual({...restored,version:undefined},{...team,version:undefined});
 });
 
 test("workspace loading completes before registration UI can render", async () => {

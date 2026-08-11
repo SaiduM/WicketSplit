@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
+import { loadNormalizedTeam, loadOrMigrateTeam, saveNormalizedTeam } from "../../../db/workspace";
 import { isSameOrigin } from "../security";
 
 const MAX_PAYLOAD_BYTES = 256_000;
@@ -67,8 +68,9 @@ function isValidState(value: unknown): boolean {
   if (state.teams.length > 50) return false;
   return state.teams.every((team: unknown) => {
     if (!team || typeof team !== "object") return false;
-    const item = team as { id?: unknown; name?: unknown; sport?: unknown; players?: unknown[]; leagues?: unknown[]; cricclubs?: unknown };
+    const item = team as { id?: unknown; name?: unknown; sport?: unknown; version?: unknown; players?: unknown[]; leagues?: unknown[]; cricclubs?: unknown };
     if (!id(item.id) || !text(item.name, 160) || !text(item.sport, 80) || !Array.isArray(item.players) || !Array.isArray(item.leagues)) return false;
+    if (item.version !== undefined && (!Number.isSafeInteger(item.version) || Number(item.version)<1)) return false;
     if (item.cricclubs !== undefined) {
       if (!item.cricclubs || typeof item.cricclubs !== "object") return false;
       const connection = item.cricclubs as { shortCode?: unknown; teamName?: unknown };
@@ -200,8 +202,12 @@ export async function GET() {
       ) THEN 1 ELSE 0 END AS is_owner
     FROM team_memberships m JOIN shared_teams t ON t.team_id = m.team_id
     WHERE m.email = ? ORDER BY m.joined_at`).bind(email).all<{ team_id: number; role: "treasurer"|"member"; player_id: number|null; payload: string; is_owner:number }>();
-  const teams = memberships.results.map(entry => ({ ...JSON.parse(entry.payload), access: { role: entry.role, playerId: entry.player_id, isOwner: entry.is_owner===1 } }));
-  return Response.json({ registered: Boolean(legacy.registered)||teams.length>0, name: legacy.name||user.name, teams }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
+  const teams = await Promise.all(memberships.results.map(async entry => {
+    const team=await loadOrMigrateTeam(entry.team_id,entry.payload);
+    return team ? { ...team, access: { role: entry.role, playerId: entry.player_id, isOwner: entry.is_owner===1 } } : null;
+  }));
+  const availableTeams=teams.filter((team):team is NonNullable<typeof team>=>Boolean(team));
+  return Response.json({ registered: Boolean(legacy.registered)||availableTeams.length>0, name: legacy.name||user.name, teams:availableTeams }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }
 
 export async function POST(request: Request) {
@@ -221,6 +227,7 @@ export async function POST(request: Request) {
   const account = state as { registered: boolean; name: string; teams: Array<Record<string, unknown>> };
   const email = user.email.toLowerCase();
   const now = new Date().toISOString();
+  const versions:Record<number,number>={};
   if(user.provider==="team"&&(account.teams.length!==1||Number(account.teams[0]?.id)!==user.teamId))return Response.json({ error: "Shared team members cannot create or switch teams" }, { status: 403 });
   await env.DB.prepare(`INSERT INTO app_states (team_key, payload, updated_at) VALUES (?, ?, ?)
     ON CONFLICT(team_key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`)
@@ -228,23 +235,26 @@ export async function POST(request: Request) {
   for (const incoming of account.teams) {
     const teamId = Number(incoming.id);
     const clean = { ...incoming }; delete clean.access;
-    const existingTeam = await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{ payload: string }>();
+    const existingLegacy = await env.DB.prepare("SELECT payload FROM shared_teams WHERE team_id = ?").bind(teamId).first<{ payload: string }>();
+    const existingTeam = await loadNormalizedTeam(teamId)??(existingLegacy?await loadOrMigrateTeam(teamId,existingLegacy.payload):null);
     const membership = await env.DB.prepare("SELECT role, player_id FROM team_memberships WHERE team_id = ? AND email = ?")
       .bind(teamId, email).first<{ role: "treasurer"|"member"; player_id: number|null }>();
     if (!existingTeam) {
       if(user.provider==="team")return Response.json({ error: "Shared team members cannot create teams" }, { status: 403 });
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO shared_teams (team_id, payload, updated_at) VALUES (?, ?, ?)").bind(teamId, JSON.stringify(clean), now),
-        env.DB.prepare("INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now),
-      ]);
+      const saved=await saveNormalizedTeam(clean as Parameters<typeof saveNormalizedTeam>[0]);
+      clean.version=saved.version;versions[teamId]=saved.version;
+      await env.DB.prepare("INSERT INTO team_memberships (team_id, email, role, player_id, joined_at) VALUES (?, ?, 'treasurer', NULL, ?)").bind(teamId, email, now).run();
       continue;
     }
     if (!membership) return Response.json({ error: "You do not have access to this team" }, { status: 403 });
     if (membership.role === "treasurer") {
-      await env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(clean), now, teamId).run();
+      let saved;
+      try { saved=await saveNormalizedTeam(clean as Parameters<typeof saveNormalizedTeam>[0]); }
+      catch(error){if((error as Error).message==="WORKSPACE_VERSION_CONFLICT")return Response.json({error:"This team changed in another session. Reload before saving again."},{status:409});throw error}
+      clean.version=saved.version;versions[teamId]=saved.version;
       continue;
     }
-    const current = JSON.parse(existingTeam.payload) as Record<string, unknown>;
+    const current = existingTeam as Record<string, unknown>;
     const oldLeagues = (current.leagues as Array<Record<string, unknown>>)??[];
     const newLeagues = (clean.leagues as Array<Record<string, unknown>>)??[];
     const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players, cricclubs: team.cricclubs });
@@ -268,7 +278,10 @@ export async function POST(request: Request) {
       }
       oldLeague.expenses=nextExpenses.map(entry=>{const old=oldById.get(entry.id);return old&&JSON.stringify(entry)===JSON.stringify(old)?old:{...entry,submittedBy:email}});
     }
-    await env.DB.prepare("UPDATE shared_teams SET payload = ?, updated_at = ? WHERE team_id = ?").bind(JSON.stringify(current), now, teamId).run();
+    let saved;
+    try { saved=await saveNormalizedTeam(current as Parameters<typeof saveNormalizedTeam>[0]); }
+    catch(error){if((error as Error).message==="WORKSPACE_VERSION_CONFLICT")return Response.json({error:"This team changed in another session. Reload before saving again."},{status:409});throw error}
+    current.version=saved.version;versions[teamId]=saved.version;
   }
-  return Response.json({ ok: true }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
+  return Response.json({ ok: true, versions }, { headers: { "X-RateLimit-Limit": String(rate.limit) } });
 }
