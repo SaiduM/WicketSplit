@@ -125,6 +125,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Automatic game split/);
   assert.match(dashboard, /Adding or editing a lineup automatically recalculates every share/);
   assert.match(dashboard, /\{!appearanceCategory&&<SplitFields/);
+  assert.match(dashboard, /const GAME_PAGE_SIZE = 12/);
+  assert.match(dashboard, /const LEDGER_PAGE_SIZE = 20/);
+  assert.match(dashboard, /aria-label=\{`\$\{itemLabel\} pagination`\}/);
+  assert.match(dashboard, /visibleGames\.map/);
+  assert.match(dashboard, /visibleEntries\.map/);
   assert.match(dashboard, /Shares cost/);
   assert.match(dashboard, /Excluded/);
   assert.match(dashboard, /splitEligiblePlayers/);
@@ -174,6 +179,21 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Confirmed payment history/);
   assert.match(dashboard, /Settlement Sent/);
   assert.match(dashboard, /originalBalance \+ sent - received/);
+});
+
+test("D1 access queries have migrations for their real lookup patterns", async () => {
+  const [schema,migration] = await Promise.all([
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0005_mysterious_caretaker.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(schema, /idx_team_memberships_email_joined/);
+  assert.match(schema, /idx_team_memberships_team_role_joined/);
+  assert.match(schema, /idx_team_memberships_team_player/);
+  assert.match(schema, /idx_team_invites_team_player_pending/);
+  assert.match(schema, /idx_team_invites_team_email_pending/);
+  assert.match(schema, /idx_team_invites_expiry/);
+  assert.match(migration, /CREATE INDEX IF NOT EXISTS/);
+  assert.match(migration, /PRAGMA optimize/);
 });
 
 test("workspace loading completes before registration UI can render", async () => {

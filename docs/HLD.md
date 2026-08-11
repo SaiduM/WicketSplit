@@ -61,6 +61,7 @@ flowchart TB
 | Shared member access | Hashed link/PIN verification, roster identity selection, and revocation |
 | Workspace API | Loads, validates, authorizes, and saves team state |
 | Invitation API | Issues expiring, single-use co-treasurer invitations |
+| Query/index layer | Indexed membership, role, player-link, invitation, and expiry lookups |
 | Finance engine | Expense shares, credits, balances, and transfer suggestions |
 | Settlement ledger | Confirmed payments and remaining-balance calculation |
 | Export layer | Shareable settlement summary and CSV audit output |
@@ -172,7 +173,9 @@ recreational teams and early production feedback, but it has limitations:
   1,000 games/league, and 10,000 entries of each financial type/league, but the
   payload limit is expected to be reached first.
 - Concurrent workspace changes use last-write-wins.
-- Long histories are not paginated.
+- Game history is paginated in groups of 12 and the finance ledger in groups of
+  20 after filtering. Pagination is currently client-side because each team is
+  still stored as one validated JSON workspace.
 - Games, expenses, credits, and repayments are not separate relational rows.
 - There is no payment-provider integration or automatic reconciliation.
 
@@ -180,4 +183,4 @@ The present model is appropriate for a controlled recreational-team beta. A
 reasonable untested operating target is tens of teams and hundreds to low
 thousands of players; it is not a load-tested service-level guarantee. See
 `FUTURE_TODO.md` for the ordered path to normalized record-level persistence,
-optimistic concurrency, pagination, monitoring, and backups.
+optimistic concurrency, record-level server pagination, monitoring, and backups.

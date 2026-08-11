@@ -81,6 +81,8 @@ Vinext, React, Firebase, and D1 architecture.
 - Preserve browser history for section navigation, the mobile Back control, and
   the guarded left-edge swipe gesture without intercepting normal scrolling.
 - Sort player selections alphabetically and provide accessible touch targets.
+- Preserve bounded pagination for game history (12 per page) and the finance
+  ledger (20 per filtered page), including mobile-friendly controls.
 - Keep lineup entry simple: selected XI/XII players share by default, keep
   exclusions behind an optional adjustment, and do not ask users to reselect
   players when adding a game-funded expense.

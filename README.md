@@ -59,6 +59,10 @@ calculates settlements but does not move money.
    Remaining balances and transfer suggestions recalculate automatically.
 10. Review the payment audit history or export the complete ledger as CSV.
 
+Game history is paginated 12 at a time, and the searchable finance ledger is
+paginated 20 entries at a time. Mobile pagination uses large Previous and Next
+controls.
+
 ## Lightweight feature set
 
 - Multiple teams, rosters, leagues, and treasurers

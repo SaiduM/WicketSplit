@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const teams = sqliteTable("teams", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -67,3 +67,38 @@ export const teamMemberAccess = sqliteTable("team_member_access", {
   createdAt: text("created_at").notNull(),
   accessSecret: text("access_secret"),
 });
+
+export const sharedTeams = sqliteTable("shared_teams", {
+  teamId: integer("team_id").primaryKey(),
+  payload: text("payload").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const teamMemberships = sqliteTable("team_memberships", {
+  teamId: integer("team_id").notNull(),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  playerId: integer("player_id"),
+  joinedAt: text("joined_at").notNull(),
+}, table => [
+  primaryKey({ columns: [table.teamId, table.email] }),
+  index("idx_team_memberships_email_joined").on(table.email, table.joinedAt),
+  index("idx_team_memberships_team_role_joined").on(table.teamId, table.role, table.joinedAt, table.email),
+  index("idx_team_memberships_team_player").on(table.teamId, table.playerId),
+]);
+
+export const teamInvites = sqliteTable("team_invites", {
+  tokenHash: text("token_hash").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  playerId: integer("player_id").notNull(),
+  createdBy: text("created_by").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  acceptedBy: text("accepted_by"),
+  acceptedAt: text("accepted_at"),
+  inviteRole: text("invite_role").notNull().default("member"),
+  intendedEmail: text("intended_email"),
+}, table => [
+  index("idx_team_invites_team_player_pending").on(table.teamId, table.playerId, table.acceptedBy),
+  index("idx_team_invites_team_email_pending").on(table.teamId, table.intendedEmail, table.acceptedBy),
+  index("idx_team_invites_expiry").on(table.expiresAt),
+]);

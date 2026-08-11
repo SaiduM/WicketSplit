@@ -51,9 +51,12 @@ scope.
 - [ ] Add idempotency keys to financial and invitation mutations.
   - Acceptance: retries cannot duplicate expenses, credits, payments, invites,
     screenshot imports, or CricClubs games.
-- [ ] Add pagination and indexed queries for long ledgers and game histories.
-  - Acceptance: page size is bounded and common team/league/date queries use
-    documented indexes.
+- [x] Add bounded client-side pagination for game history and the finance
+  ledger, plus indexes for current membership and invitation query patterns.
+- [ ] Move pagination to record-level server queries after workspace
+  normalization.
+  - Acceptance: page size is bounded and team/league/date queries page without
+    loading the complete workspace.
 - [ ] Add schema migrations and a verified legacy JSON migration path.
   - Acceptance: existing production teams retain identical balances, roles,
     record IDs, and CSV totals after migration.
