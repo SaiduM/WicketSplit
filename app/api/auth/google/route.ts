@@ -32,7 +32,7 @@ async function verifyGoogleCredential(token: string): Promise<GooglePayload | nu
         payload.exp <= now || payload.email_verified !== true || !payload.email || !payload.sub) return null;
     const keysResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs");
     if (!keysResponse.ok) return null;
-    const { keys } = await keysResponse.json() as { keys: JsonWebKey[] };
+    const { keys } = await keysResponse.json() as { keys: Array<JsonWebKey & { kid?: string }> };
     const jwk = keys.find(key => key.kid === header.kid);
     if (!jwk) return null;
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);

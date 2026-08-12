@@ -1,5 +1,14 @@
 import { env } from "cloudflare:workers";
 
+const productionOrigin = "https://www.wicketsplit.com";
+
+export function publicAppOrigin(request: Request) {
+  const requestUrl = new URL(request.url);
+  return requestUrl.hostname === "localhost" || requestUrl.hostname === "127.0.0.1"
+    ? requestUrl.origin
+    : productionOrigin;
+}
+
 export function isSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
@@ -23,4 +32,3 @@ export async function enforceApiRateLimit(key: string, limit: number, windowMs: 
 }
 
 export const clientIp = (request: Request) => request.headers.get("cf-connecting-ip") ?? "unknown";
-

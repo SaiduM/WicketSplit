@@ -99,7 +99,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   useEffect(() => {
     fetch("/api/state").then(async r => {
       if (!r.ok) throw new Error("Workspace could not be loaded");
-      return r.json();
+      return r.json() as Promise<Partial<Account>>;
     }).then(data => {
       const next = data?.registered ? data as Account : {...emptyAccount(user.name),earlyAccess:data?.earlyAccess};
       teamVersions.current=Object.fromEntries(next.teams.filter(team=>team.version).map(team=>[team.id,team.version as number]));
@@ -174,7 +174,7 @@ export default function Dashboard({ user }: { user: { name: string; email: strin
   const accountEmail = user.provider==="team"?"Shared team member access":user.email.startsWith("phone:")?"Not added":user.email;
   const accountPhone = accountPlayer?.phone||"Not added";
   const activeTeamId=team?.id;
-  useEffect(()=>{if(!activeTeamId||!isTreasurer||isSharedMember)return;let active=true;fetch(`/api/team-treasurers?teamId=${activeTeamId}`).then(async response=>response.ok?response.json():null).then(result=>{if(active&&Array.isArray(result?.treasurers))setTreasurerAccesses(result.treasurers as TreasurerAccess[])}).catch(()=>undefined);return()=>{active=false}},[activeTeamId,isTreasurer,isSharedMember]);
+  useEffect(()=>{if(!activeTeamId||!isTreasurer||isSharedMember)return;let active=true;fetch(`/api/team-treasurers?teamId=${activeTeamId}`).then(async response=>response.ok?response.json() as Promise<{treasurers?:TreasurerAccess[]}>:null).then(result=>{if(active&&Array.isArray(result?.treasurers))setTreasurerAccesses(result.treasurers)}).catch(()=>undefined);return()=>{active=false}},[activeTeamId,isTreasurer,isSharedMember]);
   const games = useMemo(()=>league?.games ?? [],[league]);
   const expenses = useMemo(()=>league?.expenses ?? [],[league]);
   const credits = useMemo(()=>league?.credits ?? [],[league]);
@@ -804,7 +804,7 @@ function ExpenseModal({expense,memberPlayerId,existingExpenses,leagueFeeExists,p
   const totalAppearances=splitAppearanceCount(games); const fundedGameCount=fundedGames(games).length; const canSave=Boolean(category&&paidBy&&(split==="appearances"||participants.length>0));
   const duplicate=existingExpenses.find(entry=>entry.id!==expense?.id&&entry.date===date&&entry.amount===Number(amount)&&entry.label.trim().toLowerCase()===label.trim().toLowerCase());
   const appearanceCategory=appearanceCategories.has(category);
-  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(canSave&&!duplicate)onSave({label:label.trim(),amount:Number(amount),category,paidBy,split,date,participants:split==="appearances"?undefined:[...participants]})}}>
+  return <div className="modal-backdrop"><form className="modal lineup-modal" onSubmit={e=>{e.preventDefault();if(canSave&&!duplicate&&split)onSave({label:label.trim(),amount:Number(amount),category,paidBy,split,date,participants:split==="appearances"?undefined:[...participants]})}}>
     <ModalHead eyebrow={expense?"EDIT PAYMENT":"NEW PAYMENT"} title={expense?"Edit expense":"Add an expense"} description={memberPlayerId?"Record an expense you paid and choose who should share it.":"Choose who paid and exactly how this cost should be shared."} close={onClose}/>
     <div className="form-grid">
       <label className="wide">Description<input autoFocus required value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Practice ground rental"/></label>

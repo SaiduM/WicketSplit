@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
-import { clientIp, enforceApiRateLimit, isSameOrigin } from "../security";
+import { clientIp, enforceApiRateLimit, isSameOrigin, publicAppOrigin } from "../security";
 
 const hashToken = async (token: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))).map(byte=>byte.toString(16).padStart(2,"0")).join("");
 
@@ -51,5 +51,5 @@ export async function POST(request: Request) {
     env.DB.prepare("DELETE FROM team_invites WHERE team_id = ? AND player_id = ? AND accepted_by IS NULL").bind(teamId,playerId),
     env.DB.prepare("INSERT INTO team_invites (token_hash, team_id, player_id, created_by, expires_at, invite_role, intended_email) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(tokenHash,teamId,playerId,email,expiresAt,role,intendedEmail),
   ]);
-  return Response.json({ url: `${new URL(request.url).origin}/api/invites/accept?token=${token}`, expiresAt, role });
+  return Response.json({ url: `${publicAppOrigin(request)}/api/invites/accept?token=${token}`, expiresAt, role });
 }

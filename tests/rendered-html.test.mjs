@@ -395,6 +395,22 @@ test("shared team member mode reuses encrypted access until explicit replacement
   assert.match(privacy, /encrypted at rest/);
 });
 
+test("all share and approval links use the canonical production domain", async () => {
+  const [security, teamAccess, invites, earlyAccess] = await Promise.all([
+    readFile(new URL("../app/api/security.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/team-access/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/invites/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/early-access/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(security, /https:\/\/www\.wicketsplit\.com/);
+  assert.match(teamAccess, /publicAppOrigin\(request\)/);
+  assert.match(invites, /publicAppOrigin\(request\)/);
+  assert.match(earlyAccess, /publicAppOrigin\(request\)/);
+  assert.doesNotMatch(teamAccess, /new URL\(request\.url\)\.origin/);
+  assert.doesNotMatch(invites, /new URL\(request\.url\)\.origin/);
+  assert.doesNotMatch(earlyAccess, /new URL\(request\.url\)\.origin/);
+});
+
 test("player deletion is treasurer-only and protects historical records", async () => {
   const playerApi = await readFile(new URL("../app/api/players/route.ts", import.meta.url), "utf8");
   assert.match(playerApi, /Only a treasurer can delete players/);

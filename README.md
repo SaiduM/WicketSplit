@@ -284,6 +284,7 @@ npm install
 npm run dev
 npm test
 npm run lint
+npm run typecheck
 ```
 
 `.openai/hosting.json` contains the Sites project and logical D1 binding.
@@ -318,9 +319,9 @@ authorized-domain list and in the Google OAuth client's Authorized JavaScript
 Origins. Do not add a path or trailing slash to an OAuth origin. Retain the
 Firebase handler URI under Authorized redirect URIs.
 
-Invitation and team-access URLs are constructed from the incoming production
-request origin. Treasurers should open the canonical `www` site before copying
-or replacing an invitation so the prepared message uses the official domain.
+Invitation, team-access, and early-access approval URLs use the canonical
+`https://www.wicketsplit.com` production origin, even when the app is opened
+through an older Sites hostname. Local development continues to use localhost.
 Existing bearer links remain valid until accepted, expired, replaced, or
 revoked.
 

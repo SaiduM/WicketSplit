@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
 import { createEarlyAccessToken, decryptEarlyAccessToken, earlyAccessStatus, encryptEarlyAccessToken, ensureEarlyAccessTable, hashEarlyAccessToken, isEarlyAccessAdmin } from "../../early-access-policy";
-import { clientIp, enforceApiRateLimit, isSameOrigin } from "../security";
+import { clientIp, enforceApiRateLimit, isSameOrigin, publicAppOrigin } from "../security";
 
 type RequestRow = {email:string;name:string;team_name:string;note:string;status:"pending"|"approved"|"rejected";requested_at:string;reviewed_at:string|null;reviewed_by:string|null;approval_token_secret:string|null;approval_expires_at:string|null;approval_used_at:string|null};
 const validEmail=(value:string)=>/^\S+@\S+\.\S+$/.test(value)&&value.length<=254;
@@ -18,7 +18,7 @@ export async function GET(request:Request) {
   const email=user.email.toLowerCase();
   if(!isEarlyAccessAdmin(email))return Response.json({status:await earlyAccessStatus(email),isAdmin:false});
   const rows=await env.DB.prepare("SELECT email,name,team_name,note,status,requested_at,reviewed_at,reviewed_by,approval_token_secret,approval_expires_at,approval_used_at FROM early_access_requests ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END, requested_at DESC LIMIT 200").all<RequestRow>();
-  const origin=new URL(request.url).origin;
+  const origin=publicAppOrigin(request);
   const requests=await Promise.all(rows.results.map(row=>publicRow(row,origin)));
   return Response.json({status:"approved",isAdmin:true,requests});
 }
@@ -65,6 +65,6 @@ export async function PATCH(request:Request){
   const result=await env.DB.prepare("UPDATE early_access_requests SET status=?,reviewed_at=?,reviewed_by=?,approval_token_hash=?,approval_token_secret=?,approval_expires_at=?,approval_used_at=NULL WHERE email=?")
     .bind(storedStatus,now.toISOString(),user.email.toLowerCase(),hash,secret,expiresAt,email).run();
   if(!result.meta.changes)return Response.json({error:"Request not found"},{status:404});
-  const signupUrl=token?`${new URL(request.url).origin}/login?email=${encodeURIComponent(email)}&register=1&return_to=${encodeURIComponent(`/api/early-access/claim?token=${token}`)}`:null;
+  const signupUrl=token?`${publicAppOrigin(request)}/login?email=${encodeURIComponent(email)}&register=1&return_to=${encodeURIComponent(`/api/early-access/claim?token=${token}`)}`:null;
   return Response.json({ok:true,signupUrl,expiresAt});
 }

@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getGoogleUser } from "../../google-auth";
-import { clientIp, enforceApiRateLimit, isSameOrigin } from "../security";
+import { clientIp, enforceApiRateLimit, isSameOrigin, publicAppOrigin } from "../security";
 
 const hash = async (value:string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(byte=>byte.toString(16).padStart(2,"0")).join("");
 const createToken = () => crypto.randomUUID().replaceAll("-","")+crypto.randomUUID().replaceAll("-","");
@@ -48,7 +48,7 @@ export async function GET(request:Request){
   await ensureTables();const row=await env.DB.prepare("SELECT access_secret FROM team_member_access WHERE team_id = ?").bind(teamId).first<{access_secret:string|null}>();
   if(!row)return Response.json({exists:false});const access=row.access_secret?await decryptAccess(row.access_secret):null;
   if(!access)return Response.json({exists:true,replacementRequired:true});
-  return Response.json({exists:true,url:`${new URL(request.url).origin}/join-team?token=${access.token}`,pin:access.pin});
+  return Response.json({exists:true,url:`${publicAppOrigin(request)}/join-team?token=${access.token}`,pin:access.pin});
 }
 
 export async function POST(request:Request){
@@ -66,11 +66,11 @@ export async function POST(request:Request){
   if(!team)return Response.json({error:"Team not found"},{status:404});
   await ensureTables();
   const current=await env.DB.prepare("SELECT access_secret FROM team_member_access WHERE team_id = ?").bind(teamId).first<{access_secret:string|null}>();
-  if(current?.access_secret&&!replace){const existing=await decryptAccess(current.access_secret);if(existing)return Response.json({url:`${new URL(request.url).origin}/join-team?token=${existing.token}`,pin:existing.pin,teamName:(JSON.parse(team.payload) as {name?:string}).name??"your team",reused:true})}
+  if(current?.access_secret&&!replace){const existing=await decryptAccess(current.access_secret);if(existing)return Response.json({url:`${publicAppOrigin(request)}/join-team?token=${existing.token}`,pin:existing.pin,teamName:(JSON.parse(team.payload) as {name?:string}).name??"your team",reused:true})}
   const token=createToken();const pin=createPin();const tokenHash=await hash(token);const pinHash=await hash(`${token}:${pin}`);const accessSecret=await encryptAccess(token,pin);const now=new Date().toISOString();
   await env.DB.prepare(`INSERT INTO team_member_access (team_id,token_hash,pin_hash,created_by,created_at,access_secret) VALUES (?,?,?,?,?,?)
     ON CONFLICT(team_id) DO UPDATE SET token_hash=excluded.token_hash,pin_hash=excluded.pin_hash,created_by=excluded.created_by,created_at=excluded.created_at,access_secret=excluded.access_secret`).bind(teamId,tokenHash,pinHash,email,now,accessSecret).run();
-  return Response.json({url:`${new URL(request.url).origin}/join-team?token=${token}`,pin,teamName:(JSON.parse(team.payload) as {name?:string}).name??"your team"});
+  return Response.json({url:`${publicAppOrigin(request)}/join-team?token=${token}`,pin,teamName:(JSON.parse(team.payload) as {name?:string}).name??"your team"});
 }
 
 export async function DELETE(request:Request){

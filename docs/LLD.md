@@ -513,9 +513,10 @@ Authentication requires synchronized allowlists:
 - Google OAuth Authorized redirect URIs: retain the Firebase authentication
   handler URI configured for the Firebase project.
 
-The metadata base URL and invitation URLs derive from the incoming request
-origin. This avoids a hard-coded hosting hostname, but means treasurers should
-use the canonical origin when generating messages. A Google `origin_mismatch`
+The metadata base URL derives from the incoming request. Team-member,
+co-treasurer, and approved early-access links are normalized to
+`https://www.wicketsplit.com` in production while retaining localhost during
+development. A Google `origin_mismatch`
 response indicates an OAuth allowlist mismatch and does not require a WicketSplit
 code deployment.
 

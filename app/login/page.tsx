@@ -71,8 +71,8 @@ export default function Login() {
       script.onerror = () => setError("Google sign-in is temporarily unavailable.");
       document.head.appendChild(script);
     }
-    fetch("/api/auth/firebase-config").then(response => response.json()).then(({ enabled, config }) => {
-      if (!enabled) return;
+    fetch("/api/auth/firebase-config").then(response => response.json() as Promise<{enabled?:boolean;config?:Record<string,string>}>).then(({ enabled, config }) => {
+      if (!enabled || !config) return;
       const app: FirebaseApp = getApps().length ? getApp() : initializeApp(config);
       authRef.current = getAuth(app);
       setFirebaseEnabled(true);
