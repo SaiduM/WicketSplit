@@ -27,6 +27,11 @@ calculates settlements but does not move money.
 
 ## Product workflow
 
+The public homepage uses a compact, swipeable feature tour with keyboard and
+button controls, concise workflow and trust sections, and a persistent mobile
+early-access action so visitors can understand the product without a long
+scroll.
+
 1. Sign in with Google or a verified Firebase email/password account.
 2. Register one or more teams, add a reusable roster, and create leagues.
 3. Record games with an optional date, opponent, and Playing XI or XII. Every

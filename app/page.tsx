@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 import { getGoogleUser } from "./google-auth";
+import FeatureCarousel from "./feature-carousel";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,8 @@ export default async function Home() {
     <nav className="public-nav">
       <a className="public-brand" href="/"><span>W</span>WicketSplit</a>
       <div>
-        <a className="nav-link" href="#workflow">How it works</a>
-        <a className="nav-link" href="#features">Features</a>
-        <a className="nav-link" href="#access">Team access</a>
+        <a className="nav-link" href="#features">Explore features</a>
+        <a className="nav-link" href="#how">How it works</a>
         <a className="ghost" href="/login?return_to=/app">Sign in</a>
         <a className="primary" href={workspaceLink}>{cta} →</a>
       </div>
@@ -27,7 +27,7 @@ export default async function Home() {
         <p>Add the Playing XI or XII, record every team cost, and let WicketSplit calculate a transparent settlement across the whole league.</p>
         <div className="hero-actions">
           <a className="primary hero-primary" href={workspaceLink}>{cta} →</a>
-          <a className="text-action" href="#workflow">See how it works ↓</a>
+          <a className="text-action" href="#features">Explore the product ↓</a>
         </div>
         <div className="hero-proof"><span>✓ No card required</span><span>✓ Players need no account</span><span>✓ Installable on iPhone</span></div>
       </div>
@@ -46,40 +46,13 @@ export default async function Home() {
     </section>
 
     <section className="capability-strip"><span>Playing XI/XII</span><i/> <span>Game-based splits</span><i/> <span>Umpiring credits</span><i/> <span>CricClubs sync</span><i/> <span>CSV settlement</span></section>
-
-    <section className="workflow-section" id="workflow">
-      <div className="section-title"><span className="hero-kicker">ONE CLEAR WORKFLOW</span><h2>From fixture to final settlement.</h2><p>WicketSplit does the repetitive math while your team keeps full visibility.</p></div>
-      <div className="workflow-grid">
-        <article><span className="step-number">01</span><div className="workflow-visual game-visual"><div><small>COMPLETED GAME</small><strong>Wolfpacks <i>vs</i> Cheetahs</strong><p>Jul 19 · Playing XII</p></div><b>12</b><section><i>SM</i><i>AR</i><i>KP</i><i>VN</i><i>+8</i></section></div><h3>Add who played</h3><p>Create a game manually, sync completed CricClubs matches, or import lineup screenshots privately on your device.</p></article>
-        <article><span className="step-number">02</span><div className="workflow-visual expense-visual"><div><i>↗</i><span><small>FRUITS / WATER</small><strong>Match refreshments</strong></span><b>$48.00</b></div><div><i>÷</i><span><small>SHARED BY</small><strong>Completed games</strong></span><b>Auto</b></div><div><i>＋</i><span><small>UMPIRE CREDIT</small><strong>2 outside games</strong></span><b>$50.00</b></div></div><h3>Record costs and credits</h3><p>Track league fees, refreshments, restaurants, other costs, who paid, and fixed umpiring credits.</p></article>
-        <article><span className="step-number">03</span><div className="workflow-visual settle-visual"><header><span>PLAYER</span><span>REMAINING</span></header><div><span><i className="lime">JM</i>Jordan</span><b className="positive">+$126.40</b></div><div><span><i className="blue">AK</i>Arun</span><b className="negative">−$71.20</b></div><div><span><i className="peach">RP</i>Ravi</span><b className="negative">−$55.20</b></div><footer>Jordan receives from 2 players</footer></div><h3>Settle with confidence</h3><p>See every player’s calculation, suggested payments, confirmed history, and exportable league records.</p></article>
-      </div>
-    </section>
-
-    <section className="feature-bento" id="features">
-      <div className="section-title"><span className="hero-kicker">MORE THAN AN EXPENSE LIST</span><h2>Purpose-built for the treasurer.</h2><p>Powerful where the league needs it, intentionally simple everywhere else.</p></div>
-      <div className="bento-grid">
-        <article className="bento-large"><span className="bento-icon">÷</span><h3>Fair by game, not by roster</h3><p>The team cost pool is divided across completed games, then among each game’s included players. Edit a lineup and every affected share updates automatically.</p><div className="formula-chip"><span>Team costs</span><b>÷ games</b><span>÷ eligible players</span><strong>= fair share</strong></div></article>
-        <article><span className="bento-icon">◎</span><h3>CricClubs sync</h3><p>Discover leagues, import completed games, lineups, and missing roster players.</p></article>
-        <article><span className="bento-icon">▧</span><h3>Private screenshot import</h3><p>Read up to 10 lineup screenshots on-device. Images are discarded after review.</p></article>
-        <article><span className="bento-icon">＋</span><h3>Umpiring credits</h3><p>Enter one fixed rate and each player’s game count. Credits flow into the team settlement.</p></article>
-        <article><span className="bento-icon">⇄</span><h3>Transparent settlement</h3><p>Fair share, expenses paid, credits, sent, received, and remaining—all explained.</p></article>
-        <article className="bento-wide"><span className="bento-icon">↗</span><h3>One team, the right access for everyone</h3><p>Owners and co-treasurers manage the books. Players open one private team link and PIN, choose their roster name, and see their personal balance without registering.</p></article>
-      </div>
-    </section>
-
-    <section className="access-showcase" id="access">
-      <div><span className="hero-kicker">SIMPLE, ROLE-BASED ACCESS</span><h2>Your team sees what they need.</h2><p>No shared treasurer passwords. No account creation for every player. No confusing admin controls in the player view.</p><div className="access-points"><span><i>1</i><b>Treasurer</b><small>Owns teams and full financial control</small></span><span><i>2</i><b>Co-treasurer</b><small>Authenticated full team management</small></span><span><i>3</i><b>Player</b><small>Private link + PIN and personal view</small></span></div></div>
-      <div className="phone-shell"><div className="phone-notch"/><div className="phone-screen"><header><span>W</span><b>WicketSplit</b></header><small>MY SETTLEMENT</small><h3>Hi, Maya.</h3><div className="phone-balance"><span>You need to pay</span><strong>$74.60</strong><small>Across 6 games</small></div><div className="phone-row"><span>Fair share</span><b>$149.60</b></div><div className="phone-row"><span>Expenses paid</span><b className="positive">+$75.00</b></div><button>See my breakdown</button><footer><i>⌂</i><i>◉</i><i>↗</i><i>⇄</i></footer></div></div>
-    </section>
-
-    <section className="trust-section">
-      <div><span className="hero-kicker">BUILT FROM A REAL TEAM PROBLEM</span><h2>Made by a cricket-team treasurer.</h2><p>WicketSplit started with a simple question: how do you fairly split a league fee when every player appears in a different number of games? It grew into one focused place for fixtures, expenses, credits, and settlement—without turning into heavyweight club-management software.</p></div>
-      <div className="trust-cards"><article><span>⌁</span><strong>No card required</strong><small>Join the early preview for free</small></article><article><span>▣</span><strong>Your records stay private</strong><small>Server-enforced team permissions</small></article><article><span>⌂</span><strong>Works like an app</strong><small>Add it to your iPhone Home Screen</small></article></div>
-    </section>
+    <FeatureCarousel/>
+    <section className="compact-how" id="how"><div><span className="hero-kicker">HOW IT WORKS</span><h2>From fixture to settled<br/>in four clear moves.</h2></div><ol><li><b>01</b><span><strong>Create your team</strong><small>Add or import the roster</small></span></li><li><b>02</b><span><strong>Add completed games</strong><small>Select the XI or XII</small></span></li><li><b>03</b><span><strong>Record team costs</strong><small>We calculate every share</small></span></li><li><b>04</b><span><strong>Settle and share</strong><small>Clear balances with confidence</small></span></li></ol></section>
+    <section className="compact-trust"><div><span className="hero-kicker">MADE FOR REAL TEAM TREASURERS</span><h2>Serious about the math.<br/>Lightweight everywhere else.</h2><p>Owners and co-treasurers manage the books. Players use one private link and PIN to see their own transparent breakdown—without creating an account.</p></div><div className="trust-accordion"><details open><summary>How is the split fair?<span>＋</span></summary><p>Team-funded costs are divided equally across completed games, then among the eligible players in each game.</p></details><details><summary>Does every player need an account?<span>＋</span></summary><p>No. Players use a reusable private team link and six-digit PIN, then select their roster identity.</p></details><details><summary>Is it mobile friendly?<span>＋</span></summary><p>Yes. WicketSplit is an installable PWA and can be added to an iPhone Home Screen without an App Store download.</p></details></div></section>
 
     <section className="public-cta modern-cta"><span className="hero-kicker">LIMITED EARLY ACCESS</span><h2>Ready to retire the team spreadsheet?</h2><p>Request access using only your email and team name. If approved, we’ll send you a private signup link.</p><a className="primary hero-primary" href={workspaceLink}>{cta} →</a><small>No account or card is required to request access.</small></section>
 
-    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Every game. Every expense. Fairly split.</p><div className="footer-links"><a href="#workflow">How it works</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
+    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Every game. Every expense. Fairly split.</p><div className="footer-links"><a href="#features">Features</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
+    <a className="mobile-sticky-cta" href={workspaceLink}>{cta} →</a>
   </main>;
 }

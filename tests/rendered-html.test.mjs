@@ -249,14 +249,19 @@ test("mobile game cards display two per row", async () => {
   assert.match(css, /\.sidebar nav button\.mobile-secondary-nav\{display:none\}/);
 });
 
-test("public access messaging and financial ledgers are mobile friendly", async () => {
-  const [home, css] = await Promise.all([
+test("public access messaging, carousel, and financial ledgers are mobile friendly", async () => {
+  const [home, carousel, css] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/feature-carousel.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
-  assert.match(home, /SIMPLE, ROLE-BASED ACCESS/);
-  assert.match(home, /Private link \+ PIN/);
+  assert.match(home, /MADE FOR REAL TEAM TREASURERS/);
+  assert.match(home, /private link and PIN/);
   assert.match(home, /LIMITED EARLY ACCESS/);
+  assert.match(carousel, /aria-roledescription="carousel"/);
+  assert.match(carousel, /onTouchStart/);
+  assert.match(carousel, /ArrowRight/);
+  assert.match(css, /\.mobile-sticky-cta\{display:block;position:fixed/);
   assert.match(css, /\.ledger-filters\+\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
   assert.match(css, /\.settlement-filter\+\.table-panel td:nth-child\(1\)::before\{content:"Player"\}/);
   assert.match(css, /\.payment-history>\.table-panel td:nth-child\(1\)::before\{content:"Date"\}/);
