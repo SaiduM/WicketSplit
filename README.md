@@ -128,12 +128,15 @@ create a first team until an early-access administrator approves the request.
 Existing team owners, existing co-treasurers, accepted co-treasurer invitations,
 and player link/PIN sessions continue to work normally.
 
-New users request access after sign-in. The administrator reviews requests at
-`/early-access`; approved users can then create their first team. The default
-administrator is the product owner account. A deployment can override or add
-administrators with the comma-separated `EARLY_ACCESS_ADMIN_EMAILS` runtime
-setting. Approval is enforced by the server when a new team is created, not
-only by the interface.
+New users request access publicly at `/request-access` using their name, email,
+team name, and an optional note; no account is required. The administrator
+reviews requests at `/early-access`. Approval creates a single-use, seven-day,
+email-bound signup link and a ready-to-copy email message. The admin can also
+open a prefilled draft in their own email app, so automated mail delivery is not
+required. The default administrator is the product owner account. A deployment
+can override or add administrators with the comma-separated
+`EARLY_ACCESS_ADMIN_EMAILS` runtime setting. Approval is enforced by the server
+when a new team is created, not only by the interface.
 
 For ordinary players, a treasurer opens **Team roster → Team member access**,
 creates one link and PIN, and shares the prepared WhatsApp message privately.

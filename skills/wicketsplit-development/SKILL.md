@@ -66,6 +66,11 @@ Vinext, React, Firebase, and D1 architecture.
 - Allow one verified email to hold memberships in multiple teams and expose
   them through the Current Team selector.
 - Keep invitation tokens random, hashed, single-use, expiring, and throttled.
+- Keep public early-access requests registration-free. Bind approved signup
+  links to the requested email, store only the token hash plus an encrypted
+  reusable admin copy, expire links after seven days, and consume them once.
+- Keep manual approval delivery provider-free: offer a copyable message and a
+  prefilled `mailto:` draft unless transactional email is explicitly added.
 
 ## API and data safety
 

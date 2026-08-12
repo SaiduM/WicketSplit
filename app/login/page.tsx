@@ -29,8 +29,8 @@ export default function Login() {
   const buttonRef = useRef<HTMLDivElement>(null);
   const authRef = useRef<Auth | null>(null);
   const [firebaseEnabled, setFirebaseEnabled] = useState(false);
-  const [mode, setMode] = useState<EmailMode>(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("reset") ? "reset" : "signin");
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<EmailMode>(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("reset") ? "reset" : typeof window !== "undefined" && new URLSearchParams(window.location.search).has("register") ? "register" : "signin");
+  const [email, setEmail] = useState(() => typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("email")??"" : "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

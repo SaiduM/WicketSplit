@@ -25,6 +25,8 @@
 | `app/api/team-treasurers/route.ts` | List roles and revoke co-treasurer membership |
 | `app/api/team-users/route.ts` | Treasurer-only access inventory and shared player-session removal |
 | `app/api/early-access/route.ts` | Submit, review, approve, or reject early-access requests |
+| `app/api/early-access/claim/route.ts` | Consume an email-bound approved signup link |
+| `app/request-access/page.tsx` | Public request form that requires no account |
 | `app/join-team/page.tsx` | Registration-free team member entry UI |
 | `app/api/players/route.ts` | Protected roster deletion |
 | `app/api/teams/route.ts` | Owner-only team deletion |
@@ -202,6 +204,14 @@ expiry, and acceptance information.
 ### `api_rate_limits`
 
 Stores rolling request counters by rate key and time window.
+
+### `early_access_requests`
+
+Stores the requester's name, email, team, note, review state, and timestamps.
+Approval creates a random token whose SHA-256 hash is queried during claim; an
+AES-GCM encrypted copy lets the admin reopen the same prepared message until
+the link is used or expires. The raw token is never stored. Signup links are
+email-bound, single-use, and valid for seven days.
 
 ## API contracts
 

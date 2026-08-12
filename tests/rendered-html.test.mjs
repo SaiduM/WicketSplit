@@ -264,24 +264,33 @@ test("public access messaging and financial ledgers are mobile friendly", async 
 });
 
 test("new team creation is protected by an administrator-approved early-access gate", async () => {
-  const [stateApi, accessApi, policy, dashboard, migration] = await Promise.all([
+  const [stateApi, accessApi, claimApi, policy, dashboard, requestPage, migration] = await Promise.all([
     readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/early-access/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/early-access/claim/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/early-access-policy.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../drizzle/0007_overrated_spyke.sql", import.meta.url), "utf8"),
+    readFile(new URL("../app/request-access/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0008_curved_turbo.sql", import.meta.url), "utf8"),
   ]);
   assert.match(stateApi, /Early-access approval is required before creating a team/);
   assert.match(accessApi, /Administrator access required/);
   assert.match(accessApi, /early-access-request:/);
+  assert.match(accessApi, /Approve|approval_token_hash|signupUrl/);
+  assert.match(claimApi, /approval_used_at/);
+  assert.match(claimApi, /SET status='approved'/);
+  assert.match(claimApi, /email-mismatch/);
   assert.match(policy, /EARLY_ACCESS_ADMIN_EMAILS/);
-  assert.match(dashboard, /INVITE-ONLY EARLY ACCESS/);
+  assert.match(policy, /wicketsplit-early-access/);
+  assert.match(dashboard, /This email has not been approved yet/);
+  assert.match(requestPage, /No account or card is required/);
+  assert.match(requestPage, /name,email,teamName,note/);
   const admin = await readFile(new URL("../app/early-access/early-access-admin.tsx", import.meta.url), "utf8");
   assert.match(admin, /Copy approval message/);
+  assert.match(admin, /Open email draft/);
   assert.match(admin, /navigator\.clipboard\.writeText/);
-  assert.match(admin, /login\?return_to=\/app/);
-  assert.match(migration, /early_access_requests/);
-  assert.match(migration, /idx_early_access_status_requested/);
+  assert.match(admin, /single-use and expires in 7 days/);
+  assert.match(migration, /approval_token_hash/);
 });
 
 test("squad screenshots are processed locally and reviewed before batch import", async () => {

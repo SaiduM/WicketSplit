@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const user = await getGoogleUser();
-  const workspaceLink = user ? "/app" : "/login?return_to=/app";
+  const workspaceLink = user ? "/app" : "/request-access";
   const cta = user ? "Open WicketSplit" : "Request early access";
 
   return <main className="public-site product-landing">
@@ -78,7 +78,7 @@ export default async function Home() {
       <div className="trust-cards"><article><span>⌁</span><strong>No card required</strong><small>Join the early preview for free</small></article><article><span>▣</span><strong>Your records stay private</strong><small>Server-enforced team permissions</small></article><article><span>⌂</span><strong>Works like an app</strong><small>Add it to your iPhone Home Screen</small></article></div>
     </section>
 
-    <section className="public-cta modern-cta"><span className="hero-kicker">LIMITED EARLY ACCESS</span><h2>Ready to retire the team spreadsheet?</h2><p>We’re onboarding a small number of cricket teams and learning directly from their treasurers.</p><a className="primary hero-primary" href={workspaceLink}>{cta} →</a><small>Already approved? Sign in using the same email from your request.</small></section>
+    <section className="public-cta modern-cta"><span className="hero-kicker">LIMITED EARLY ACCESS</span><h2>Ready to retire the team spreadsheet?</h2><p>Request access using only your email and team name. If approved, we’ll send you a private signup link.</p><a className="primary hero-primary" href={workspaceLink}>{cta} →</a><small>No account or card is required to request access.</small></section>
 
     <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Every game. Every expense. Fairly split.</p><div className="footer-links"><a href="#workflow">How it works</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
   </main>;

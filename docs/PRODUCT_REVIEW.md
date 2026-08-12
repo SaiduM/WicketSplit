@@ -12,6 +12,10 @@ ledger through individual accounts, while ordinary players use a reusable
 private team link and PIN. This keeps administration accountable without
 forcing every player to register.
 
+Early-access discovery is also registration-free. Prospective treasurers send
+their email and team name first; approved applicants receive an expiring,
+email-bound signup link and create an account only after approval.
+
 ## Functional coverage
 
 - Multiple teams, treasurers, rosters, and leagues

@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const teams = sqliteTable("teams", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -68,8 +68,13 @@ export const earlyAccessRequests = sqliteTable("early_access_requests", {
   requestedAt: text("requested_at").notNull(),
   reviewedAt: text("reviewed_at"),
   reviewedBy: text("reviewed_by"),
+  approvalTokenHash: text("approval_token_hash"),
+  approvalTokenSecret: text("approval_token_secret"),
+  approvalExpiresAt: text("approval_expires_at"),
+  approvalUsedAt: text("approval_used_at"),
 }, table => [
   index("idx_early_access_status_requested").on(table.status, table.requestedAt),
+  uniqueIndex("idx_early_access_approval_token").on(table.approvalTokenHash),
 ]);
 
 export const teamMemberAccess = sqliteTable("team_member_access", {

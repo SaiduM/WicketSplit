@@ -17,6 +17,8 @@ scope.
 - The responsive PWA has role-based mobile navigation and guarded startup sync.
 - The product is published at `https://www.wicketsplit.com`; Sites custom-domain
   DNS is active for `www`, and Google/Firebase authorize both official origins.
+- Early-access requests require no account; administrator approval produces an
+  email-bound, single-use seven-day signup link and a prefilled email draft.
 - Lineup entry selects the Playing XI/XII once, defaults every selected player
   into the split, and keeps rare exclusions behind an optional adjustment;
   game-funded expense entry needs no duplicate player selection.
