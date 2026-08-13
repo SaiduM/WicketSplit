@@ -17,6 +17,8 @@ The public production site is:
 
 <https://www.wicketsplit.com>
 
+Official LinkedIn page: <https://www.linkedin.com/company/wicketsplit/>
+
 The `www` hostname is the canonical product URL. The zone-apex hostname
 `https://wicketsplit.com` is attached to the same Sites project and should be
 used only after its managed TLS certificate reports active.

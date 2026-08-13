@@ -258,6 +258,9 @@ test("public access messaging, carousel, and financial ledgers are mobile friend
   assert.match(home, /MADE FOR REAL TEAM TREASURERS/);
   assert.match(home, /private link and PIN/);
   assert.match(home, /LIMITED EARLY ACCESS/);
+  assert.match(home, /https:\/\/www\.linkedin\.com\/company\/wicketsplit\//);
+  assert.match(home, /Follow WicketSplit on LinkedIn/);
+  assert.match(home, /target="_blank" rel="noopener noreferrer"/);
   assert.match(carousel, /aria-roledescription="carousel"/);
   assert.match(carousel, /onTouchStart/);
   assert.match(carousel, /ArrowRight/);
