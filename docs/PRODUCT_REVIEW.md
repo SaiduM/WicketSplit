@@ -88,7 +88,8 @@ transfers funds.
 ## Recommended next priorities
 
 1. Collect feedback from a small number of real teams before adding scope.
-2. Add error monitoring and a tested backup/restore procedure.
+2. Rehearse the implemented team backup/restore procedure and add automated
+   provider-level whole-D1 disaster recovery.
 3. Replace full-workspace writes with idempotent record-specific mutations.
 4. Move pagination into indexed server queries and run staged load tests before
    broad public growth.

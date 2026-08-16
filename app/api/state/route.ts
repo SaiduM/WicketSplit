@@ -59,7 +59,7 @@ async function enforceRateLimit(identity: string, action: "read" | "write") {
   return { allowed: (row?.request_count ?? limit + 1) <= limit, limit };
 }
 
-function isValidState(value: unknown): boolean {
+export function isValidState(value: unknown): boolean {
   const text = (candidate: unknown, max: number, required = true) =>
     typeof candidate === "string" && candidate.length <= max && (!required || candidate.trim().length > 0);
   const id = (candidate: unknown) => typeof candidate === "number" && Number.isSafeInteger(candidate) && candidate > 0;

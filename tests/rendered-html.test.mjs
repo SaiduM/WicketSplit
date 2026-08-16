@@ -22,6 +22,27 @@ test("Google account recovery does not collect an app password", async () => {
   assert.doesNotMatch(recovery, /type=["']password["']/i);
 });
 
+test("team backups are integrity checked and restored only by the owner", async () => {
+  const route = await readFile(new URL("../app/api/backup/route.ts", import.meta.url), "utf8");
+  assert.match(route, /SHA-256/);
+  assert.match(route, /Only the original team owner can restore a backup/);
+  assert.match(route, /Backup integrity check failed/);
+  assert.match(route, /team_restore_points/);
+  assert.match(route, /ORDER BY created_at DESC LIMIT 10/);
+  assert.match(route, /isValidState/);
+});
+
+test("feedback is rate limited and has an administrator queue", async () => {
+  const route = await readFile(new URL("../app/api/feedback/route.ts", import.meta.url), "utf8");
+  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  const landing = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(route, /enforceApiRateLimit/);
+  assert.match(route, /isEarlyAccessAdmin/);
+  assert.match(route, /feedback_reports/);
+  assert.match(dashboard, /Report a problem/);
+  assert.match(landing, /Report a problem/);
+});
+
 test("email login uses Firebase verification and a server-verified session", async () => {
   const [login, emailApi, configApi] = await Promise.all([
     readFile(new URL("../app/login/page.tsx", import.meta.url), "utf8"),

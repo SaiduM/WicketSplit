@@ -537,5 +537,7 @@ Recommended next design:
 
 - Add record-specific mutation APIs and idempotency keys.
 - Move pagination and filtering into indexed D1 queries.
-- Add immutable audit events, backups, metrics, and alerts.
+- Add immutable audit events, automated whole-D1 backups, metrics, and alerts.
+  Portable team export/restore is implemented with checksum verification,
+  owner-only restore, structural validation, and ten retained restore points.
 - See `FUTURE_TODO.md` for priority, acceptance criteria, and deferred scope.

@@ -29,9 +29,12 @@ scope.
   workspace load/save, CricClubs sync, and failed deployments.
   - Acceptance: errors include route, status, correlation ID, release version,
     and redacted account/team identifiers.
-- [ ] Create and test a D1 backup and restore runbook.
+- [x] Add portable team backup, guarded owner restore, and a recovery runbook.
+  - Delivered: checksum validation, record validation, pre-restore snapshots,
+    ten-point retention, and documented verification steps.
+- [ ] Automate and rehearse provider-level whole-D1 disaster recovery.
   - Acceptance: restore a non-production copy and verify team, membership,
-    invitation, expense, credit, and payment counts.
+    invitation, expense, credit, payment, feedback, and restore-point counts.
 - [ ] Add structured audit events for role changes and destructive actions.
   - Acceptance: team, league, game, player, expense, credit, payment, and access
     deletion events retain actor, target, time, and result.
@@ -73,7 +76,9 @@ scope.
 ## P2 — product quality after feedback
 
 - [ ] Remember the last selected team and league per authenticated account.
-- [ ] Add in-app release notes and a lightweight feedback/report-problem action.
+- [ ] Add in-app release notes.
+- [x] Add a lightweight public and in-app feedback/report-problem action with
+  rate limiting and an administrator review queue.
 - [x] Add a generic production domain and synchronize Sites DNS, Google
   Authorized JavaScript Origins, and Firebase authorized domains.
 - [ ] Finish branded authentication delivery.

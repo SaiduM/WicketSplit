@@ -52,7 +52,7 @@ export default async function Home() {
 
     <section className="public-cta modern-cta"><span className="hero-kicker">LIMITED EARLY ACCESS</span><h2>Ready to retire the team spreadsheet?</h2><p>Request access using only your email and team name. If approved, we’ll send you a private signup link.</p><a className="primary hero-primary" href={workspaceLink}>{cta} →</a><small>No account or card is required to request access.</small><a className="linkedin-follow" href="https://www.linkedin.com/company/wicketsplit/" target="_blank" rel="noopener noreferrer"><b>in</b> Follow WicketSplit on LinkedIn ↗</a></section>
 
-    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Every game. Every expense. Fairly split.</p><div className="footer-links"><a href="#features">Features</a><a href="https://www.linkedin.com/company/wicketsplit/" target="_blank" rel="noopener noreferrer" aria-label="WicketSplit on LinkedIn">LinkedIn ↗</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
+    <footer><a className="public-brand" href="/"><span>W</span>WicketSplit</a><p>Every game. Every expense. Fairly split.</p><div className="footer-links"><a href="#features">Features</a><a href="/feedback">Report a problem</a><a href="https://www.linkedin.com/company/wicketsplit/" target="_blank" rel="noopener noreferrer" aria-label="WicketSplit on LinkedIn">LinkedIn ↗</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a><a href="/forgot-password">Account recovery</a></div></footer>
     <a className="mobile-sticky-cta" href={workspaceLink}>{cta} →</a>
   </main>;
 }

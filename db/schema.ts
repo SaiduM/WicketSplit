@@ -181,3 +181,27 @@ export const workspacePayments = sqliteTable("workspace_payments", workspaceReco
   primaryKey({ columns: [table.teamId, table.leagueId, table.recordId] }),
   index("idx_workspace_payments_league_date").on(table.teamId, table.leagueId, table.eventDate, table.sortOrder),
 ]);
+
+export const teamRestorePoints = sqliteTable("team_restore_points", {
+  id: text("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  payload: text("payload").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+}, table => [
+  index("idx_team_restore_points_team_created").on(table.teamId, table.createdAt),
+]);
+
+export const feedbackReports = sqliteTable("feedback_reports", {
+  id: text("id").primaryKey(),
+  reporterEmail: text("reporter_email"),
+  teamId: integer("team_id"),
+  category: text("category").notNull(),
+  message: text("message").notNull(),
+  pageUrl: text("page_url"),
+  status: text("status").notNull().default("open"),
+  createdAt: text("created_at").notNull(),
+  resolvedAt: text("resolved_at"),
+}, table => [
+  index("idx_feedback_reports_status_created").on(table.status, table.createdAt),
+]);

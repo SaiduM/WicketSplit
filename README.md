@@ -235,6 +235,21 @@ Confirmed payment history is included in the CSV export.
 These controls are appropriate for a lightweight feedback release. They do not
 replace an independent penetration test, monitoring and alerting, tested
 backups, or a compliance review if regulated or high-value data is introduced.
+
+## Backup, recovery, and feedback
+
+Authenticated treasurers can download a team backup from **Account → Backup &
+recovery**. Only the original team owner can restore it. Restores validate the
+file checksum and all record references, require the current team name, and
+create a private pre-restore snapshot before replacing the team data. Backups
+exclude account credentials, sessions, team PINs, memberships, and invitation
+tokens. See [docs/BACKUP_RECOVERY.md](docs/BACKUP_RECOVERY.md) for the operating
+procedure and recovery checklist.
+
+Anyone can use **Report a problem** from the public footer; signed-in users can
+also open it from the account menu. Reports are rate-limited and stored in D1.
+Configured early-access administrators can review and resolve them from the
+private feedback queue.
 Each team carries an optimistic version. A stale treasurer save is rejected and
 the app asks that user to reload the latest team instead of silently replacing
 another treasurer's work.

@@ -200,4 +200,6 @@ The present model is appropriate for a controlled recreational-team beta. A
 reasonable untested operating target is tens of teams and hundreds to low
 thousands of players; it is not a load-tested service-level guarantee. See
 `FUTURE_TODO.md` for the ordered path to normalized record-level persistence,
-record-specific writes, server pagination, monitoring, and backups.
+record-specific writes, server pagination, monitoring, and provider-level
+whole-database backups. Team owners already have portable checksum-protected
+exports and guarded restores with pre-restore D1 snapshots.
