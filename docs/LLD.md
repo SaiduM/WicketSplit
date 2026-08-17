@@ -268,7 +268,9 @@ the original IDs, array order, optional fields, and financial payloads.
    team's authoritative record set in one guarded D1 batch.
 8. For a member:
    - Require the submitted workspace to contain exactly the session's team.
-   - Reject setup, game, credit, and payment changes.
+    - Reject setup, game, credit, and confirmed-payment changes.
+    - Permit a new pending payment only when its sender matches the session's
+      roster player; reject edits and deletions of submitted payments.
    - Reject all new expenses; a treasurer or co-treasurer must record them.
    - Accept edits or deletions only when the stored `submittedBy` matches the
      verified session identity; edited entries must retain the linked payer.
@@ -426,8 +428,12 @@ The payment form:
 - Records the received date and optional reference.
 - Stamps the recorder's verified email.
 
-Only treasurers can add or delete payments. Deleting a mistaken record restores
-the prior balances. Referenced players cannot be deleted.
+Players can submit only their own outgoing suggested payment. Pending payments
+do not participate in balance calculations or CSV exports. Treasurers can
+confirm receipt, which changes the status to confirmed and recalculates both
+balances, or reject the pending record. Only treasurers can directly add or
+delete confirmed payments. Deleting a mistaken confirmed record restores the
+prior balances. Referenced players cannot be deleted.
 
 ## Invitation flow
 

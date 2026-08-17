@@ -161,12 +161,16 @@ export function isValidState(value: unknown): boolean {
       const paymentIds = new Set<number>();
       return (record.payments??[]).every(payment => {
         if (!payment || typeof payment !== "object") return false;
-        const entry = payment as { id?: unknown; date?: unknown; fromPlayerId?: unknown; toPlayerId?: unknown; amount?: unknown; note?: unknown; recordedBy?: unknown };
+        const entry = payment as { id?: unknown; date?: unknown; fromPlayerId?: unknown; toPlayerId?: unknown; amount?: unknown; note?: unknown; recordedBy?: unknown; status?: unknown; confirmedBy?: unknown; confirmedAt?: unknown };
         if (!id(entry.id) || paymentIds.has(entry.id as number) || !text(entry.date,10) || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date)) ||
             !id(entry.fromPlayerId) || !playerIds.has(entry.fromPlayerId as number) || !id(entry.toPlayerId) || !playerIds.has(entry.toPlayerId as number) ||
             entry.fromPlayerId===entry.toPlayerId || typeof entry.amount!=="number" || !Number.isFinite(entry.amount) || entry.amount<=0 || entry.amount>100_000_000) return false;
         if (entry.note!==undefined && !text(entry.note,240,false)) return false;
         if (entry.recordedBy!==undefined && !text(entry.recordedBy,254)) return false;
+        if (entry.status!==undefined && !["pending","confirmed"].includes(String(entry.status))) return false;
+        if (entry.confirmedBy!==undefined && !text(entry.confirmedBy,254)) return false;
+        if (entry.confirmedAt!==undefined && (!text(entry.confirmedAt,40)||Number.isNaN(Date.parse(String(entry.confirmedAt))))) return false;
+        if (entry.status==="pending"&&(entry.confirmedBy!==undefined||entry.confirmedAt!==undefined)) return false;
         paymentIds.add(entry.id as number); return true;
       });
     });
@@ -266,7 +270,7 @@ export async function POST(request: Request) {
     const oldLeagues = (current.leagues as Array<Record<string, unknown>>)??[];
     const newLeagues = (clean.leagues as Array<Record<string, unknown>>)??[];
     const teamShape = (team: Record<string, unknown>) => JSON.stringify({ id: team.id, name: team.name, sport: team.sport, players: team.players, cricclubs: team.cricclubs });
-    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[], payments: league.payments??[], cricclubs: league.cricclubs });
+    const leagueShape = (league: Record<string, unknown>) => JSON.stringify({ id: league.id, name: league.name, season: league.season, status: league.status, games: league.games, credits: league.credits??[], cricclubs: league.cricclubs });
     if (teamShape(current)!==teamShape(clean)||oldLeagues.length!==newLeagues.length) return Response.json({ error: "Members cannot change team setup" }, { status: 403 });
     for (const oldLeague of oldLeagues) {
       const nextLeague = newLeagues.find(item=>item.id===oldLeague.id);
@@ -285,6 +289,16 @@ export async function POST(request: Request) {
         }
       }
       oldLeague.expenses=nextExpenses.map(entry=>{const old=oldById.get(entry.id);return old&&JSON.stringify(entry)===JSON.stringify(old)?old:{...entry,submittedBy:email}});
+      const oldPayments=(oldLeague.payments as Array<Record<string,unknown>>)??[];
+      const nextPayments=(nextLeague.payments as Array<Record<string,unknown>>)??[];
+      const oldPaymentsById=new Map(oldPayments.map(entry=>[entry.id,entry]));
+      if(oldPayments.some(old=>!nextPayments.some(next=>next.id===old.id)))return Response.json({error:"Players cannot remove payment records"},{status:403});
+      for(const entry of nextPayments){
+        const old=oldPaymentsById.get(entry.id);
+        if(old&&JSON.stringify(entry)!==JSON.stringify(old))return Response.json({error:"Players cannot change submitted payments"},{status:403});
+        if(!old&&(entry.status!=="pending"||entry.fromPlayerId!==membership.player_id))return Response.json({error:"Players can submit only their own outgoing payments"},{status:403});
+      }
+      oldLeague.payments=nextPayments.map(entry=>oldPaymentsById.get(entry.id)??{...entry,status:"pending",recordedBy:email});
     }
     let saved;
     try { saved=await saveNormalizedTeam(current as Parameters<typeof saveNormalizedTeam>[0]); }

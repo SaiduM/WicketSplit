@@ -66,8 +66,10 @@ scroll.
    among each game’s eligible players. A player may therefore owe less, owe
    nothing, or finish with money to receive.
 8. Share the suggested transfers showing who should pay whom.
-9. After the receiver confirms money arrived, record the settlement payment.
-   Remaining balances and transfer suggestions recalculate automatically.
+9. A player can select **I paid — settle up** for their suggested transfer.
+   The submission remains pending and does not change balances until a
+   treasurer or co-treasurer confirms receipt. Treasurers may also record a
+   payment directly after the receiver confirms it arrived.
 10. Review the payment audit history or export the complete ledger as CSV.
 
 Game history is paginated 12 at a time, and the searchable finance ledger is
@@ -112,8 +114,9 @@ controls.
 - Batch umpiring entry with one fixed rate and per-player game counts; full
   credits are added to the equal-per-game team cost pool and itemized in the Calculator
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
-- Confirmed repayment ledger with received date, sender, receiver, amount,
-  optional reference, remaining balances, and overpayment protection
+- Player-submitted settlement requests with treasurer confirmation, plus a
+  confirmed repayment ledger with date, sender, receiver, amount, optional
+  reference, remaining balances, and overpayment protection
 - Mobile-friendly PWA installation and responsive navigation
 - History-aware mobile navigation with an on-screen Back button and guarded
   left-edge swipe gesture for returning to the previous WicketSplit section
@@ -180,7 +183,9 @@ Roles are enforced by the server:
   Members may edit or delete only older expenses they previously submitted.
   Their streamlined navigation contains Home, Games, Expenses, and a private
   **My breakdown** view limited to their own balance, payment direction, and
-  confirmed payment history. They cannot create or switch teams or change the roster,
+  confirmed payment history. They can submit their own suggested outgoing
+  payment for treasurer confirmation, but cannot confirm it or change balances.
+  They cannot create or switch teams or change the roster,
   leagues, games, credits, settlements, or invitations.
 - **Co-treasurer:** has full team-management access. These invitations require
   a roster email and can only be accepted by that verified email identity.
@@ -204,8 +209,10 @@ The Settlement page continuously suggests who should pay whom based on the
 player's fair share, expenses paid, umpiring credits, and confirmed payments.
 Its table and Details view show each positive contribution and shared cost so
 the remaining amount can be audited without reconstructing the formula.
-A treasurer records a payment only after the receiver
-confirms it arrived. The form limits the amount to both the sender's remaining
+A player may submit their own suggested outgoing payment. It remains pending,
+is excluded from balances and exports, and appears in the treasurer's review
+queue. A treasurer confirms it only after the receiver verifies arrival, or
+rejects an incorrect submission. The form limits the amount to both the sender's remaining
 debt and the receiver's remaining amount due. Each confirmed payment retains
 its date, sender, receiver, amount, optional reference, and recorder. Deleting
 an incorrect payment restores the prior balances and recalculates suggestions.

@@ -95,7 +95,7 @@ certificate is active. Firebase and Google OAuth must authorize both origins.
 flowchart LR
     Owner["Original Treasurer"] --> Full["Full Team Management"]
     Co["Co-treasurer"] --> Full
-    Member["Player via Team Link + PIN"] --> Limited["Read-only Personal Team View"]
+    Member["Player via Team Link + PIN"] --> Limited["Personal View + Pending Payment Submission"]
 
     Full --> Setup["Roster, Leagues, Games"]
     Full --> Finance["Expenses, Credits, Payments"]
@@ -107,7 +107,9 @@ flowchart LR
 - **Co-treasurer:** full operational management.
 - **Player:** no registration; enters through the private team link and PIN,
   selects a roster identity, and can view limited team records and a private
-  player breakdown. Shared sessions are restricted to the linked team, cannot
+  player breakdown. A player may submit only their own suggested outgoing
+  settlement payment; it remains pending until a treasurer confirms receipt.
+  Shared sessions are restricted to the linked team, cannot
   add new expenses, and cannot create another team. Compatibility rules may
   still permit correction or deletion of an older expense previously submitted
   by that same shared identity.

@@ -450,12 +450,25 @@ test("player deletion is treasurer-only and protects historical records", async 
   assert.match(playerApi, /fromPlayerId/);
 });
 
-test("settlement payments are validated and members cannot modify them", async () => {
+test("settlement payments are structurally validated", async () => {
   const stateApi = await readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8");
   assert.match(stateApi, /record\.payments\.length > 10_000/);
   assert.match(stateApi, /entry\.fromPlayerId===entry\.toPlayerId/);
   assert.match(stateApi, /entry\.amount<=0/);
-  assert.match(stateApi, /payments: league\.payments\?\?\[\]/);
+  assert.match(stateApi, /Players cannot remove payment records/);
+});
+
+test("players can submit pending settlement payments without clearing their own debt", async () => {
+  const dashboard = await readFile(new URL("../app/dashboard.tsx", import.meta.url), "utf8");
+  const stateApi = await readFile(new URL("../app/api/state/route.ts", import.meta.url), "utf8");
+  assert.match(dashboard, /I paid — settle up/);
+  assert.match(dashboard, /Payment submitted for treasurer confirmation/);
+  assert.match(dashboard, /payment\.status!=="pending"/);
+  assert.match(dashboard, /Payments to confirm/);
+  assert.match(dashboard, /Confirm received/);
+  assert.match(stateApi, /Players can submit only their own outgoing payments/);
+  assert.match(stateApi, /entry\.status!=="pending"\|\|entry\.fromPlayerId!==membership\.player_id/);
+  assert.match(stateApi, /Players cannot change submitted payments/);
 });
 
 test("team deletion is owner-only, throttled, and removes shared access atomically", async () => {

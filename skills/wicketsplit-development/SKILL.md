@@ -43,6 +43,9 @@ Vinext, React, Firebase, and D1 architecture.
   safe deletion, recalculate all equal-per-game shares.
 - Confirm expense deletion and immediately recalculate all affected balances.
 - Keep confirmed settlement payments separate from expenses and credits.
+- Allow a linked player to submit only their own outgoing suggested payment as
+  pending. Pending payments never affect balances or exports; a treasurer must
+  confirm receipt or reject the submission.
 - Show the full settlement equation and itemized positive contributions in the player Details view; never hide expenses paid or umpiring credits inside the remaining balance.
 - Keep the player calculator summary compact: combine expense categories into one share and show umpiring credit and net share without weight or umpiring-count columns.
 - Give shared-link players a mobile-visible My breakdown route limited to their linked roster identity; never expose other players' settlement rows, exports, or management actions there.
@@ -59,7 +62,8 @@ Vinext, React, Firebase, and D1 architecture.
 - Keep the combined Team users inventory authenticated-treasurer-only; return sanitized access metadata and never PINs, access tokens, encrypted access secrets, or their hashes.
 - Allow members to view financial records but require a treasurer or co-treasurer to add new expenses.
 - Allow treasurers to manage setup, entries, credits, and invitations.
-- Allow only treasurers to record or delete confirmed settlement payments.
+- Allow only treasurers to record, confirm, reject, or delete confirmed
+  settlement payments. Players may create only their own pending submission.
 - Restrict whole-team deletion to the original team treasurer and remove the
   shared workspace, memberships, and invitations in one database batch.
 - Require an email-bound invitation for co-treasurer access.
