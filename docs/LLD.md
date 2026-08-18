@@ -471,6 +471,14 @@ is zero, suggested transfers are empty, and no payment awaits confirmation.
 After the status becomes `Completed`, management controls are disabled and
 `PUT /api/state` rejects any changed or deleted version of that league with
 HTTP 423. The original data remains readable and exportable.
+
+### Player payment identity
+
+The shared team link and PIN provide read-only player visibility. Submitting an
+outgoing settlement requires a Google or verified email/password session whose
+team membership is linked to that roster player. The API rejects payment
+changes made through a shared-link session, and individually authenticated
+players can submit only pending payments originating from their own player ID.
 - Bounded strings and optional contact fields
 
 The request payload limit is 256 KB, which is the practical limit before the

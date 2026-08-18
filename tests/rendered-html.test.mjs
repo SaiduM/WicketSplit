@@ -357,9 +357,9 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /Select who paid/);
   assert.match(dashboard, /Select sharing method/);
   assert.match(dashboard, /appearanceCategories\.has\(next\)\?"appearances":"custom"/);
-  assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isSharedMember/);
+  assert.match(dashboard, /const navigationItems:ReadonlyArray<readonly \[View,string,string\]>=isTeamMember/);
   assert.match(dashboard, /\["overview","▦","Home"\],\["games","◉","Games"\],\["expenses","↗","Expenses"\],\["settlement","⇄","My breakdown"\]/);
-  assert.match(dashboard, /viewerPlayerId=\{isSharedMember\?memberPlayerId:undefined\}/);
+  assert.match(dashboard, /viewerPlayerId=\{isTeamMember\?memberPlayerId:undefined\}/);
   assert.match(dashboard, /const playerView=!canManage&&viewerPlayerId!==undefined/);
   assert.match(dashboard, /useState<"all"\|"pending">\("all"\)/);
   assert.match(dashboard, /\["expenses","↗","Expenses"\],\["settlement","⇄","Settlement"\]/);
@@ -470,6 +470,9 @@ test("players can submit pending settlement payments without clearing their own 
   assert.match(stateApi, /Players can submit only their own outgoing payments/);
   assert.match(stateApi, /entry\.status!=="pending"\|\|entry\.fromPlayerId!==membership\.player_id/);
   assert.match(stateApi, /Players cannot change submitted payments/);
+  assert.match(dashboard, /canSubmitPayment=\{isTeamMember&&!isSharedMember&&!user\.email\.startsWith\("phone:"\)\}/);
+  assert.match(dashboard, /Sign in with email to settle/);
+  assert.match(stateApi, /Sign in with your verified email to submit a payment/);
 });
 
 test("team deletion is owner-only, throttled, and removes shared access atomically", async () => {

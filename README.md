@@ -65,7 +65,9 @@ scroll.
    among each game’s eligible players. A player may therefore owe less, owe
    nothing, or finish with money to receive.
 8. Share the suggested transfers showing who should pay whom.
-9. A player can select **I paid — settle up** for their suggested transfer.
+9. An individually authenticated, roster-linked player can select **I paid —
+   settle up** for their own suggested transfer. Shared team-link/PIN access is
+   read-only and requires email sign-in before submitting a payment.
    The submission remains pending and does not change balances until a
    treasurer or co-treasurer confirms receipt. Treasurers may also record a
    payment directly after the receiver confirms it arrived.

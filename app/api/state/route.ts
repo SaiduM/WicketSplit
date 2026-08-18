@@ -297,6 +297,7 @@ export async function POST(request: Request) {
       oldLeague.expenses=nextExpenses.map(entry=>{const old=oldById.get(entry.id);return old&&JSON.stringify(entry)===JSON.stringify(old)?old:{...entry,submittedBy:email}});
       const oldPayments=(oldLeague.payments as Array<Record<string,unknown>>)??[];
       const nextPayments=(nextLeague.payments as Array<Record<string,unknown>>)??[];
+      if(user.provider==="team"&&JSON.stringify(oldPayments)!==JSON.stringify(nextPayments))return Response.json({error:"Sign in with your verified email to submit a payment"},{status:403});
       const oldPaymentsById=new Map(oldPayments.map(entry=>[entry.id,entry]));
       if(oldPayments.some(old=>!nextPayments.some(next=>next.id===old.id)))return Response.json({error:"Players cannot remove payment records"},{status:403});
       for(const entry of nextPayments){
