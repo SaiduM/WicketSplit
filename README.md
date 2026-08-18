@@ -55,10 +55,9 @@ scroll.
    recalculate the shares automatically.
 
 5. Choose custom players or a games-played split for Restaurant and Other.
-6. Use the Calculator to review appearances, weights, each cost component, and
-   an informational per-game breakdown showing lineup size, eligible payers,
-   exclusions, allocated cost, and cost per payer. The same breakdown is
-   included in the settlement CSV.
+6. Open Settlement → Shares by game to review every game’s eligible players,
+   allocated cost, and per-player share. The same breakdown is included in the
+   settlement CSV.
 7. Record umpiring for the team by entering the fixed credit per game once and
    the number of games umpired beside any players. Only non-zero rows are saved.
    Each player receives the full credit. That full credited amount is also added
@@ -108,11 +107,11 @@ controls.
 - Equal-per-game league fees and refreshment costs, divided by each game’s eligible players
 - Per-game split eligibility: record the full Playing XI/XII while excluding
   selected players from League Fee and Fruits / Water allocation
-- Simplified league calculator showing games played, eligible games, combined expense share, umpiring credit, and net share
-- Per-game calculation breakdown in Calculator and CSV showing each game’s
+- Settlement tabs for balances, per-game shares, and payment history without a separate calculator page
+- Per-game calculation breakdown in Settlement and CSV showing each game’s
   equal allocation and its lineup-dependent cost per payer
 - Batch umpiring entry with one fixed rate and per-player game counts; full
-  credits are added to the equal-per-game team cost pool and itemized in the Calculator
+  credits are added to the equal-per-game team cost pool and itemized in Settlement
 - Player calculation breakdowns, filters, duplicate protection, and CSV export
 - Player-submitted settlement requests with treasurer confirmation, plus a
   confirmed repayment ledger with date, sender, receiver, amount, optional

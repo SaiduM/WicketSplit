@@ -47,7 +47,8 @@ Vinext, React, Firebase, and D1 architecture.
   pending. Pending payments never affect balances or exports; a treasurer must
   confirm receipt or reject the submission.
 - Show the full settlement equation and itemized positive contributions in the player Details view; never hide expenses paid or umpiring credits inside the remaining balance.
-- Keep the player calculator summary compact: combine expense categories into one share and show umpiring credit and net share without weight or umpiring-count columns.
+- Keep calculation details inside Settlement: use separate Balances, Shares by game, and Payments tabs; do not restore a standalone Calculator navigation item.
+- Allow a league to be closed only after balances are zero and no payments are pending. Completed leagues are immutable, read-only references at both UI and API boundaries.
 - Give shared-link players a mobile-visible My breakdown route limited to their linked roster identity; never expose other players' settlement rows, exports, or management actions there.
 - Never scope an authenticated treasurer or co-treasurer to a player settlement view. Default their Settlement page to all players and keep it reachable on mobile.
 - A confirmed payment increases the sender's balance and decreases the

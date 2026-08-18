@@ -114,3 +114,7 @@ scope.
 
 Add deferred scope only after repeated team feedback demonstrates that it
 supports the core expense-and-settlement job.
+
+The current baseline also includes a compact tabbed Settlement experience,
+mobile treasurer/co-treasurer access to Settlement, in-place payment recording,
+and an irreversible read-only lock for fully settled completed leagues.

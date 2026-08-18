@@ -48,8 +48,9 @@ message only in a trusted group and replace access if it leaks.
 
 ## Navigation and mobile experience
 
-Treasurers see Home, Team roster, Leagues, Games, Expenses, Calculator, and
-Settlement. Players see only Home, Games, and Expenses. The Home page is
+Treasurers see Home, Team roster, Leagues, Games, Expenses, and Settlement.
+Settlement uses focused tabs for balances, shares by game, and payments.
+Players see only Home, Games, and Expenses. The Home page is
 personal to the selected roster identity and emphasizes what that person owes
 or receives and the games they played.
 

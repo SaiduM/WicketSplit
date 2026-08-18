@@ -70,6 +70,10 @@ flowchart TB
 | Finance engine | Expense shares, credits, balances, and transfer suggestions |
 | Settlement ledger | Transparent fair share, expenses paid, umpiring credits, confirmed payments, and remaining-balance calculation |
 | Export layer | Shareable settlement summary and CSV audit output |
+
+Fully settled leagues can be permanently closed from Settlement. A completed
+league remains available as read-only reference data, while both the interface
+and state API prevent later editing or deletion.
 | Cloudflare D1 | Accounts, teams, memberships, invitations, and rate counters |
 
 ## Deployment architecture

@@ -260,6 +260,12 @@ export async function POST(request: Request) {
     }
     if (!membership) return Response.json({ error: "You do not have access to this team" }, { status: 403 });
     if (membership.role === "treasurer") {
+      const existingLeagues=((existingTeam as Record<string,unknown>).leagues as Array<Record<string,unknown>>)??[];
+      const incomingLeagues=(clean.leagues as Array<Record<string,unknown>>)??[];
+      for(const closed of existingLeagues.filter(item=>item.status==="Completed")){
+        const next=incomingLeagues.find(item=>item.id===closed.id);
+        if(!next||JSON.stringify(next)!==JSON.stringify(closed))return Response.json({error:"Completed leagues are locked for reference and cannot be edited"},{status:423});
+      }
       let saved;
       try { saved=await saveNormalizedTeam(clean as Parameters<typeof saveNormalizedTeam>[0]); }
       catch(error){if((error as Error).message==="WORKSPACE_VERSION_CONFLICT")return Response.json({error:"This team changed in another session. Reload before saving again."},{status:409});throw error}

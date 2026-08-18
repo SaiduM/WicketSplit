@@ -105,9 +105,8 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Custom players/);
   assert.match(dashboard, /By games played/);
   assert.match(dashboard, /appearanceCategories = new Set\(\["League fee","League Fee","Fruits & Water","Fruits \/ Water","Fruits","Water"\]\)/);
-  assert.match(dashboard, /League share calculator/);
-  assert.match(dashboard, /The full team cost pool is split equally across/);
-  assert.match(dashboard, /Each game’s cost is then divided equally among that game’s eligible players/);
+  assert.match(dashboard, /Player share for each game/);
+  assert.match(dashboard, /The team-funded cost is split equally across completed games/);
   assert.doesNotMatch(dashboard, /<th>Fruits \/ water<\/th>/);
   assert.doesNotMatch(dashboard, />A game lineup</);
   assert.match(dashboard, /Which roster player are you/);
@@ -115,6 +114,11 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /You will receive/);
   assert.match(dashboard, /My settlement/);
   assert.match(dashboard, /My games/);
+  assert.match(dashboard, /Lock completed league/);
+  assert.match(dashboard, /Shares by game/);
+  assert.match(dashboard, /setView\("settlement"\);history\.replaceState/);
+  assert.match(stateApi, /Completed leagues are locked for reference and cannot be edited/);
+  assert.match(stateApi, /status:423/);
   assert.match(dashboard, /My fair share/);
   assert.doesNotMatch(dashboard, /Total league cost/);
   assert.doesNotMatch(dashboard, /Recent entries/);
@@ -131,13 +135,10 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /Split equally by game · \$\{count\} completed \$\{count===1\?"game":"games"\}/);
   assert.match(dashboard, /if\(entry\.kind==="umpiring-waiver"\) return gameSplitLabel\(games\)/);
   assert.match(dashboard, /gameWeightedShare\(e\.amount,player\.id,games\)/);
-  assert.match(dashboard, /Combined expense share/);
-  assert.match(dashboard, /All league, refreshments, umpiring, and other shared costs/);
-  assert.match(dashboard, /Credits reduce each player’s net share/);
   assert.doesNotMatch(dashboard, /<th>Weight<\/th>/);
-  assert.match(dashboard, /Per-game breakdown/);
-  assert.match(dashboard, /Each completed game receives an equal part of the team cost pool/);
-  assert.match(dashboard, /1\/fundedGameCount/);
+  assert.match(dashboard, /Shares by game/);
+  assert.match(dashboard, /Players sharing this game/);
+  assert.match(dashboard, /teamCost\/completed\.length/);
   assert.match(dashboard, /PER-GAME BREAKDOWN/);
   assert.match(dashboard, /Allocated Cost/);
   assert.match(dashboard, /perGame\/eligible\.length/);
@@ -266,8 +267,7 @@ test("mobile game cards display two per row", async () => {
   assert.match(css, /\.game-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}/);
   assert.match(css, /\.roster-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px\}/);
   assert.match(css, /\.delete-player\{border:1px solid #e6b9b5;background:#fff7f6/);
-  assert.match(dashboard, /mobile-secondary-nav/);
-  assert.match(css, /\.sidebar nav button\.mobile-secondary-nav\{display:none\}/);
+  assert.match(dashboard, /\["settlement","⇄","Settlement"\]/);
 });
 
 test("public access messaging, carousel, and financial ledgers are mobile friendly", async () => {
@@ -362,7 +362,8 @@ test("shared teams use authenticated invitations and server-side roles", async (
   assert.match(dashboard, /viewerPlayerId=\{isSharedMember\?memberPlayerId:undefined\}/);
   assert.match(dashboard, /const playerView=!canManage&&viewerPlayerId!==undefined/);
   assert.match(dashboard, /useState<"all"\|"pending">\("all"\)/);
-  assert.match(dashboard, /!isSharedMember&&id==="calculator"\?"mobile-secondary-nav"/);
+  assert.match(dashboard, /\["expenses","↗","Expenses"\],\["settlement","⇄","Settlement"\]/);
+  assert.doesNotMatch(dashboard, /\["calculator"/);
   assert.match(dashboard, /What I should do now/);
   assert.match(dashboard, /My confirmed payments/);
   assert.match(dashboard, /modal==="expense" && league && isTreasurer/);

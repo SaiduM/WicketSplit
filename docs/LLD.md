@@ -323,7 +323,8 @@ player total game-funded share =
   sum of player game shares for every eligible game they played
 ```
 
-The Calculator and CSV expose this same calculation as a per-game view:
+Settlement → Shares by game and the CSV expose this same calculation as a
+per-game view:
 
 ```text
 game allocated cost =
@@ -462,6 +463,14 @@ The state API validates:
 - Existing player and game references
 - Unique, non-empty participant lists
 - Different settlement sender and receiver
+
+### Completed-league lock
+
+Settlement offers `Lock completed league` only when every calculated balance
+is zero, suggested transfers are empty, and no payment awaits confirmation.
+After the status becomes `Completed`, management controls are disabled and
+`PUT /api/state` rejects any changed or deleted version of that league with
+HTTP 423. The original data remains readable and exportable.
 - Bounded strings and optional contact fields
 
 The request payload limit is 256 KB, which is the practical limit before the
