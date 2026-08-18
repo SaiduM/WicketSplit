@@ -119,6 +119,10 @@ test("finance workflow includes editable dated expenses and settlement transfers
   assert.match(dashboard, /setView\("settlement"\);history\.replaceState/);
   assert.match(stateApi, /Completed leagues are locked for reference and cannot be edited/);
   assert.match(stateApi, /status:423/);
+  assert.match(stateApi, /Confirm all payments and settle every balance before completing this league/);
+  assert.match(stateApi, /leagueHasOutstanding/);
+  assert.match(dashboard, /Completion needs attention/);
+  assert.match(dashboard, /Reopen league/);
   assert.match(dashboard, /My fair share/);
   assert.doesNotMatch(dashboard, /Total league cost/);
   assert.doesNotMatch(dashboard, /Recent entries/);

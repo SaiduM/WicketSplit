@@ -7,6 +7,19 @@ import { earlyAccessStatus, isEarlyAccessAdmin } from "../../early-access-policy
 const MAX_PAYLOAD_BYTES = 256_000;
 const READS_PER_MINUTE = 120;
 const WRITES_PER_MINUTE = 40;
+const fundedCategories=new Set(["League fee","League Fee","Fruits & Water","Fruits / Water","Fruits","Water"]);
+
+function leagueHasOutstanding(league:Record<string,unknown>,players:Array<Record<string,unknown>>){
+  const games=((league.games as Array<Record<string,unknown>>)??[]).filter(game=>game.status==="Completed");
+  const expenses=(league.expenses as Array<Record<string,unknown>>)??[];const credits=(league.credits as Array<Record<string,unknown>>)??[];const payments=(league.payments as Array<Record<string,unknown>>)??[];
+  if(payments.some(payment=>payment.status==="pending"))return true;
+  const eligible=(game:Record<string,unknown>)=>((game.players as number[])??[]).filter(id=>!((game.excludedFromSplit as number[]|undefined)??[]).includes(id));
+  const fundedGames=games.filter(game=>eligible(game).length>0);
+  const gameShare=(amount:number,playerId:number)=>fundedGames.reduce((sum,game)=>{const ids=eligible(game);return sum+(ids.includes(playerId)?amount/fundedGames.length/ids.length:0)},0);
+  return players.some(player=>{const playerId=Number(player.id);const paid=expenses.filter(expense=>expense.paidBy===playerId).reduce((sum,expense)=>sum+Number(expense.amount),0);const credit=credits.filter(entry=>entry.playerId===playerId).reduce((sum,entry)=>sum+Number(entry.amount),0);
+    const expenseShare=expenses.reduce((sum,expense)=>{if(expense.split==="appearances"||fundedCategories.has(String(expense.category)))return sum+gameShare(Number(expense.amount),playerId);const participants=(expense.participants as number[]|undefined)??(expense.split==="players"?((games.find(game=>game.id===expense.gameId)?.players as number[]|undefined)??[]):players.map(item=>Number(item.id)));return sum+(participants.includes(playerId)?Number(expense.amount)/participants.length:0)},0);
+    const creditShare=credits.reduce((sum,entry)=>{if(entry.kind==="umpiring-waiver")return sum+gameShare(Number(entry.amount),playerId);const participants=(entry.participants as number[]|undefined)??[];return sum+(participants.includes(playerId)?Number(entry.amount)/participants.length:0)},0);const confirmed=payments.filter(payment=>payment.status!=="pending");const sent=confirmed.filter(payment=>payment.fromPlayerId===playerId).reduce((sum,payment)=>sum+Number(payment.amount),0);const received=confirmed.filter(payment=>payment.toPlayerId===playerId).reduce((sum,payment)=>sum+Number(payment.amount),0);return Math.abs(paid+credit-expenseShare-creditShare+sent-received)>.005});
+}
 
 async function ensureTables() {
   await env.DB.batch([
@@ -264,8 +277,10 @@ export async function POST(request: Request) {
       const incomingLeagues=(clean.leagues as Array<Record<string,unknown>>)??[];
       for(const closed of existingLeagues.filter(item=>item.status==="Completed")){
         const next=incomingLeagues.find(item=>item.id===closed.id);
-        if(!next||JSON.stringify(next)!==JSON.stringify(closed))return Response.json({error:"Completed leagues are locked for reference and cannot be edited"},{status:423});
+        const reopened=next&&next.status==="Active"&&JSON.stringify({...next,status:"Completed"})===JSON.stringify(closed)&&leagueHasOutstanding(closed,((clean.players as Array<Record<string,unknown>>)??[]));
+        if(!next||JSON.stringify(next)!==JSON.stringify(closed)&&!reopened)return Response.json({error:"Completed leagues are locked for reference and cannot be edited"},{status:423});
       }
+      for(const next of incomingLeagues.filter(item=>item.status==="Completed")){const prior=existingLeagues.find(item=>item.id===next.id);if(prior?.status!=="Completed"&&leagueHasOutstanding(next,((clean.players as Array<Record<string,unknown>>)??[])))return Response.json({error:"Confirm all payments and settle every balance before completing this league"},{status:409});}
       let saved;
       try { saved=await saveNormalizedTeam(clean as Parameters<typeof saveNormalizedTeam>[0]); }
       catch(error){if((error as Error).message==="WORKSPACE_VERSION_CONFLICT")return Response.json({error:"This team changed in another session. Reload before saving again."},{status:409});throw error}

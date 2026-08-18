@@ -72,6 +72,9 @@ scroll.
    treasurer or co-treasurer confirms receipt. Treasurers may also record a
    payment directly after the receiver confirms it arrived.
 10. Review the payment audit history or export the complete ledger as CSV.
+11. After every balance reaches zero and no payment awaits confirmation, lock
+    the league as a read-only historical reference. The server recalculates the
+    settlement before accepting completion.
 
 Game history is paginated 12 at a time, and the searchable finance ledger is
 paginated 20 entries at a time. Mobile pagination uses large Previous and Next

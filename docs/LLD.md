@@ -472,6 +472,11 @@ After the status becomes `Completed`, management controls are disabled and
 `PUT /api/state` rejects any changed or deleted version of that league with
 HTTP 423. The original data remains readable and exportable.
 
+The API independently recalculates every player balance and checks pending
+payments before accepting an Active → Completed transition. A legacy league
+that was marked Completed while money remains shows `Completion needs
+attention` and can be reopened only without changing any other league data.
+
 ### Player payment identity
 
 The shared team link and PIN provide read-only player visibility. Submitting an

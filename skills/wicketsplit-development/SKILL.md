@@ -49,6 +49,7 @@ Vinext, React, Firebase, and D1 architecture.
 - Show the full settlement equation and itemized positive contributions in the player Details view; never hide expenses paid or umpiring credits inside the remaining balance.
 - Keep calculation details inside Settlement: use separate Balances, Shares by game, and Payments tabs; do not restore a standalone Calculator navigation item.
 - Allow a league to be closed only after balances are zero and no payments are pending. Completed leagues are immutable, read-only references at both UI and API boundaries.
+- Recalculate settlement server-side before accepting completion. If legacy completed data still has outstanding money, permit only a status-only recovery to Active so settlement can finish.
 - Give shared-link players a mobile-visible My breakdown route limited to their linked roster identity; never expose other players' settlement rows, exports, or management actions there.
 - Keep shared team-link/PIN sessions read-only for settlement. Only an individually authenticated, roster-linked email account may submit that player's outgoing payment for treasurer confirmation.
 - Never scope an authenticated treasurer or co-treasurer to a player settlement view. Default their Settlement page to all players and keep it reachable on mobile.
